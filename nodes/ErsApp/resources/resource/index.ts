@@ -37,6 +37,10 @@ export const resourceDescription: INodeProperties[] = [
 					request: {
 						method: 'POST',
 						url: `http://192.168.1.16:8080/rest/v1/resources`,
+						body: '={{ $json }}',
+						headers: {
+							'Content-Type': 'application/json',
+						},
 					},
 				},
 			},
