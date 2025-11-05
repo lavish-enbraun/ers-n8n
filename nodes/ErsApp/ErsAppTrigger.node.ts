@@ -27,15 +27,7 @@ export class ErsAppTrigger implements INodeType {
 				path: 'ersapp',
 			},
 		],
-		properties: [
-			{
-				displayName: 'Challenge Detection Field',
-				name: 'challengeField',
-				type: 'string',
-				default: 'challenge',
-				description: 'Field name in the payload that indicates a challenge request (e.g., "challenge", "token", "verify"). If this field exists, the payload will be echoed back as the response.',
-			},
-		],
+		properties: [],
 	};
 
 	async webhook(this: IWebhookFunctions): Promise<IWebhookResponseData> {
@@ -61,15 +53,15 @@ export class ErsAppTrigger implements INodeType {
 			const challengeField = this.getNodeParameter('challengeField', '') as string || 'challenge';
 			
 			// Log request details for debugging
-			console.log('📥 POST Request received');
-			console.log('📦 Body:', JSON.stringify(body, null, 2));
+			console.log('POST Request received');
+			console.log('Body:', JSON.stringify(body, null, 2));
 			
 			// Check if this is a challenge request by looking for the challenge field in the payload
 			const isChallenge = body && typeof body === 'object' && challengeField in body;
 			
 			if (isChallenge) {
-				console.log('🔐 Challenge detected! Field:', challengeField, 'Value:', body[challengeField]);
-				console.log('📤 Echoing challenge payload back as response');
+				console.log('Challenge detected! Field:', challengeField, 'Value:', body[challengeField]);
+				console.log('Echoing challenge payload back as response');
 				
 				// Return the same payload as the HTTP response
 				// This is how the target application verifies the webhook URL

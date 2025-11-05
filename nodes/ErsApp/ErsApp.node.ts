@@ -24,7 +24,7 @@ export class ErsApp implements INodeType {
 				'Content-Type': 'application/json',
 			},
 		},
-			properties: [
+		properties: [
 			{
 				displayName: 'Resource',
 				name: 'resource',

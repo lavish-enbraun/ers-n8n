@@ -17,6 +17,23 @@ export class ErsAppOAuth2Api implements ICredentialType {
 
 	properties: INodeProperties[] = [
 		{
+			displayName: 'Client ID',
+			name: 'clientId',
+			type: 'string',
+			required: true,
+			default: '',
+		},
+		{
+			displayName: 'Client Secret',
+			name: 'clientSecret',
+			type: 'string',
+			typeOptions: {
+				password: true,
+			},
+			required: true,
+			default: '',
+		},
+		{
 			displayName: 'Grant Type',
 			name: 'grantType',
 			type: 'hidden',
