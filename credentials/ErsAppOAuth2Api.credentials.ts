@@ -19,19 +19,18 @@ export class ErsAppOAuth2Api implements ICredentialType {
 		{
 			displayName: 'Client ID',
 			name: 'clientId',
-			type: 'string',
-			required: true,
-			default: '',
+			type: 'hidden',
+			default: 'I7XLLz8dQ9P8wa0q',
 		},
 		{
 			displayName: 'Client Secret',
 			name: 'clientSecret',
-			type: 'string',
+			type: 'hidden',
 			typeOptions: {
 				password: true,
 			},
 			required: true,
-			default: '',
+			default: 'fixed-client-secret-abcde',
 		},
 		{
 			displayName: 'Grant Type',
@@ -69,5 +68,17 @@ export class ErsAppOAuth2Api implements ICredentialType {
 			type: 'hidden',
 			default: 'header',
 		},
+		{
+			displayName: 'OAuth Redirect URL',
+			name: 'oauthRedirectUrl',
+			type: 'hidden',
+			default: 'http://localhost:5678/rest/oauth2-credential/callback',
+			displayOptions: {
+			  show: {
+				// never true
+				neverShow: ['true'],
+			  },
+			},
+		  }
 	];
 }
