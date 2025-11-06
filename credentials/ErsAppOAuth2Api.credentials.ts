@@ -5,7 +5,8 @@ export class ErsAppOAuth2Api implements ICredentialType {
 
 	extends = ['oAuth2Api'];
 
-	displayName = 'Ers App OAuth2 API';
+	// eslint-disable-next-line n8n-nodes-base/cred-class-field-display-name-missing-api, n8n-nodes-base/cred-class-field-display-name-missing-oauth2
+	displayName = 'Sign in with eResource Scheduler';
 
 	icon: { light: IconFile; dark: IconFile } = {
 		light: 'file:../nodes/ErsApp/ersApp.svg',
@@ -30,7 +31,7 @@ export class ErsAppOAuth2Api implements ICredentialType {
 				password: true,
 			},
 			required: true,
-			default: 'fixed-client-secret-abcde',
+			default: 'yJNV3MC01TyYpM6UxBb9UDsovlqA6beK',
 		},
 		{
 			displayName: 'Grant Type',
@@ -73,12 +74,6 @@ export class ErsAppOAuth2Api implements ICredentialType {
 			name: 'oauthRedirectUrl',
 			type: 'hidden',
 			default: 'http://localhost:5678/rest/oauth2-credential/callback',
-			displayOptions: {
-			  show: {
-				// never true
-				neverShow: ['true'],
-			  },
-			},
 		  }
 	];
 }
