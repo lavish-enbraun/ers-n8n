@@ -1,8 +1,9 @@
 import type { INodeProperties } from 'n8n-workflow';
-import { resourceGetManyDescription } from './getAll';
-import { resourcePostManyDescription } from './postMany';
-import { resourceCreateDescription } from './create';
 import { BASE_URL, API_BASE_PATH } from '../../constants';
+import { resourceGetResourcesDescription } from './getAll';
+import { resourceCreateDescription } from './create';
+import { resourceUpdateDescription } from './update';
+import { resourceDeleteDescription } from './delete';
 
 const showOnlyForResources = {
 	resource: ['resource'],
@@ -19,34 +20,6 @@ export const resourceDescription: INodeProperties[] = [
 		},
 		options: [
 			{
-				name: 'Get Many',
-				value: 'getAll',
-				action: 'Get resources',
-				description: 'Get many resources',
-				routing: {
-					request: {
-						method: 'GET',
-						url: `${BASE_URL}${API_BASE_PATH}/resources`,
-					},
-				},
-			},
-			{
-				name: 'POST Many',
-				value: 'postMany',
-				action: 'Post many resources',
-				description: 'Post many resources',
-				routing: {
-					request: {
-						method: 'POST',
-						url: `${BASE_URL}${API_BASE_PATH}/resources`,
-						body: '={{ $json }}',
-						headers: {
-							'Content-Type': 'application/json',
-						},
-					},
-				},
-			},
-			{
 				name: 'Create',
 				value: 'create',
 				action: 'Create a resource',
@@ -58,16 +31,56 @@ export const resourceDescription: INodeProperties[] = [
 						headers: {
 							'Content-Type': 'application/json',
 						},
-						body: '={{ { first_name: $parameter.first_name, start_date: $parameter.start_date ? new Date($parameter.start_date).toISOString().split("T")[0] : $parameter.start_date, resource_type_id: $parameter.resource_type_id, ...($parameter.last_name ? { last_name: $parameter.last_name } : {}), ...($parameter.last_date ? { last_date: new Date($parameter.last_date).toISOString().split("T")[0] } : {}), ...($parameter.additionalFields?.email ? { email: $parameter.additionalFields.email } : {}), ...($parameter.additionalFields?.phone ? { phone: $parameter.additionalFields.phone } : {}), ...($parameter.additionalFields?.calendar ? { calendar: $parameter.additionalFields.calendar } : {}) } }}',
+						body: '={{ { first_name: $parameter.first_name, start_date: $parameter.start_date ? new Date($parameter.start_date).toISOString().split("T")[0] : $parameter.start_date, resource_type_id: $parameter.resource_type_id, ...($parameter.additionalFields?.email ? { email: $parameter.additionalFields.email } : {}), ...($parameter.additionalFields?.phone ? { phone: $parameter.additionalFields.phone } : {}), ...($parameter.additionalFields?.calendar ? { calendar: $parameter.additionalFields.calendar } : {}), ...($parameter.additionalFields?.last_name ? { last_name: $parameter.additionalFields.last_name } : {}), ...($parameter.additionalFields?.last_date ? { last_date: new Date($parameter.additionalFields.last_date).toISOString().split("T")[0] } : {}), ...($parameter.udfFields?.field && Array.isArray($parameter.udfFields.field) ? $parameter.udfFields.field.reduce((acc, item) => { if (item.fieldName) { try { const fieldData = JSON.parse(item.fieldName); const fieldCode = fieldData.code; if (item.fieldValueText !== undefined && item.fieldValueText !== null && item.fieldValueText !== "") { acc[fieldCode] = item.fieldValueText; } else if (item.fieldValueBoolean !== undefined && item.fieldValueBoolean !== null) { acc[fieldCode] = item.fieldValueBoolean; } } catch (e) { } } return acc; }, {}) : {}) } }}',
 					},
 				},
 			},
-			
+			{
+				name: 'Update',
+				value: 'update',
+				action: 'Update a resource',
+				description: 'Update an existing resource',
+				routing: {
+					request: {
+						method: 'PUT',
+						url: `={{ "${BASE_URL}${API_BASE_PATH}/resources/" + $parameter.resource_id }}`,
+						headers: {
+							'Content-Type': 'application/json',
+						},
+						body: '={{ { ...($parameter.first_name ? { first_name: $parameter.first_name } : {}), ...($parameter.additionalFields?.email ? { email: $parameter.additionalFields.email } : {}), ...($parameter.additionalFields?.phone ? { phone: $parameter.additionalFields.phone } : {}), ...($parameter.additionalFields?.calendar ? { calendar: $parameter.additionalFields.calendar } : {}), ...($parameter.additionalFields?.last_name ? { last_name: $parameter.additionalFields.last_name } : {}) } }}',
+					},
+				},
+			},
+			{
+				name: 'Delete',
+				value: 'delete',
+				action: 'Delete a resource',
+				description: 'Delete a resource',
+				routing: {
+					request: {
+						method: 'DELETE',
+						url: `={{ "${BASE_URL}${API_BASE_PATH}/resources/" + $parameter.resource_id }}`
+					},
+				},
+			},
+			{
+				name: 'Get Many',
+				value: 'getAll',
+				action: 'Get many resources',
+				description: 'Retrieve a list of resources',
+				routing: {
+					request: {
+						method: 'GET',
+						url: `${BASE_URL}${API_BASE_PATH}/resources`,
+					},
+				},
+			},
 		],
-		default: 'getAll',
+		default: 'create',
 	},
-	...resourceGetManyDescription,
-	...resourcePostManyDescription,
+	...resourceGetResourcesDescription,
 	...resourceCreateDescription,
+	...resourceUpdateDescription,
+	...resourceDeleteDescription,
 ];
 

@@ -1,17 +1,17 @@
 import type { INodeProperties } from 'n8n-workflow';
 
-const showOnlyForResourceGetMany = {
+const showOnlyForResourceGetResources = {
 	operation: ['getAll'],
 	resource: ['resource'],
 };
 
-export const resourceGetManyDescription: INodeProperties[] = [
+export const resourceGetResourcesDescription: INodeProperties[] = [
 	{
 		displayName: 'Return All',
 		name: 'returnAll',
 		type: 'boolean',
 		displayOptions: {
-			show: showOnlyForResourceGetMany,
+			show: showOnlyForResourceGetResources,
 		},
 		default: false,
 		description: 'Whether to return all results or only up to a given limit',
@@ -38,7 +38,7 @@ export const resourceGetManyDescription: INodeProperties[] = [
 		type: 'number',
 		displayOptions: {
 			show: {
-				...showOnlyForResourceGetMany,
+				...showOnlyForResourceGetResources,
 				returnAll: [false],
 			},
 		},

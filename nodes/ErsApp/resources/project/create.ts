@@ -1,61 +1,44 @@
 import type { INodeProperties } from 'n8n-workflow';
 
-const showOnlyForResourceCreate = {
+const showOnlyForProjectCreate = {
 	operation: ['create'],
-	resource: ['resource'],
+	resource: ['project'],
 };
 
-export const resourceCreateDescription: INodeProperties[] = [
+export const projectCreateDescription: INodeProperties[] = [
 	{
-		displayName: 'First Name',
-		name: 'first_name',
+		displayName: 'Title',
+		name: 'title',
 		type: 'string',
 		required: true,
 		displayOptions: {
-			show: showOnlyForResourceCreate,
+			show: showOnlyForProjectCreate,
 		},
 		default: '',
-		description: 'First name of the resource',
+		description: 'Title of the project',
 		routing: {
 			send: {
-				property: 'first_name',
+				property: 'title',
 				type: 'body',
 			},
 		},
 	},
 	{
-		displayName: 'Start Date',
-		name: 'start_date',
-		type: 'dateTime',
-		required: true,
-		displayOptions: {
-			show: showOnlyForResourceCreate,
-		},
-		default: '',
-		description: 'Start date of the resource',
-		routing: {
-			send: {
-				property: 'start_date',
-				type: 'body',
-			},
-		},
-	},
-	{
-		displayName: 'Resource Type Name or ID',
-		name: 'resource_type_id',
+		displayName: 'Project Type Name or ID',
+		name: 'project_type_id',
 		type: 'options',
 		required: true,
 		displayOptions: {
-			show: showOnlyForResourceCreate,
+			show: showOnlyForProjectCreate,
 		},
 		typeOptions: {
-			loadOptionsMethod: 'getResourceTypes',
+			loadOptionsMethod: 'getProjectTypes',
 		},
 		default: '',
 		description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
 		routing: {
 			send: {
-				property: 'resource_type_id',
+				property: 'project_type_id',
 				type: 'body',
 			},
 		},
@@ -66,72 +49,59 @@ export const resourceCreateDescription: INodeProperties[] = [
 		type: 'collection',
 		placeholder: 'Add Field',
 		displayOptions: {
-			show: showOnlyForResourceCreate,
+			show: showOnlyForProjectCreate,
 		},
 		default: {},
 		options: [
 			{
-				displayName: 'Calendar',
-				name: 'calendar',
+				displayName: 'Start Date',
+				name: 'project_start_date',
+				type: 'dateTime',
+				default: '',
+				description: 'Start date of the project',
+				routing: {
+					send: {
+						property: 'project_start_date',
+						type: 'body',
+					},
+				},
+			},
+			{
+				displayName: 'End Date',
+				name: 'end_date',
+				type: 'dateTime',
+				default: '',
+				description: 'End date of the project',
+				routing: {
+					send: {
+						property: 'end_date',
+						type: 'body',
+					},
+				},
+			},
+			{
+				displayName: 'Tags',
+				name: 'tags',
+				type: 'string',
+				default: '',
+				description: 'Tags for the project',
+				routing: {
+					send: {
+						property: 'tags',
+						type: 'body',
+					},
+				},
+			},
+			{
+				displayName: 'Project Calendar',
+				name: 'project_calendar',
 				type: 'number',
 				placeholder: '',
 				default: '',
-				description: 'ID of Calendar to assign to resource',
+				description: 'ID of Calendar to assign to project',
 				routing: {
 					send: {
-						property: 'calendar',
-						type: 'body',
-					},
-				},
-			},
-			{
-				displayName: 'Email',
-				name: 'email',
-				type: 'string',
-				placeholder: 'name@email.com',
-				default: '',
-				routing: {
-					send: {
-						property: 'email',
-						type: 'body',
-					},
-				},
-			},
-			{
-				displayName: 'Last Date',
-				name: 'last_date',
-				type: 'dateTime',
-				default: '',
-				description: 'Last working date of the resource (if applicable)',
-				routing: {
-					send: {
-						property: 'last_date',
-						type: 'body',
-					},
-				},
-			},
-			{
-				displayName: 'Last Name',
-				name: 'last_name',
-				type: 'string',
-				default: '',
-				description: 'Last name of the resource',
-				routing: {
-					send: {
-						property: 'last_name',
-						type: 'body',
-					},
-				},
-			},
-			{
-				displayName: 'Phone Number',
-				name: 'phone',
-				type: 'string',
-				placeholder: '',
-				default: '',
-				routing: {
-					send: {
-						property: 'phone',
+						property: 'project_calendar',
 						type: 'body',
 					},
 				},
@@ -145,11 +115,11 @@ export const resourceCreateDescription: INodeProperties[] = [
 		placeholder: 'Add UDF Field',
 		displayOptions: {
 			show: {
-				...showOnlyForResourceCreate,
-				resource_type_id: [
+				...showOnlyForProjectCreate,
+				project_type_id: [
 					{
 						_cnd: {
-							regex: '.+', // Show when resource_type_id has any value
+							regex: '.+', // Show when project_type_id has any value
 						},
 					},
 				],
@@ -159,7 +129,7 @@ export const resourceCreateDescription: INodeProperties[] = [
 		typeOptions: {
 			multipleValues: true,
 		},
-		description: 'Custom user-defined fields from eResource Scheduler. Fields are fetched dynamically based on the selected Resource Type. After selecting a field, fill ONLY the appropriate value field that matches the field type (Text for TEXT/EMAIL/ENAME, Number for NUMBER/INTEGER, Date for DATE, Boolean for BOOLEAN/CHECKBOX, Select for dropdowns with options, Multi-Select for multi-select dropdowns).',
+		description: 'Custom user-defined fields from eResource Scheduler. Fields are fetched dynamically based on the selected Project Type. After selecting a field, fill ONLY the appropriate value field that matches the field type (Text for TEXT/EMAIL/ENAME, Number for NUMBER/INTEGER, Date for DATE, Boolean for BOOLEAN/CHECKBOX, Select for dropdowns with options, Multi-Select for multi-select dropdowns).',
 		options: [
 			{
 				displayName: 'Field',
@@ -170,7 +140,7 @@ export const resourceCreateDescription: INodeProperties[] = [
 						name: 'fieldName',
 						type: 'options',
 						typeOptions: {
-							loadOptionsMethod: 'getResourceUDFFields',
+							loadOptionsMethod: 'getProjectUDFFields',
 						},
 						default: '',
 						description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
@@ -223,7 +193,7 @@ export const resourceCreateDescription: INodeProperties[] = [
 						type: 'options',
 						noDataExpression: true,
 						typeOptions: {
-							loadOptionsMethod: 'getResourceUDFFieldOptions',
+							loadOptionsMethod: 'getProjectUDFFieldOptions',
 							multipleValues: true,
 						},
 						default: '',
@@ -284,7 +254,7 @@ export const resourceCreateDescription: INodeProperties[] = [
 						type: 'options',
 						noDataExpression: true,
 						typeOptions: {
-							loadOptionsMethod: 'getResourceUDFFieldOptions',
+							loadOptionsMethod: 'getProjectUDFFieldOptions',
 						},
 						default: '',
 						displayOptions: {
