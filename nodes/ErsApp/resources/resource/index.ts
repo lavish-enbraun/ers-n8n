@@ -2,6 +2,7 @@ import type { INodeProperties } from 'n8n-workflow';
 import { resourceGetManyDescription } from './getAll';
 import { resourcePostManyDescription } from './postMany';
 import { resourceCreateDescription } from './create';
+import { BASE_URL, API_BASE_PATH } from '../../constants';
 
 const showOnlyForResources = {
 	resource: ['resource'],
@@ -25,7 +26,7 @@ export const resourceDescription: INodeProperties[] = [
 				routing: {
 					request: {
 						method: 'GET',
-						url: `http://192.168.1.16:8080/rest/v1/resources`,
+						url: `${BASE_URL}${API_BASE_PATH}/resources`,
 					},
 				},
 			},
@@ -37,7 +38,7 @@ export const resourceDescription: INodeProperties[] = [
 				routing: {
 					request: {
 						method: 'POST',
-						url: `http://192.168.1.16:8080/rest/v1/resources`,
+						url: `${BASE_URL}${API_BASE_PATH}/resources`,
 						body: '={{ $json }}',
 						headers: {
 							'Content-Type': 'application/json',
@@ -53,7 +54,7 @@ export const resourceDescription: INodeProperties[] = [
 				routing: {
 					request: {
 						method: 'POST',
-						url: `http://192.168.1.16:8080/rest/v1/resources`,
+						url: `${BASE_URL}${API_BASE_PATH}/resources`,
 						headers: {
 							'Content-Type': 'application/json',
 						},

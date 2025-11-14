@@ -1,5 +1,6 @@
 import { NodeConnectionTypes, type INodeType, type INodeTypeDescription } from 'n8n-workflow';
 import { resourceDescription } from './resources/resource';
+import { BASE_URL } from './constants';
 
 export class ErsApp implements INodeType {
 	description: INodeTypeDescription = {
@@ -18,7 +19,7 @@ export class ErsApp implements INodeType {
 		outputs: [NodeConnectionTypes.Main],
 		credentials: [{ name: 'ersAppOAuth2Api', required: true }],
 		requestDefaults: {
-			baseURL: `http://192.168.1.16:8080/login/oauth/authorize`,
+			baseURL: `${BASE_URL}/login/oauth/authorize`,
 			headers: {
 				Accept: 'application/json',
 				'Content-Type': 'application/json',
