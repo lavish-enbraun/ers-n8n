@@ -3,6 +3,7 @@ import type {
     INodeProperties, 
     IconFile,
 } from 'n8n-workflow';
+import { BASE_URL } from '../nodes/ErsApp/constants';
 
 export class ErsAppOAuth2Api implements ICredentialType {
     name = 'ersAppOAuth2Api';
@@ -47,13 +48,13 @@ export class ErsAppOAuth2Api implements ICredentialType {
             displayName: 'Authorization URL',
             name: 'authUrl',
             type: 'hidden',
-            default: `http://192.168.1.16:8080/login/oauth/authorize`,
+            default: `${BASE_URL}/login/oauth/authorize`,
         },
         {
             displayName: 'Access Token URL',
             name: 'accessTokenUrl',
             type: 'hidden',
-            default: `http://192.168.1.16:8080/login/oauth/token?client_source=system`,
+            default: `${BASE_URL}/login/oauth/token?client_source=system`,
         },
         {
             displayName: 'Auth URI Query Parameters',
