@@ -43,6 +43,29 @@ function getValidEventsForEntity(entity: number, events: number[]): number[] {
 	return filtered;
 }
 
+/**
+ * Overrides webhook URL by replacing localhost or 192.168.1.76 with the override value
+ * @param webhookUrl - The original webhook URL
+ * @param overrideValue - The value to replace localhost/192.168.1.76 with
+ * @returns The webhook URL with overridden host
+ */
+function overrideWebhookUrl(webhookUrl: string, overrideValue: string): string {
+	if (!overrideValue || overrideValue.trim() === '') {
+		return webhookUrl;
+	}
+
+	const trimmedOverride = overrideValue.trim();
+	
+	// Replace localhost (with or without port)
+	webhookUrl = webhookUrl.replace(/https?:\/\/localhost(:\d+)?/gi, (match) => {
+		const protocol = match.startsWith('https') ? 'https://' : 'http://';
+		const port = match.match(/:(\d+)/)?.[1] || '';
+		return port ? `${protocol}${trimmedOverride}:${port}` : `${protocol}${trimmedOverride}`;
+	});
+
+	return webhookUrl;
+}
+
 export class ErsAppWebhookTrigger implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'ERS App Webhook Trigger',
@@ -72,8 +95,8 @@ export class ErsAppWebhookTrigger implements INodeType {
 				name: 'webhookUrlOverride',
 				type: 'string',
 				default: '',
-				description: 'Optionally override the webhook URL. Leave empty to use the auto-generated URL. Useful if you need to use a public URL (e.g., ngrok) instead of localhost.',
-				placeholder: 'https://your-public-url.com/webhook/ersapp-webhook',
+				description: 'Override the host in the webhook URL. Replaces "localhost" or "192.168.1.76" with this value. Leave empty to use the auto-generated URL as-is. Useful if you need to use a public URL (e.g., ngrok) instead of localhost.',
+				placeholder: 'your-public-url.com',
 			},
 			{
 				displayName: 'Entities',
@@ -170,20 +193,22 @@ export class ErsAppWebhookTrigger implements INodeType {
 				// Get webhook URL override from node parameters
 				const webhookUrlOverride = this.getNodeParameter('webhookUrlOverride', '') as string;
 				
-				// Use override URL if provided, otherwise use the auto-generated webhook URL
+				// Get webhook URL - this ensures the webhook is ready
+				const generatedUrl = this.getNodeWebhookUrl('default');
+				
+				if (!generatedUrl) {
+					throw new NodeApiError(this.getNode(), {
+						message: 'Failed to get webhook URL. Please ensure the workflow is saved and activated.',
+					});
+				}
+				
+				// Apply override function to replace localhost or 192.168.1.76 with override value
 				let webhookUrl: string;
 				if (webhookUrlOverride && webhookUrlOverride.trim() !== '') {
-					webhookUrl = webhookUrlOverride.trim();
+					// Use override function to replace localhost/192.168.1.76 in the generated URL
+					webhookUrl = overrideWebhookUrl(generatedUrl, webhookUrlOverride);
 				} else {
-					// Get webhook URL - this ensures the webhook is ready
-					const generatedUrl = this.getNodeWebhookUrl('default');
-					
-					if (!generatedUrl) {
-						throw new NodeApiError(this.getNode(), {
-							message: 'Failed to get webhook URL. Please ensure the workflow is saved and activated.',
-						});
-					}
-					
+					// Use the generated URL as-is
 					webhookUrl = generatedUrl;
 				}
 				
@@ -199,7 +224,6 @@ export class ErsAppWebhookTrigger implements INodeType {
 					const credentials = await this.getCredentials('ersAppOAuth2Api');
 					
 					// OAuth2 tokens can be stored in different locations
-					// Check common locations for the access token
 					const creds = credentials as Record<string, unknown>;
 					const accessToken = 
 						(creds.access_token as string | undefined) || 
@@ -208,7 +232,7 @@ export class ErsAppWebhookTrigger implements INodeType {
 						((creds.data as Record<string, unknown> | undefined)?.access_token as string | undefined);
 
 				if (!accessToken) {
-					// Log available keys for debugging
+
 					const keys = Object.keys(creds);
 					console.error('[ERS Webhook] OAuth2 access token not found. Available credential keys:', keys);
 					throw new NodeApiError(this.getNode(), {
@@ -271,7 +295,7 @@ export class ErsAppWebhookTrigger implements INodeType {
 					console.log('[ERS Webhook] Request Payload:', JSON.stringify(payload, null, 2));
 					console.log('[ERS Webhook] Request Headers:', {
 						'Content-Type': 'application/json',
-						Authorization: `Bearer ${accessToken.substring(0, 20)}...` // Log partial token for security
+						Authorization: `Bearer ${accessToken.substring(0, 20)}...`
 					});
 					
 					const webhookResponse = await this.helpers.httpRequest({
@@ -380,7 +404,7 @@ export class ErsAppWebhookTrigger implements INodeType {
 				console.log('[ERS Webhook] Request Payload:', JSON.stringify(triggerPayload, null, 2));
 				console.log('[ERS Webhook] Request Headers:', {
 					'Content-Type': 'application/json',
-					Authorization: `Bearer ${accessToken.substring(0, 20)}...` // Log partial token for security
+					Authorization: `Bearer ${accessToken.substring(0, 20)}...`
 				});
 				
 				const triggerResponse = await this.helpers.httpRequest({
@@ -419,10 +443,139 @@ export class ErsAppWebhookTrigger implements INodeType {
 				}
 			},
 			async delete(this: IHookFunctions): Promise<boolean> {
-				// Webhook deletion is disabled to avoid 409 conflicts
-				// The webhook will remain on the server even when the node is deactivated
-				console.log('[ERS Webhook] Webhook deletion is disabled. Webhook will remain on the server.');
-				return true;
+				// This method is called by n8n when:
+				// - The node is manually deleted from the workflow UI
+				// - The workflow is deactivated
+				// We only want to delete the webhook when the node is actually removed, not when workflow is deactivated
+				console.log('[ERS Webhook] ========== DELETE METHOD CALLED ==========');
+				try {
+					// Get workflow and node info for logging
+					const workflow = this.getWorkflow();
+					const workflowActive = (workflow as { active?: boolean }).active;
+					const currentNode = this.getNode();
+					
+					console.log('[ERS Webhook] Workflow active state:', workflowActive);
+					console.log('[ERS Webhook] Current node name:', currentNode?.name || 'unknown');
+					console.log('[ERS Webhook] Current node ID:', currentNode?.id || 'unknown');
+					
+					// Try to determine if this is a workflow deactivation vs node deletion
+					// When workflow is deactivated, it's usually inactive
+					// When node is deleted, workflow is usually still active
+					// However, to be safe, we'll check if we can still access node parameters
+					// If we can't access parameters reliably, assume node deletion
+					let isWorkflowDeactivation = false;
+					if (workflowActive === false) {
+						// Workflow is inactive - likely a deactivation
+						// But verify by checking if we can still access the node
+						try {
+							// Try to access a node parameter - if this works, node still exists (deactivation)
+							// If this fails, node was deleted
+							this.getNodeParameter('entities', []);
+							isWorkflowDeactivation = true;
+							console.log('[ERS Webhook] Workflow is inactive AND node parameters accessible. This is a workflow deactivation. Skipping webhook deletion.');
+						} catch {
+							// Can't access node parameters - node was likely deleted
+							isWorkflowDeactivation = false;
+							console.log('[ERS Webhook] Workflow is inactive but cannot access node parameters. Assuming node deletion. Proceeding with webhook deletion.');
+						}
+					}
+					
+					// If it's a workflow deactivation, skip deletion
+					if (isWorkflowDeactivation) {
+						return true;
+					}
+					
+					// Otherwise, proceed with deletion (node was manually deleted)
+					console.log('[ERS Webhook] Node deletion detected. Proceeding with webhook deletion.');
+					
+					// Get webhook ID from static data
+					const staticData = this.getWorkflowStaticData('node');
+					const webhookId = staticData.webhookId as number | string | undefined;
+
+					if (!webhookId) {
+						console.log('[ERS Webhook] No webhook ID found in static data. Webhook may have already been deleted or never created.');
+						return true;
+					}
+
+					// Get OAuth2 credentials
+					const credentials = await this.getCredentials('ersAppOAuth2Api');
+					
+					// OAuth2 tokens can be stored in different locations
+					// Check common locations for the access token
+					const creds = credentials as Record<string, unknown>;
+					const accessToken = 
+						(creds.access_token as string | undefined) || 
+						(creds.accessToken as string | undefined) || 
+						((creds.oauthTokenData as Record<string, unknown> | undefined)?.access_token as string | undefined) ||
+						((creds.data as Record<string, unknown> | undefined)?.access_token as string | undefined);
+
+					if (!accessToken) {
+						console.warn('[ERS Webhook] OAuth2 access token not found. Cannot delete webhook from server.');
+						// Clear the webhook ID from static data even if we can't delete it
+						delete staticData.webhookId;
+						return true;
+					}
+
+					// Delete webhook from ERS App API with force_delete_triggers parameter
+					const deleteWebhookUrl = `${BASE_URL}/rest/webhooks/${webhookId}?force_delete_logs=true&force_delete_triggers=true`;
+					console.log('[ERS Webhook] ========== WEBHOOK DELETION REQUEST ==========');
+					console.log('[ERS Webhook] Request URL:', deleteWebhookUrl);
+					console.log('[ERS Webhook] Request Method: DELETE');
+					console.log('[ERS Webhook] Webhook ID:', webhookId);
+					console.log('[ERS Webhook] Force Delete Triggers: true');
+					console.log('[ERS Webhook] Request Headers:', {
+						Authorization: `Bearer ${accessToken.substring(0, 20)}...` // Log partial token for security
+					});
+
+					await this.helpers.httpRequest({
+						method: 'DELETE',
+						url: deleteWebhookUrl,
+						headers: {
+							Authorization: `Bearer ${accessToken}`,
+						},
+						json: true,
+					});
+
+					console.log('[ERS Webhook] ========== WEBHOOK DELETION SUCCESS ==========');
+					console.log('[ERS Webhook] Webhook successfully deleted from ERS App API');
+					console.log('[ERS Webhook] ===============================================');
+
+					// Clear the webhook ID from static data
+					delete staticData.webhookId;
+
+					return true;
+				} catch (error) {
+					const errorMessage = error instanceof Error ? error.message : String(error);
+					console.error('[ERS Webhook] ========== WEBHOOK DELETION ERROR ==========');
+					console.error('[ERS Webhook] Error Message:', errorMessage);
+					console.error('[ERS Webhook] Full Error:', error);
+					
+					if (error && typeof error === 'object' && 'response' in error) {
+						const httpError = error as { response?: { status?: number; statusText?: string; data?: unknown } };
+						console.error('[ERS Webhook] HTTP Status:', httpError.response?.status);
+						console.error('[ERS Webhook] HTTP Status Text:', httpError.response?.statusText);
+						console.error('[ERS Webhook] Error Response Body:', JSON.stringify(httpError.response?.data, null, 2));
+						
+						// If webhook not found (404), it's already deleted, so we can consider it successful
+						if (httpError.response?.status === 404) {
+							console.log('[ERS Webhook] Webhook not found on server (404). It may have already been deleted.');
+							const staticData = this.getWorkflowStaticData('node');
+							delete staticData.webhookId;
+							return true;
+						}
+					}
+					
+					console.error('[ERS Webhook] ===========================================');
+					
+					// Even if deletion fails, clear the static data to avoid issues
+					const staticData = this.getWorkflowStaticData('node');
+					delete staticData.webhookId;
+					
+					// Log the error but don't throw - we don't want to prevent node deletion
+					// The webhook may have already been deleted or the API may be unavailable
+					console.warn('[ERS Webhook] Failed to delete webhook from server, but continuing with node deletion.');
+					return true;
+				}
 			},
 		},
 	};
@@ -489,4 +642,3 @@ export class ErsAppWebhookTrigger implements INodeType {
 		return { noWebhookResponse: true };
 	}
 }
-
