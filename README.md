@@ -1,13 +1,74 @@
 # n8n-ers-app
 
+An n8n community node to integrate with eResource Scheduler (ERS) App. This integration provides resource management, webhook triggers, and OAuth2 authentication for seamless workflow automation.
+
+## 📚 Documentation
+
+- **[API Documentation](./docs/API.md)** - Complete API reference for all nodes, operations, and data types
+- **[Usage Guide](./docs/USAGE.md)** - Step-by-step tutorials and workflow examples
+- **[Webhooks Guide](./docs/WEBHOOKS.md)** - Comprehensive webhook setup and configuration
+- **[Credentials Setup](./docs/CREDENTIALS.md)** - OAuth2 authentication and credential management
+- **[Troubleshooting](./docs/TROUBLESHOOTING.md)** - Common issues and solutions
+
 ## Table of Contents
 
+- [Features](#features)
 - [Prerequisites](#prerequisites)
+- [Quick Start](#quick-start)
 - [Local Development Setup](#local-development-setup)
 - [Installation](#installation)
 - [Credentials](#credentials)
 - [Development](#development)
 - [Version History](#version-history)
+
+## Features
+
+✨ **Resource Management**
+- Create, read, and manage resources
+- Batch operations support
+- Pagination for large datasets
+
+🔔 **Webhook Triggers**
+- Real-time event notifications
+- Automatic webhook registration
+- Entity and event filtering
+- Challenge verification support
+
+🔐 **OAuth2 Authentication**
+- Secure token-based authentication
+- Automatic token refresh
+- Multiple credential support
+
+🚀 **Production Ready**
+- Comprehensive error handling
+- Detailed logging and debugging
+- TypeScript support
+- Full documentation
+
+## Quick Start
+
+### 1. Install the Package
+
+```bash
+npm install n8n-nodes-ers-app
+```
+
+### 2. Configure Credentials
+
+1. Go to **Credentials** in n8n
+2. Click **New Credential**
+3. Search for "ERS App OAuth2 API"
+4. Click **Connect my account**
+5. Complete OAuth2 authorization
+
+### 3. Create Your First Workflow
+
+1. Add an **"Ers App"** node
+2. Select your credentials
+3. Choose **"Get Many"** operation
+4. Execute to fetch resources
+
+📖 For detailed instructions, see the [Usage Guide](./docs/USAGE.md)
 
 ## Prerequisites
 
@@ -17,6 +78,7 @@ Before setting up the local development environment, ensure you have the followi
 - **npm** (comes with Node.js)
 - **n8n** (for testing the node locally)
 - **Git** (for cloning the repository)
+- **ERS App Access** (OAuth2 credentials and API access)
 
 ## Local Development Setup
 
@@ -187,6 +249,58 @@ This node uses OAuth2 authentication. To set up credentials:
 
 For more information on setting up webhooks, refer to the [Webhook API Documentation](./WEBHOOK_API.md).
 
+## Nodes Overview
+
+### ERS App Node
+
+Main node for resource operations.
+
+**Operations**:
+- **Get Many**: Fetch multiple resources with pagination
+- **Create**: Create a new resource
+- **POST Many**: Bulk create resources
+
+**Configuration**:
+```json
+{
+  "resource": "resource",
+  "operation": "getAll",
+  "returnAll": true
+}
+```
+
+📖 [Complete API Reference](./docs/API.md)
+
+### ERS App Trigger (Basic)
+
+Simple webhook endpoint for manual configuration.
+
+**Use When**:
+- Manual webhook setup preferred
+- Simple use cases
+- Testing webhook payloads
+
+### ERS App Webhook Trigger (Advanced)
+
+Advanced webhook with automatic registration and event filtering.
+
+**Features**:
+- ✅ Automatic webhook registration
+- ✅ Entity and event filtering
+- ✅ URL override for local development
+- ✅ Lifecycle management
+
+**Configuration**:
+```json
+{
+  "entities": [1, 2],      // Resource, Project
+  "events": [1, 2],        // Create, Update
+  "webhookUrlOverride": "" // Optional for ngrok
+}
+```
+
+📖 [Webhook Complete Guide](./docs/WEBHOOKS.md)
+
 ## Development
 
 ### Project Structure
@@ -197,15 +311,22 @@ ers-n8n/
 │   └── ErsAppOAuth2Api.credentials.ts
 ├── nodes/                # Node implementations
 │   └── ErsApp/
-│       ├── ErsApp.node.ts           # Main node
-│       ├── ErsAppTrigger.node.ts    # Webhook trigger node
-│       ├── constants.ts              # API constants
-│       └── resources/                # Resource-specific operations
-│           ├── booking/
-│           ├── exception/
-│           ├── project/
-│           ├── requirement/
+│       ├── ErsApp.node.ts                  # Main node
+│       ├── ErsAppTrigger.node.ts           # Basic webhook trigger
+│       ├── ErsAppWebhookTrigger.node.ts    # Advanced webhook trigger
+│       ├── constants.ts                     # API constants
+│       └── resources/                       # Resource operations
 │           └── resource/
+│               ├── index.ts
+│               ├── create.ts
+│               ├── getAll.ts
+│               └── postMany.ts
+├── docs/                 # Documentation
+│   ├── API.md
+│   ├── USAGE.md
+│   ├── WEBHOOKS.md
+│   ├── CREDENTIALS.md
+│   └── TROUBLESHOOTING.md
 ├── dist/                 # Compiled JavaScript (generated)
 ├── package.json
 ├── tsconfig.json
@@ -226,38 +347,89 @@ This creates optimized JavaScript files in the `dist/` directory.
 n8n start
 ```
 
+## Use Cases
+
+### 🎯 Resource Onboarding
+Automatically create user accounts and send welcome emails when resources are added to ERS App.
+
+### 📊 Utilization Tracking
+Monitor resource allocation and generate reports on project utilization.
+
+### 🔄 CRM Synchronization
+Two-way sync between ERS App and external CRM systems (HubSpot, Salesforce, etc.).
+
+### 📧 Notification System
+Send notifications via email, Slack, or Teams when resources are created, updated, or deleted.
+
+### 📈 Analytics & Reporting
+Extract resource data, transform it, and push to analytics platforms.
+
+📖 See more examples in the [Usage Guide](./docs/USAGE.md)
+
 ## Version History
 
-### 0.1.0
-- Initial release
-- Support for Resource, Project, Booking, Requirement, and Exception entities
-- CRUD operations for all entity types
-- OAuth2 authentication
-- Webhook trigger node
-- Basic error handling and validation
+### 0.1.0 (Current)
+- ✅ Initial release
+- ✅ Resource operations (Get Many, Create, POST Many)
+- ✅ OAuth2 authentication
+- ✅ Basic webhook trigger (ErsAppTrigger)
+- ✅ Advanced webhook trigger (ErsAppWebhookTrigger)
+- ✅ Automatic webhook registration and management
+- ✅ Entity and event filtering
+- ✅ Comprehensive documentation
+- ✅ TypeScript support
+- ✅ Error handling and logging
+
+**Known Limitations**:
+- Only Resource entity operations implemented
+- No Update or Delete operations yet
+- Unsigned webhooks only
 
 ---
 
 ## Troubleshooting
 
-### Node Not Appearing in n8n
+### Quick Fixes
 
-1. **Check the build**: Ensure `npm run build` completed successfully
-2. **Verify N8N_CUSTOM_EXTENSIONS**: Make sure the environment variable points to the correct directory
-3. **Check n8n logs**: Look for any error messages about loading custom nodes
-4. **Restart n8n**: Sometimes n8n needs a restart to detect new nodes
+| Issue | Solution |
+|-------|----------|
+| Node not appearing | Rebuild (`npm run build`) and restart n8n |
+| Authentication failed | Re-authenticate credentials in n8n |
+| Webhook not triggering | Check workflow is active and n8n is accessible |
+| 401 Unauthorized | Token expired, reconnect credentials |
+| 404 Not Found | Verify BASE_URL in constants.ts |
 
-### Build Errors
+📖 For complete troubleshooting guide, see [Troubleshooting Documentation](./docs/TROUBLESHOOTING.md)
 
-1. **TypeScript errors**: Run `npm run lint` to see detailed error messages
-2. **Missing dependencies**: Run `npm install` again
-3. **Type issues**: Check that all imports are correct and types are properly defined
+## Support & Contributing
 
-### Authentication Issues
+### Getting Help
 
-1. **Verify credentials**: Double-check OAuth2 credentials in n8n
-2. **Check API base URL**: Ensure the BASE_URL in `constants.ts` is correct
-3. **Token expiration**: Re-authenticate if tokens have expired
+- 📖 [Documentation](./docs/)
+- 💬 [GitHub Issues](https://github.com/lavish-enbraun/ers-n8n/issues)
+- 📧 Email: lavish.pareta@enbraun.com
+- 🌐 [n8n Community Forum](https://community.n8n.io/)
+
+### Contributing
+
+Contributions are welcome! Please:
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Update documentation
+6. Submit a pull request
+
+### Reporting Issues
+
+When reporting issues, please include:
+
+- n8n version
+- Node.js version
+- Error messages
+- Steps to reproduce
+- Expected vs actual behavior
 
 ---
 
