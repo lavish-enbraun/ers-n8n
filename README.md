@@ -30,7 +30,7 @@ cd ers-n8n
 ### Step 2: Install Dependencies
 
 ```bash
-npm install
+sudo npm install
 ```
 
 This will install all required dependencies including:
@@ -44,7 +44,7 @@ This will install all required dependencies including:
 Build the TypeScript source files to JavaScript:
 
 ```bash
-npm run build
+sudo npm run build
 ```
 
 This compiles the TypeScript files in `nodes/` and `credentials/` directories to the `dist/` directory.
@@ -55,7 +55,7 @@ This compiles the TypeScript files in `nodes/` and `credentials/` directories to
 
 1. **Install n8n globally** (if not already installed):
    ```bash
-   npm install -g n8n
+   sudo npm install -g n8n
    ```
 
 2. **Set the N8N_CUSTOM_EXTENSIONS environment variable** to point to your local node:
