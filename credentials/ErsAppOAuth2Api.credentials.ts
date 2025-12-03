@@ -3,7 +3,7 @@ import type {
     INodeProperties, 
     IconFile,
 } from 'n8n-workflow';
-import { BASE_URL } from '../nodes/ErsApp/constants';
+import { BASE_URL, CLIENT_ID, CLIENT_SECRET, OAUTH_REDIRECT_URL } from '../nodes/ErsApp/constants';
 
 export class ErsAppOAuth2Api implements ICredentialType {
     name = 'ersAppOAuth2Api';
@@ -26,7 +26,7 @@ export class ErsAppOAuth2Api implements ICredentialType {
             displayName: 'Client ID',
             name: 'clientId',
             type: 'hidden',
-            default: '121',
+            default: CLIENT_ID,
         },
         {
             displayName: 'Client Secret',
@@ -36,7 +36,7 @@ export class ErsAppOAuth2Api implements ICredentialType {
                 password: true,
             },
             required: true,
-            default: '122',
+            default: CLIENT_SECRET,
         },
         {
             displayName: 'Grant Type',
@@ -78,7 +78,7 @@ export class ErsAppOAuth2Api implements ICredentialType {
             displayName: 'OAuth Redirect URL',
             name: 'oauthRedirectUrl',
             type: 'hidden',
-            default: 'http://localhost:5678/rest/oauth2-credential/callback',
+            default: OAUTH_REDIRECT_URL,
         },
     ];
 }
