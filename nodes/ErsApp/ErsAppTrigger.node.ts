@@ -91,92 +91,107 @@ export class ErsAppTrigger implements INodeType {
 		],
 		properties: [
 			{
-				displayName: 'Webhook URL Override',
-				name: 'webhookUrlOverride',
-				type: 'string',
-				default: '',
-				description: 'Override the host in the webhook URL. Replaces "localhost" or "192.168.1.76" with this value. Leave empty to use the auto-generated URL as-is. Useful if you need to use a public URL (e.g., ngrok) instead of localhost.',
-				placeholder: 'your-public-url.com',
-			},
-			{
-				displayName: 'Entities',
-				name: 'entities',
-				type: 'multiOptions',
-				description: 'Select the entities to monitor for events',
+				displayName: 'ERS Webhook',
+				name: 'webhook',
+				type: 'fixedCollection',
+				default: {},
+				description: 'Configure the ERS webhook trigger settings',
 				options: [
 					{
-						name: 'Resource',
-						value: 1,
-					},
-					{
-						name: 'Project',
-						value: 2,
-					},
-					{
-						name: 'Booking',
-						value: 4,
-					},
-					{
-						name: 'Role Rate',
-						value: 8,
-					},
-					{
-						name: 'Timesheet',
-						value: 16,
-					},
-					{
-						name: 'Requirement',
-						value: 32,
+						name: 'webhookSettings',
+						displayName: 'Webhook Settings',
+						values: [
+							{
+								displayName: 'Webhook URL Override',
+								name: 'webhookUrlOverride',
+								type: 'string',
+								default: '',
+								description: 'Override the host in the webhook URL. Replaces "localhost" or "192.168.1.76" with this value. Leave empty to use the auto-generated URL as-is. Useful if you need to use a public URL (e.g., ngrok) instead of localhost.',
+								placeholder: 'your-public-url.com',
+							},
+							{
+								displayName: 'Entities',
+								name: 'entities',
+								type: 'multiOptions',
+								description: 'Select the entities to monitor for events',
+								options: [
+									{
+										name: 'Resource',
+										value: 1,
+									},
+									{
+										name: 'Project',
+										value: 2,
+									},
+									{
+										name: 'Booking',
+										value: 4,
+									},
+									{
+										name: 'Role Rate',
+										value: 8,
+									},
+									{
+										name: 'Timesheet',
+										value: 16,
+									},
+									{
+										name: 'Requirement',
+										value: 32,
+									},
+								],
+								default: [],
+								required: true,
+							},
+							{
+								displayName: 'Events',
+								name: 'events',
+								type: 'multiOptions',
+								description: 'Select the events to trigger on',
+								options: [
+									{
+										name: 'Create',
+										value: 1,
+									},
+									{
+										name: 'Update',
+										value: 2,
+									},
+									{
+										name: 'Delete',
+										value: 3,
+									},
+									{
+										name: 'Add Task',
+										value: 4,
+									},
+									{
+										name: 'Edit Task',
+										value: 5,
+									},
+									{
+										name: 'Delete Task',
+										value: 6,
+									},
+									{
+										name: 'Add Rate',
+										value: 7,
+									},
+									{
+										name: 'Edit Rate',
+										value: 8,
+									},
+									{
+										name: 'Delete Rate',
+										value: 9,
+									},
+								],
+								default: [],
+								required: true,
+							},
+						],
 					},
 				],
-				default: [],
-				required: true,
-			},
-			{
-				displayName: 'Events',
-				name: 'events',
-				type: 'multiOptions',
-				description: 'Select the events to trigger on',
-				options: [
-					{
-						name: 'Create',
-						value: 1,
-					},
-					{
-						name: 'Update',
-						value: 2,
-					},
-					{
-						name: 'Delete',
-						value: 3,
-					},
-					{
-						name: 'Add Task',
-						value: 4,
-					},
-					{
-						name: 'Edit Task',
-						value: 5,
-					},
-					{
-						name: 'Delete Task',
-						value: 6,
-					},
-					{
-						name: 'Add Rate',
-						value: 7,
-					},
-					{
-						name: 'Edit Rate',
-						value: 8,
-					},
-					{
-						name: 'Delete Rate',
-						value: 9,
-					},
-				],
-				default: [],
-				required: true,
 			},
 		],
 	};
@@ -191,7 +206,9 @@ export class ErsAppTrigger implements INodeType {
 			},
 			async create(this: IHookFunctions): Promise<boolean> {
 				// Get webhook URL override from node parameters
-				const webhookUrlOverride = this.getNodeParameter('webhookUrlOverride', '') as string;
+				const webhookParam = this.getNodeParameter('webhook', {}) as { webhookSettings?: { webhookUrlOverride?: string; entities?: number[]; events?: number[] } };
+				const webhookConfig = webhookParam.webhookSettings || {};
+				const webhookUrlOverride = webhookConfig.webhookUrlOverride || '';
 				
 				// Get webhook URL - this ensures the webhook is ready
 				const generatedUrl = this.getNodeWebhookUrl('default');
@@ -364,8 +381,8 @@ export class ErsAppTrigger implements INodeType {
 				// This ensures triggers are updated even when webhook already exists
 
 				// Get selected entities and events
-				const entities = this.getNodeParameter('entities', []) as number[];
-				const events = this.getNodeParameter('events', []) as number[];
+				const entities = webhookConfig.entities || [];
+				const events = webhookConfig.events || [];
 				
 				console.log('[ERS Webhook] Selected entities:', entities);
 				console.log('[ERS Webhook] Selected events:', events);
@@ -470,7 +487,7 @@ export class ErsAppTrigger implements INodeType {
 						try {
 							// Try to access a node parameter - if this works, node still exists (deactivation)
 							// If this fails, node was deleted
-							this.getNodeParameter('entities', []);
+							this.getNodeParameter('webhook', {});
 							isWorkflowDeactivation = true;
 							console.log('[ERS Webhook] Workflow is inactive AND node parameters accessible. This is a workflow deactivation. Skipping webhook deletion.');
 						} catch {
