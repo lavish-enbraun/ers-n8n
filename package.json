@@ -35,8 +35,7 @@
     ],
     "nodes": [
       "dist/nodes/ErsApp/ErsApp.node.js",
-      "dist/nodes/ErsApp/ErsAppTrigger.node.js",
-      "dist/nodes/ErsApp/ErsAppWebhookTrigger.node.js"
+      "dist/nodes/ErsApp/ErsAppTrigger.node.js"
     ]
   },
   "devDependencies": {
