@@ -11,6 +11,7 @@ import { projectDescription } from './resources/project';
 import { bookingDescription } from './resources/booking';
 import { requirementDescription } from './resources/requirement';
 import { ratesDescription } from './resources/rates';
+import { timesheetDescription } from './resources/timesheet';
 
 export class ErsApp implements INodeType {
 	description: INodeTypeDescription = {
@@ -62,6 +63,10 @@ export class ErsApp implements INodeType {
 						name: 'Resource',
 						value: 'resource',
 					},
+					{
+						name: 'Timesheet',
+						value: 'timesheet',
+					},
 				],
 				default: 'resource',
 			},
@@ -70,6 +75,7 @@ export class ErsApp implements INodeType {
 			...bookingDescription,
 			...requirementDescription,
 			...ratesDescription,
+			...timesheetDescription,
 		],
 	};
 
