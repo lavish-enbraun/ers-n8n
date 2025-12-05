@@ -10,7 +10,6 @@ import { resourceDescription } from './resources/resource';
 import { projectDescription } from './resources/project';
 import { bookingDescription } from './resources/booking';
 import { requirementDescription } from './resources/requirement';
-import { exceptionDescription } from './resources/exception';
 
 export class ErsApp implements INodeType {
 	description: INodeTypeDescription = {
@@ -47,10 +46,6 @@ export class ErsApp implements INodeType {
 						value: 'booking',
 					},
 					{
-						name: 'Exception',
-						value: 'exception',
-					},
-					{
 						name: 'Project',
 						value: 'project',
 					},
@@ -69,7 +64,6 @@ export class ErsApp implements INodeType {
 			...projectDescription,
 			...bookingDescription,
 			...requirementDescription,
-			...exceptionDescription,
 		],
 	};
 
