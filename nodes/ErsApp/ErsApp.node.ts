@@ -94,19 +94,54 @@ export class ErsApp implements INodeType {
 								'Accept': 'application/json',
 							},
 						},
-					) as { data?: Array<{ id: number; name: string; description?: string; is_active?: boolean }> };
+					) as { data?: Array<{ id: number; name: string; description?: string; is_active?: boolean; is_human?: boolean }> };
 
 					if (!response.data || !Array.isArray(response.data)) {
 						return [];
 					}
 
-					return response.data
-						.filter((type) => type.is_active !== false) // Only show active resource types
-						.map((type) => ({
-							name: type.name || `Resource Type ${type.id}`,
-							value: type.id,
-							description: type.description || undefined,
-						}));
+					const activeTypes = response.data.filter((type) => type.is_active !== false);
+
+					// Always fetch individual resource type details to get is_human from /rest/resources/resourcetype/${id}
+					const typesWithDetails = await Promise.all(
+						activeTypes.map(async (type) => {
+							let isHuman = false;
+							
+							// Always fetch individual resource type details to get is_human
+							try {
+								const detailResponse = await this.helpers.httpRequestWithAuthentication.call(
+									this,
+									'ersAppOAuth2Api',
+									{
+										method: 'GET',
+										url: `${BASE_URL}/rest/resources/resourcetype/${type.id}`,
+										headers: {
+											'Accept': 'application/json',
+										},
+									},
+								) as { is_human?: boolean };
+								
+								isHuman = detailResponse.is_human === true;
+							} catch (error) {
+								// If fetching individual details fails, default to false
+								console.warn(`Could not fetch is_human for resource type ${type.id}:`, error);
+								isHuman = false;
+							}
+
+							// Store resource type data including is_human as JSON string in value
+							const resourceTypeData = {
+								id: type.id,
+								is_human: isHuman,
+							};
+							return {
+								name: type.name || `Resource Type ${type.id}`,
+								value: JSON.stringify(resourceTypeData),
+								description: type.description || undefined,
+							};
+						}),
+					);
+
+					return typesWithDetails;
 				} catch (error: any) {
 					// Silently handle missing access token errors (expected when credentials aren't authenticated yet)
 					if (error?.message?.includes('access token') || error?.messages?.some((msg: string) => msg.includes('access token'))) {
@@ -133,6 +168,18 @@ export class ErsApp implements INodeType {
 					if (resourceTypeId === '' || resourceTypeId === null || resourceTypeId === undefined) {
 						console.warn('resource_type_id is empty, null, or undefined');
 						return [];
+					}
+
+					// Parse JSON string format if it's a JSON string (new format with is_human)
+					if (typeof resourceTypeId === 'string') {
+						try {
+							const parsed = JSON.parse(resourceTypeId);
+							if (parsed && typeof parsed === 'object' && 'id' in parsed) {
+								resourceTypeId = parsed.id;
+							}
+						} catch (e) {
+							// Not a JSON string, use as-is
+						}
 					}
 
 					// Ensure resourceTypeId is a string for URL construction

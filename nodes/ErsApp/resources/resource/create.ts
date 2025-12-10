@@ -23,11 +23,12 @@ export const resourceCreateDescription: INodeProperties[] = [
 			send: {
 				property: 'resource_type_id',
 				type: 'body',
+				value: '={{ (() => { try { if (typeof $value === "string") { const parsed = JSON.parse($value); if (parsed && typeof parsed === "object" && "id" in parsed) { return parsed.id; } } } catch (e) { } return $value; })() }}',
 			},
 		},
 	},
 	{
-		displayName: 'First Name',
+		displayName: 'Resource Name',
 		name: 'first_name',
 		type: 'string',
 		required: true,
@@ -38,7 +39,7 @@ export const resourceCreateDescription: INodeProperties[] = [
 		description: 'First name of the resource',
 		routing: {
 			send: {
-				property: 'first_name',
+				property: '={{ (() => { try { if ($parameter.resource_type_id) { if (typeof $parameter.resource_type_id === "string") { const parsed = JSON.parse($parameter.resource_type_id); if (parsed && typeof parsed === "object" && "is_human" in parsed) { return parsed.is_human ? "first_name" : "name"; } } } } catch (e) { } return "first_name"; })() }}',
 				type: 'body',
 			},
 		},
