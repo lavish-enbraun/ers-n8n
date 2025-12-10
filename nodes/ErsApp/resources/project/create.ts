@@ -7,23 +7,6 @@ const showOnlyForProjectCreate = {
 
 export const projectCreateDescription: INodeProperties[] = [
 	{
-		displayName: 'Title',
-		name: 'title',
-		type: 'string',
-		required: true,
-		displayOptions: {
-			show: showOnlyForProjectCreate,
-		},
-		default: '',
-		description: 'Title of the project',
-		routing: {
-			send: {
-				property: 'title',
-				type: 'body',
-			},
-		},
-	},
-	{
 		displayName: 'Project Type Name or ID',
 		name: 'project_type_id',
 		type: 'options',
@@ -40,73 +23,26 @@ export const projectCreateDescription: INodeProperties[] = [
 			send: {
 				property: 'project_type_id',
 				type: 'body',
+				value: '={{ (() => { try { if (typeof $value === "string") { const parsed = JSON.parse($value); if (parsed && typeof parsed === "object" && "id" in parsed) { return parsed.id; } } } catch (e) { } return $value; })() }}',
 			},
 		},
 	},
 	{
-		displayName: 'Additional Fields',
-		name: 'additionalFields',
-		type: 'collection',
-		placeholder: 'Add Field',
+		displayName: 'Title',
+		name: 'title',
+		type: 'string',
+		required: true,
 		displayOptions: {
 			show: showOnlyForProjectCreate,
 		},
-		default: {},
-		options: [
-			{
-				displayName: 'Start Date',
-				name: 'project_start_date',
-				type: 'dateTime',
-				default: '',
-				description: 'Start date of the project',
-				routing: {
-					send: {
-						property: 'project_start_date',
-						type: 'body',
-					},
-				},
+		default: '',
+		description: 'Title of the project',
+		routing: {
+			send: {
+				property: 'title',
+				type: 'body',
 			},
-			{
-				displayName: 'End Date',
-				name: 'end_date',
-				type: 'dateTime',
-				default: '',
-				description: 'End date of the project',
-				routing: {
-					send: {
-						property: 'end_date',
-						type: 'body',
-					},
-				},
-			},
-			{
-				displayName: 'Tags',
-				name: 'tags',
-				type: 'string',
-				default: '',
-				description: 'Tags for the project',
-				routing: {
-					send: {
-						property: 'tags',
-						type: 'body',
-					},
-				},
-			},
-			{
-				displayName: 'Project Calendar',
-				name: 'project_calendar',
-				type: 'number',
-				placeholder: '',
-				default: '',
-				description: 'ID of Calendar to assign to project',
-				routing: {
-					send: {
-						property: 'project_calendar',
-						type: 'body',
-					},
-				},
-			},
-		],
+		},
 	},
 	{
 		displayName: 'User Defined Fields',
@@ -196,7 +132,7 @@ export const projectCreateDescription: INodeProperties[] = [
 							loadOptionsMethod: 'getProjectUDFFieldOptions',
 							multipleValues: true,
 						},
-						default: '',
+						default: [],
 						displayOptions: {
 							show: {
 								fieldName: [
@@ -218,7 +154,7 @@ export const projectCreateDescription: INodeProperties[] = [
 								],
 							},
 						},
-						description: 'Fill this for multi-select dropdown fields. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
+						description: 'Select multiple options from the dropdown. Selected values will be sent as an array of IDs. Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
 					},
 					{
 						displayName: 'Field Value (Number)',
