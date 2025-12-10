@@ -21,100 +21,260 @@ export const projectUpdateDescription: INodeProperties[] = [
 		description: 'Unique ID of the project to update',
 	},
 	{
-		displayName: 'Title',
-		name: 'title',
-		type: 'string',
-		required: true,
+		displayName: 'Project Type Name or ID',
+		name: 'project_type_id',
+		type: 'options',
 		displayOptions: {
 			show: showOnlyForProjectUpdate,
 		},
+		typeOptions: {
+			loadOptionsMethod: 'getProjectTypes',
+		},
 		default: '',
-		description: 'Title of the project',
+		description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
 		routing: {
 			send: {
-				property: 'title',
+				property: 'project_type_id',
 				type: 'body',
+				value: '={{ (() => { try { if (typeof $value === "string") { const parsed = JSON.parse($value); if (parsed && typeof parsed === "object" && "id" in parsed) { return parsed.id; } } } catch (e) { } return $value; })() }}',
 			},
 		},
 	},
 	{
-		displayName: 'Additional Fields',
-		name: 'additionalFields',
-		type: 'collection',
-		placeholder: 'Add Field',
+		displayName: 'Title',
+		name: 'title',
+		type: 'string',
 		displayOptions: {
 			show: showOnlyForProjectUpdate,
 		},
+		default: '',
+		description: 'Title of the project. Optional - only included in request if provided.',
+	},
+	{
+		displayName: 'User Defined Fields',
+		name: 'udfFields',
+		type: 'fixedCollection',
+		placeholder: 'Add UDF Field',
+		displayOptions: {
+			show: {
+				...showOnlyForProjectUpdate,
+				project_type_id: [
+					{
+						_cnd: {
+							regex: '.+', // Show when project_type_id has any value
+						},
+					},
+				],
+			},
+		},
 		default: {},
+		typeOptions: {
+			multipleValues: true,
+		},
+		description: 'Custom user-defined fields from eResource Scheduler. Fields are fetched dynamically based on the selected Project Type. After selecting a field, fill ONLY the appropriate value field that matches the field type (Text for TEXT/EMAIL/ENAME, Number for NUMBER/INTEGER, Date for DATE, Boolean for BOOLEAN/CHECKBOX, Select for dropdowns with options, Multi-Select for multi-select dropdowns).',
 		options: [
 			{
-				displayName: 'Project Type ID',
-				name: 'project_type_id',
-				type: 'number',
-				typeOptions: {
-					minValue: 1,
-				},
-				default: 1,
-				description: 'Type ID of the project',
-				routing: {
-					send: {
-						property: 'project_type_id',
-						type: 'body',
+				displayName: 'Field',
+				name: 'field',
+				values: [
+					{
+						displayName: 'Field Name or ID',
+						name: 'fieldName',
+						type: 'options',
+						typeOptions: {
+							loadOptionsMethod: 'getProjectUDFFields',
+						},
+						default: '',
+						description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+						required: true,
 					},
-				},
-			},
-			{
-				displayName: 'Start Date',
-				name: 'project_start_date',
-				type: 'dateTime',
-				default: '',
-				description: 'Start date of the project',
-				routing: {
-					send: {
-						property: 'project_start_date',
-						type: 'body',
+					{
+						displayName: 'Field Value (Boolean)',
+						name: 'fieldValueBoolean',
+						type: 'boolean',
+						default: false,
+						displayOptions: {
+							show: {
+								fieldName: [
+									{
+										_cnd: {
+											regex: '.*"field_type":"CHK".*',
+										},
+									},
+									{
+										_cnd: {
+											regex: '.*"field_type":"BOOLEAN".*',
+										},
+									},
+								],
+							},
+						},
+						description: 'Whether to fill this for BOOLEAN, CHECKBOX field types',
 					},
-				},
-			},
-			{
-				displayName: 'End Date',
-				name: 'end_date',
-				type: 'dateTime',
-				default: '',
-				description: 'End date of the project',
-				routing: {
-					send: {
-						property: 'end_date',
-						type: 'body',
+					{
+						displayName: 'Field Value (Date)',
+						name: 'fieldValueDate',
+						type: 'dateTime',
+						default: '',
+						displayOptions: {
+							show: {
+								fieldName: [
+									{
+										_cnd: {
+											regex: '.*"field_type":"DATE".*',
+										},
+									},
+								],
+							},
+						},
+						description: 'Fill this for DATE field types',
 					},
-				},
-			},
-			{
-				displayName: 'Tags',
-				name: 'tags',
-				type: 'string',
-				default: '',
-				description: 'Tags for the project',
-				routing: {
-					send: {
-						property: 'tags',
-						type: 'body',
+					{
+						displayName: 'Field Value (Multi-Select) Name or ID',
+						name: 'fieldValueMultiSelect',
+						type: 'options',
+						noDataExpression: true,
+						typeOptions: {
+							loadOptionsMethod: 'getProjectUDFFieldOptions',
+							multipleValues: true,
+						},
+						default: [],
+						displayOptions: {
+							show: {
+								fieldName: [
+									{
+										_cnd: {
+											regex: '.*"field_type":"DDMS".*',
+										},
+									},
+									{
+										_cnd: {
+											regex: '.*"field_type":"ROLES".*',
+										},
+									},
+									{
+										_cnd: {
+											regex: '.*"field_type":"CHGRP".*',
+										},
+									},
+								],
+							},
+						},
+						description: 'Select multiple options from the dropdown. Selected values will be sent as an array of IDs. Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
 					},
-				},
-			},
-			{
-				displayName: 'Project Calendar',
-				name: 'project_calendar',
-				type: 'number',
-				placeholder: '',
-				default: '',
-				description: 'ID of Calendar to assign to project',
-				routing: {
-					send: {
-						property: 'project_calendar',
-						type: 'body',
+					{
+						displayName: 'Field Value (Number)',
+						name: 'fieldValueNumber',
+						type: 'number',
+						default: 0,
+						displayOptions: {
+							show: {
+								fieldName: [
+									{
+										_cnd: {
+											regex: '.*"field_type":"NUMBER".*',
+										},
+									},
+									{
+										_cnd: {
+											regex: '.*"field_type":"INTEGER".*',
+										},
+									},
+									{
+										_cnd: {
+											regex: '.*"field_type":"FLOAT".*',
+										},
+									},
+								],
+							},
+						},
+						description: 'Fill this for NUMBER, INTEGER, FLOAT field types',
 					},
-				},
+					{
+						displayName: 'Field Value (Select) Name or ID',
+						name: 'fieldValueSelect',
+						type: 'options',
+						noDataExpression: true,
+						typeOptions: {
+							loadOptionsMethod: 'getProjectUDFFieldOptions',
+						},
+						default: '',
+						displayOptions: {
+							show: {
+								fieldName: [
+									{
+										_cnd: {
+											regex: '.*"field_type":"RTYPE".*',
+										},
+									},
+									{
+										_cnd: {
+											regex: '.*"field_type":"DDSS".*',
+										},
+									},
+									{
+										_cnd: {
+											regex: '.*"field_type":"ROLESS".*',
+										},
+									},
+									{
+										_cnd: {
+											regex: '.*"field_type":"USS".*',
+										},
+									},
+								],
+							},
+							hide: {
+								fieldName: [
+									{
+										_cnd: {
+											regex: '.*"field_type":"DDMS".*',
+										},
+									},
+									{
+										_cnd: {
+											regex: '.*"field_type":"ROLES".*',
+										},
+									},
+									{
+										_cnd: {
+											regex: '.*"field_type":"CHGRP".*',
+										},
+									},
+								],
+							},
+						},
+						description: 'Fill this for single-select dropdown fields. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
+					},
+					{
+						displayName: 'Field Value (Text)',
+						name: 'fieldValueText',
+						type: 'string',
+						default: '',
+						displayOptions: {
+							show: {
+								fieldName: [
+									{
+										_cnd: {
+											regex: '.*"field_type":"TEXT".*',
+										},
+									},
+									{
+										_cnd: {
+											regex: '.*"field_type":"EMAIL".*',
+										},
+									},
+									{
+										_cnd: {
+											regex: '.*"field_type":"ENAME".*',
+										},
+									},
+								],
+							},
+						},
+						description: 'Fill this for TEXT, EMAIL, ENAME field types',
+					},
+				],
 			},
 		],
 	},
