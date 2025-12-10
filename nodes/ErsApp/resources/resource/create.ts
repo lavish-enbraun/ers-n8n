@@ -62,84 +62,6 @@ export const resourceCreateDescription: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Additional Fields',
-		name: 'additionalFields',
-		type: 'collection',
-		placeholder: 'Add Field',
-		displayOptions: {
-			show: showOnlyForResourceCreate,
-		},
-		default: {},
-		options: [
-			{
-				displayName: 'Calendar',
-				name: 'calendar',
-				type: 'number',
-				placeholder: '',
-				default: '',
-				description: 'ID of Calendar to assign to resource',
-				routing: {
-					send: {
-						property: 'calendar',
-						type: 'body',
-					},
-				},
-			},
-			{
-				displayName: 'Email',
-				name: 'email',
-				type: 'string',
-				placeholder: 'name@email.com',
-				default: '',
-				routing: {
-					send: {
-						property: 'email',
-						type: 'body',
-					},
-				},
-			},
-			{
-				displayName: 'Last Date',
-				name: 'last_date',
-				type: 'dateTime',
-				default: '',
-				description: 'Last working date of the resource (if applicable)',
-				routing: {
-					send: {
-						property: 'last_date',
-						type: 'body',
-					},
-				},
-			},
-			{
-				displayName: 'Last Name',
-				name: 'last_name',
-				type: 'string',
-				default: '',
-				description: 'Last name of the resource',
-				routing: {
-					send: {
-						property: 'last_name',
-						type: 'body',
-					},
-				},
-			},
-			{
-				displayName: 'Phone Number',
-				name: 'phone',
-				type: 'string',
-				placeholder: '',
-				default: '',
-				routing: {
-					send: {
-						property: 'phone',
-						type: 'body',
-					},
-				},
-			},
-		],
-	},
-	{
 		displayName: 'User Defined Fields',
 		name: 'udfFields',
 		type: 'fixedCollection',
@@ -227,7 +149,7 @@ export const resourceCreateDescription: INodeProperties[] = [
 							loadOptionsMethod: 'getResourceUDFFieldOptions',
 							multipleValues: true,
 						},
-						default: '',
+						default: [],
 						displayOptions: {
 							show: {
 								fieldName: [
@@ -249,7 +171,7 @@ export const resourceCreateDescription: INodeProperties[] = [
 								],
 							},
 						},
-						description: 'Fill this for multi-select dropdown fields. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
+						description: 'Select multiple options from the dropdown. Selected values will be sent as an array of IDs. Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
 					},
 					{
 						displayName: 'Field Value (Number)',
