@@ -7,6 +7,26 @@ const showOnlyForResourceCreate = {
 
 export const resourceCreateDescription: INodeProperties[] = [
 	{
+		displayName: 'Resource Type Name or ID',
+		name: 'resource_type_id',
+		type: 'options',
+		required: true,
+		displayOptions: {
+			show: showOnlyForResourceCreate,
+		},
+		typeOptions: {
+			loadOptionsMethod: 'getResourceTypes',
+		},
+		default: '',
+		description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+		routing: {
+			send: {
+				property: 'resource_type_id',
+				type: 'body',
+			},
+		},
+	},
+	{
 		displayName: 'First Name',
 		name: 'first_name',
 		type: 'string',
@@ -36,26 +56,6 @@ export const resourceCreateDescription: INodeProperties[] = [
 		routing: {
 			send: {
 				property: 'start_date',
-				type: 'body',
-			},
-		},
-	},
-	{
-		displayName: 'Resource Type Name or ID',
-		name: 'resource_type_id',
-		type: 'options',
-		required: true,
-		displayOptions: {
-			show: showOnlyForResourceCreate,
-		},
-		typeOptions: {
-			loadOptionsMethod: 'getResourceTypes',
-		},
-		default: '',
-		description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
-		routing: {
-			send: {
-				property: 'resource_type_id',
 				type: 'body',
 			},
 		},
