@@ -107,13 +107,18 @@ export class ErsApp implements INodeType {
 							value: type.id,
 							description: type.description || undefined,
 						}));
-				} catch (error) {
+				} catch (error: any) {
+					// Silently handle missing access token errors (expected when credentials aren't authenticated yet)
+					if (error?.message?.includes('access token') || error?.messages?.some((msg: string) => msg.includes('access token'))) {
+						return [];
+					}
+					// Log other unexpected errors
 					console.error('Error fetching resource types:', error);
 					return [];
 				}
 			},
 
-			// Fetch user-defined fields for resources from /rest/resources/udf
+			// Fetch user-defined fields for resources from /rest/resources/resourcetype/${id}
 			async getResourceUDFFields(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 				try {
 					// Get the selected resource_type_id from node parameters
@@ -133,10 +138,42 @@ export class ErsApp implements INodeType {
 					// Ensure resourceTypeId is a string for URL construction
 					resourceTypeId = String(resourceTypeId);
 
-					// Fetch available fields for this resource type
-					const availableFieldCodes: string[] = [];
+					interface UDFOption {
+						id: number | string;
+						name: string;
+						color?: string;
+						description?: string;
+						udf_desc_id?: number;
+					}
+
+					interface UDFField {
+						code: string;
+						display_name?: string;
+						field_type?: string;
+						is_system_defined?: boolean;
+						is_required?: boolean;
+						help_text?: string;
+						information_text?: string;
+						options?: UDFOption[];
+						mindate?: string;
+						maxdate?: string;
+						minlength?: number;
+						maxlength?: number;
+						regex?: string;
+					}
+
+					interface ResourceTypeSection {
+						udfs?: UDFField[];
+					}
+
+					interface ResourceTypeResponse {
+						sections?: ResourceTypeSection[];
+					}
+
+					// Fetch UDF fields directly from resource type endpoint
+					let resourceTypeResponse: ResourceTypeResponse;
 					try {
-						const resourceTypeResponse = await this.helpers.httpRequestWithAuthentication.call(
+						resourceTypeResponse = await this.helpers.httpRequestWithAuthentication.call(
 							this,
 							'ersAppOAuth2Api',
 							{
@@ -146,89 +183,46 @@ export class ErsApp implements INodeType {
 									'Accept': 'application/json',
 								},
 							},
-						) as { sections?: Array<{ udfs?: Array<{ code?: string }> }> };
-						
-						// Extract field codes from sections[].udfs[].code
-						if (resourceTypeResponse.sections && Array.isArray(resourceTypeResponse.sections)) {
-							resourceTypeResponse.sections.forEach((section) => {
-								if (section.udfs && Array.isArray(section.udfs)) {
-									section.udfs.forEach((udf) => {
-										if (udf.code) {
-											availableFieldCodes.push(udf.code);
-										}
-									});
-								}
-							});
+						) as ResourceTypeResponse;
+					} catch (error: any) {
+						// Silently handle missing access token errors (expected when credentials aren't authenticated yet)
+						if (error?.message?.includes('access token') || error?.messages?.some((msg: string) => msg.includes('access token'))) {
+							return [];
 						}
-
-						// Debug: Log if no field codes were found
-						if (availableFieldCodes.length === 0) {
-							console.warn(`No field codes found for resource type ${resourceTypeId}. Response structure:`, JSON.stringify(resourceTypeResponse, null, 2));
-						}
-					} catch (error) {
 						console.error('Error fetching resource type fields:', error);
-						// If this fails, return empty array to avoid showing wrong fields
 						return [];
 					}
 
-					interface UDFField {
-						code: string;
-						display_name: string;
-						field_type: string;
-						is_system_defined: boolean;
-						is_required: boolean;
-						availability: number;
-						help_text?: string;
-						information_text?: string;
-						options?: Array<{ id: number | string; name: string; color?: string }>;
-						mindate?: string;
-						maxdate?: string;
-						minlength?: number;
-						maxlength?: number;
-						regex?: string;
+					// Extract all UDF fields from sections
+					const udfFields: UDFField[] = [];
+					if (resourceTypeResponse.sections && Array.isArray(resourceTypeResponse.sections)) {
+						resourceTypeResponse.sections.forEach((section) => {
+							if (section.udfs && Array.isArray(section.udfs)) {
+								section.udfs.forEach((udf) => {
+									if (udf.code) {
+										udfFields.push(udf);
+									}
+								});
+							}
+						});
 					}
 
-					interface UDFResponse {
-						data: UDFField[];
-					}
-
-					// Fetch all UDF fields
-					const udfResponse = await this.helpers.httpRequestWithAuthentication.call(
-						this,
-						'ersAppOAuth2Api',
-						{
-							method: 'GET',
-							url: `${BASE_URL}/rest/resources/udf`,
-							headers: {
-								'Accept': 'application/json',
-							},
-						},
-					) as UDFResponse;
-
-					if (!udfResponse.data || !Array.isArray(udfResponse.data)) {
+					// If no fields were found, log a warning
+					if (udfFields.length === 0) {
+						console.warn(`No UDF fields found for resource type ${resourceTypeId}. Response structure:`, JSON.stringify(resourceTypeResponse, null, 2));
 						return [];
 					}
 
-					// Filter UDF fields based on what's available for this resource type
+					// Filter and map UDF fields
 					const excludedSystemFields = ['id', 'resource_type_id', 'first_name', 'start_date'];
 					
-					// If no field codes were found, log a warning but don't filter everything out
-					// This might indicate the API structure is different or there are no UDFs for this type
-					if (availableFieldCodes.length === 0) {
-						console.warn(`No available field codes found for resource type ${resourceTypeId}. This might indicate no UDFs are configured for this resource type.`);
-						// Return empty array since we can't determine which fields are valid
-						return [];
-					}
-					
-					const fields = udfResponse.data
+					const fields = udfFields
 						.filter((field: UDFField) => {
 							// Exclude system fields that are already in the static form
 							if (field.is_system_defined && excludedSystemFields.includes(field.code)) {
 								return false;
 							}
-							
-							// Only include fields that are available for this resource type
-							return availableFieldCodes.includes(field.code);
+							return true; // All fields from this endpoint are already filtered for this resource type
 						})
 						.map((field: UDFField) => {
 							// Build description with helpful info
@@ -240,11 +234,18 @@ export class ErsApp implements INodeType {
 								description = description ? `${description} - Required` : 'Required field';
 							}
 
+							// Normalize options to only include id, name, and color
+							const normalizedOptions = (field.options || []).map((option) => ({
+								id: option.id,
+								name: option.name,
+								color: option.color,
+							}));
+
 							// Store field metadata as JSON string in the value
 							const fieldData = {
 								code: field.code,
-								field_type: field.field_type,
-								options: field.options || [],
+								field_type: field.field_type || '',
+								options: normalizedOptions,
 								mindate: field.mindate,
 								maxdate: field.maxdate,
 								minlength: field.minlength,
@@ -292,7 +293,12 @@ export class ErsApp implements INodeType {
 							value: type.id,
 							description: type.description || undefined,
 						}));
-				} catch (error) {
+				} catch (error: any) {
+					// Silently handle missing access token errors (expected when credentials aren't authenticated yet)
+					if (error?.message?.includes('access token') || error?.messages?.some((msg: string) => msg.includes('access token'))) {
+						return [];
+					}
+					// Log other unexpected errors
 					console.error('Error fetching project types:', error);
 					return [];
 				}
@@ -350,7 +356,11 @@ export class ErsApp implements INodeType {
 						if (availableFieldCodes.length === 0) {
 							console.warn(`No field codes found for project type ${projectTypeId}. Response structure:`, JSON.stringify(projectTypeResponse, null, 2));
 						}
-					} catch (error) {
+					} catch (error: any) {
+						// Silently handle missing access token errors (expected when credentials aren't authenticated yet)
+						if (error?.message?.includes('access token') || error?.messages?.some((msg: string) => msg.includes('access token'))) {
+							return [];
+						}
 						console.error('Error fetching project type fields:', error);
 						// If this fails, return empty array to avoid showing wrong fields
 						return [];
@@ -444,7 +454,11 @@ export class ErsApp implements INodeType {
 						});
 
 					return fields;
-				} catch (error) {
+				} catch (error: any) {
+					// Silently handle missing access token errors (expected when credentials aren't authenticated yet)
+					if (error?.message?.includes('access token') || error?.messages?.some((msg: string) => msg.includes('access token'))) {
+						return [];
+					}
 					console.error('Error fetching UDF fields:', error);
 					return [];
 				}
