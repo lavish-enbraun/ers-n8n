@@ -14,7 +14,7 @@ import { BASE_URL } from './constants';
  */
 const ENTITY_VALID_EVENTS: Record<number, number[]> = {
 	1: [1, 2, 3, 7, 8, 9],   // Resource
-	2: [1, 2, 3, 4, 5, 6, 7, 8, 9], // Project
+	2: [1, 2, 3, 7, 8, 9], // Project
 	4: [1, 2, 3],             // Booking
 	8: [1, 2, 3],              // Role Rate
 	16: [7, 8, 9],            // Timesheet
@@ -162,18 +162,6 @@ export class ErsAppTrigger implements INodeType {
 										value: 3,
 									},
 									{
-										name: 'Add Task',
-										value: 4,
-									},
-									{
-										name: 'Edit Task',
-										value: 5,
-									},
-									{
-										name: 'Delete Task',
-										value: 6,
-									},
-									{
 										name: 'Add Rate',
 										value: 7,
 									},
@@ -199,12 +187,39 @@ export class ErsAppTrigger implements INodeType {
 	webhookMethods = {
 		default: {
 			async checkExists(this: IHookFunctions): Promise<boolean> {
-				// Always return false to ensure create() method is always called
-				// This allows triggers to be updated whenever entities/events change
-				// The create() method already handles checking for existing webhooks
+				// Check if webhook exists in static data and workflow is active
+				// If webhook exists and workflow is active, return true to reuse it
+				// If webhook doesn't exist or workflow is inactive, return false to trigger create/delete
+				const staticData = this.getWorkflowStaticData('node');
+				const webhookId = staticData.webhookId as number | string | undefined;
+				
+				if (!webhookId) {
+					console.log('[ERS Webhook] No webhook ID in static data. Webhook does not exist.');
+					return false;
+				}
+				
+				// Check if workflow is active
+				const workflow = this.getWorkflow();
+				const workflowActive = (workflow as { active?: boolean }).active;
+				
+				if (workflowActive === true) {
+					console.log('[ERS Webhook] Webhook exists and workflow is active. Reusing existing webhook ID:', webhookId);
+					return true;
+				}
+				
+				console.log('[ERS Webhook] Webhook exists but workflow is inactive. Will delete and recreate.');
 				return false;
 			},
 			async create(this: IHookFunctions): Promise<boolean> {
+				// Check if workflow is active - only create webhook if workflow is active
+				const workflow = this.getWorkflow();
+				const workflowActive = (workflow as { active?: boolean }).active;
+				
+				if (workflowActive !== true) {
+					console.log('[ERS Webhook] Workflow is not active. Skipping webhook creation.');
+					return true;
+				}
+				
 				// Get webhook URL override from node parameters
 				const webhookParam = this.getNodeParameter('webhook', {}) as { webhookSettings?: { webhookUrlOverride?: string; entities?: number[]; events?: number[] } };
 				const webhookConfig = webhookParam.webhookSettings || {};
@@ -257,7 +272,7 @@ export class ErsAppTrigger implements INodeType {
 					});
 				}
 
-				// Check if webhook already exists
+				// Check if webhook already exists in static data
 				const staticData = this.getWorkflowStaticData('node');
 				let webhookId: number | string | undefined = staticData.webhookId as number | string | undefined;
 				let webhookExists = false;
