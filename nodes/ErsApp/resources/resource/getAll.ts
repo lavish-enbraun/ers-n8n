@@ -5,6 +5,8 @@ const showOnlyForResourceGetResources = {
 	resource: ['resource'],
 };
 
+const API_PAGE_SIZE = 500;
+
 export const resourceGetResourcesDescription: INodeProperties[] = [
 	{
 		displayName: 'Return All',
@@ -25,7 +27,7 @@ export const resourceGetResourcesDescription: INodeProperties[] = [
 					properties: {
 						limitParameter: 'limit',
 						offsetParameter: 'offset',
-						pageSize: 100,
+						pageSize: API_PAGE_SIZE,
 						type: 'query',
 					},
 				},
@@ -44,19 +46,27 @@ export const resourceGetResourcesDescription: INodeProperties[] = [
 		},
 		typeOptions: {
 			minValue: 1,
-			maxValue: 100,
 		},
-		default: 50,
+		default: 25,
+		description: 'Max number of results to return.',
 		routing: {
 			send: {
-				type: 'query',
-				property: 'limit',
+				paginate: `={{ $value > ${API_PAGE_SIZE} }}`,
+			},
+			operations: {
+				pagination: {
+					type: 'offset',
+					properties: {
+						limitParameter: 'limit',
+						offsetParameter: 'offset',
+						pageSize: API_PAGE_SIZE,
+						type: 'query',
+					},
+				},
 			},
 			output: {
 				maxResults: '={{$value}}',
 			},
 		},
-		description: 'Max number of results to return',
 	},
 ];
-

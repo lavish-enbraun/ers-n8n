@@ -3,15 +3,18 @@ import {
 	type INodeType, 
 	type INodeTypeDescription,
 	type ILoadOptionsFunctions,
-	type INodePropertyOptions 
+	type INodePropertyOptions,
+	type IExecuteFunctions,
+	type INodeExecutionData
 } from 'n8n-workflow';
-import { BASE_URL} from './constants';
+import { BASE_URL, API_BASE_PATH } from './constants';
 import { resourceDescription } from './resources/resource';
 import { projectDescription } from './resources/project';
 import { bookingDescription } from './resources/booking';
 import { requirementDescription } from './resources/requirement';
 import { ratesDescription } from './resources/rates';
 import { timesheetDescription } from './resources/timesheet';
+import { fetchAllItems } from './utils';
 
 export class ErsApp implements INodeType {
 	description: INodeTypeDescription = {
@@ -568,62 +571,83 @@ export class ErsApp implements INodeType {
 				}
 			},
 
-			// Get options for dropdown/select fields for projects
-			async getProjectUDFFieldOptions(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-				try {
-					// Get the current node parameters to find the selected field
-					const currentNode = this.getNode();
-					const parameters = currentNode.parameters as { udfFields?: { field?: Array<{ fieldName?: string }> } };
-					
-					// Try to get the fieldName from the current context
-					// This is tricky because we need to know which item in the array we're editing
-					// For now, we'll get the first field's fieldName
-					const udfFields = parameters.udfFields;
-					if (!udfFields || !udfFields.field || !Array.isArray(udfFields.field) || udfFields.field.length === 0) {
-						// Return empty option to allow empty string default
-						return [{ name: '', value: '' }];
-					}
-
-					// Get the first field's fieldName (in practice, n8n will call this for the current item)
-					const fieldName = udfFields.field[0]?.fieldName as string;
-					
-					if (!fieldName || fieldName === '') {
-						// Return empty option to allow empty string default
-						return [{ name: '', value: '' }];
-					}
-
-					// Parse the field metadata
-					interface FieldData {
-						code: string;
-						field_type: string;
-						options: Array<{ id: number | string; name: string; color?: string }>;
-					}
-					let fieldData: FieldData;
-					try {
-						fieldData = JSON.parse(fieldName);
-					} catch {
-						// Return empty option to allow empty string default
-						return [{ name: '', value: '' }];
-					}
-
-					// Return options if available
-					if (fieldData.options && Array.isArray(fieldData.options) && fieldData.options.length > 0) {
-						const options = fieldData.options.map((option) => ({
-							name: option.name,
-							value: option.id,
-							description: option.color ? `Color: ${option.color}` : undefined,
-						}));
-						// Add empty option at the beginning to allow empty string default
-						return [{ name: '', value: '' }, ...options];
-					}
-
-					// Return empty option to allow empty string default
-					return [{ name: '', value: '' }];
-				} catch {
-					// Return empty option to allow empty string default
+		/**
+		 * Loads dropdown options for UDF field values based on the selected field's metadata.
+		 * Parses field metadata from JSON to extract available options (e.g., for select/multi-select fields).
+		 */
+		async getProjectUDFFieldOptions(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+			try {
+				const currentNode = this.getNode();
+				const parameters = currentNode.parameters as { udfFields?: { field?: Array<{ fieldName?: string }> } };
+				
+				const udfFields = parameters.udfFields;
+				if (!udfFields || !udfFields.field || !Array.isArray(udfFields.field) || udfFields.field.length === 0) {
 					return [{ name: '', value: '' }];
 				}
-			},
+
+				// n8n calls this for each field item individually
+				const fieldName = udfFields.field[0]?.fieldName as string;
+				
+				if (!fieldName || fieldName === '') {
+					return [{ name: '', value: '' }];
+				}
+
+				// Field metadata is stored as JSON string
+				interface FieldData {
+					code: string;
+					field_type: string;
+					options: Array<{ id: number | string; name: string; color?: string }>;
+				}
+				let fieldData: FieldData;
+				try {
+					fieldData = JSON.parse(fieldName);
+				} catch {
+					return [{ name: '', value: '' }];
+				}
+
+				// Map field options to n8n dropdown format
+				if (fieldData.options && Array.isArray(fieldData.options) && fieldData.options.length > 0) {
+					const options = fieldData.options.map((option) => ({
+						name: option.name,
+						value: option.id,
+						description: option.color ? `Color: ${option.color}` : undefined,
+					}));
+					return [{ name: '', value: '' }, ...options];
+				}
+
+				return [{ name: '', value: '' }];
+			} catch {
+				return [{ name: '', value: '' }];
+			}
+		},
 		},
 	};
+
+	// Execute method for getAll operations
+	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
+		const resource = this.getNodeParameter('resource', 0) as string;
+		const operation = this.getNodeParameter('operation', 0) as string;
+
+		if (operation === 'getAll' && (resource === 'resource' || resource === 'project')) {
+			const returnAll = this.getNodeParameter('returnAll', 0, false) as boolean;
+			const limit = this.getNodeParameter('limit', 0, 50) as number | undefined;
+			
+			const totalItemsNeeded = returnAll ? null : (limit || undefined);
+			
+			const apiUrl = `${BASE_URL}${API_BASE_PATH}/${resource === 'resource' ? 'resources' : 'projects'}`;
+			
+			const items = await fetchAllItems(
+				this.helpers,
+				this,
+				'ersAppOAuth2Api',
+				apiUrl,
+				totalItemsNeeded,
+				'data'
+			);
+
+			// Return items in n8n format
+			return [this.helpers.returnJsonArray(items)];
+		}
+		return [[]];
+	}
 }

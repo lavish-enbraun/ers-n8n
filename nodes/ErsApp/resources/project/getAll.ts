@@ -5,45 +5,68 @@ const showOnlyForProjectGetAll = {
 	resource: ['project'],
 };
 
+const API_PAGE_SIZE = 500;
+
 export const projectGetAllDescription: INodeProperties[] = [
+	{
+		displayName: 'Return All',
+		name: 'returnAll',
+		type: 'boolean',
+		displayOptions: {
+			show: showOnlyForProjectGetAll,
+		},
+		default: false,
+		description: 'Whether to return all results or only up to a given limit',
+		routing: {
+			send: {
+				paginate: '={{ $value }}',
+			},
+			operations: {
+				pagination: {
+					type: 'offset',
+					properties: {
+						limitParameter: 'limit',
+						offsetParameter: 'offset',
+						pageSize: API_PAGE_SIZE,
+						type: 'query',
+					},
+				},
+			},
+		},
+	},
 	{
 		displayName: 'Limit',
 		name: 'limit',
 		type: 'number',
 		displayOptions: {
-			show: showOnlyForProjectGetAll,
+			show: {
+				...showOnlyForProjectGetAll,
+				returnAll: [false],
+			},
 		},
 		typeOptions: {
 			minValue: 1,
-			maxValue: 500,
 		},
-		default: 50,
-		description: 'Max number of results to return',
+		default: 25,
+		description: 'Max number of results to return.',
 		routing: {
 			send: {
-				type: 'query',
-				property: 'limit',
+				paginate: `={{ $value > ${API_PAGE_SIZE} }}`,
 			},
-		},
-	},
-	{
-		displayName: 'Offset',
-		name: 'offset',
-		type: 'number',
-		displayOptions: {
-			show: showOnlyForProjectGetAll,
-		},
-		typeOptions: {
-			minValue: 0,
-		},
-		default: 0,
-		description: 'Offset keyword is used to skip n items. If offset value is given as 10, then first 10 records will be skipped from result set. Default value is 0.',
-		routing: {
-			send: {
-				type: 'query',
-				property: 'offset',
+			operations: {
+				pagination: {
+					type: 'offset',
+					properties: {
+						limitParameter: 'limit',
+						offsetParameter: 'offset',
+						pageSize: API_PAGE_SIZE,
+						type: 'query',
+					},
+				},
+			},
+			output: {
+				maxResults: '={{$value}}',
 			},
 		},
 	},
 ];
-
