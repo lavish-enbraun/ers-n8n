@@ -44,26 +44,20 @@ function getValidEventsForEntity(entity: number, events: number[]): number[] {
 }
 
 /**
- * Overrides webhook URL by replacing localhost or 192.168.1.76 with the override value
+ * Replaces webhook URL host with host.docker.internal:5678 for Docker compatibility
  * @param webhookUrl - The original webhook URL
- * @param overrideValue - The value to replace localhost/192.168.1.76 with
- * @returns The webhook URL with overridden host
+ * @returns The webhook URL with host.docker.internal:5678 as the host
  */
-function overrideWebhookUrl(webhookUrl: string, overrideValue: string): string {
-	if (!overrideValue || overrideValue.trim() === '') {
+function replaceWebhookUrlForDocker(webhookUrl: string): string {
+	// Extract protocol and path from the original URL
+	const urlMatch = webhookUrl.match(/^(https?:\/\/)([^\/]+)(.*)$/);
+	if (!urlMatch) {
 		return webhookUrl;
 	}
-
-	const trimmedOverride = overrideValue.trim();
 	
-	// Replace localhost (with or without port)
-	webhookUrl = webhookUrl.replace(/https?:\/\/localhost(:\d+)?/gi, (match) => {
-		const protocol = match.startsWith('https') ? 'https://' : 'http://';
-		const port = match.match(/:(\d+)/)?.[1] || '';
-		return port ? `${protocol}${trimmedOverride}:${port}` : `${protocol}${trimmedOverride}`;
-	});
-
-	return webhookUrl;
+	const [, protocol, , path] = urlMatch;
+	// Replace with host.docker.internal:5678
+	return `${protocol}host.docker.internal:5678${path}`;
 }
 
 export class ErsAppTrigger implements INodeType {
@@ -91,92 +85,99 @@ export class ErsAppTrigger implements INodeType {
 		],
 		properties: [
 			{
-				displayName: 'Webhook URL Override',
-				name: 'webhookUrlOverride',
-				type: 'string',
-				default: '',
-				description: 'Override the host in the webhook URL. Replaces "localhost" or "192.168.1.76" with this value. Leave empty to use the auto-generated URL as-is. Useful if you need to use a public URL (e.g., ngrok) instead of localhost.',
-				placeholder: 'your-public-url.com',
-			},
-			{
-				displayName: 'Entities',
-				name: 'entities',
-				type: 'multiOptions',
-				description: 'Select the entities to monitor for events',
+				displayName: 'ERS Webhook',
+				name: 'webhook',
+				type: 'fixedCollection',
+				default: {},
+				description: 'Configure the ERS webhook trigger settings',
 				options: [
 					{
-						name: 'Resource',
-						value: 1,
-					},
-					{
-						name: 'Project',
-						value: 2,
-					},
-					{
-						name: 'Booking',
-						value: 4,
-					},
-					{
-						name: 'Role Rate',
-						value: 8,
-					},
-					{
-						name: 'Timesheet',
-						value: 16,
-					},
-					{
-						name: 'Requirement',
-						value: 32,
+						name: 'webhookSettings',
+						displayName: 'Webhook Settings',
+						values: [
+							{
+								displayName: 'Entities',
+								name: 'entities',
+								type: 'multiOptions',
+								description: 'Select the entities to monitor for events',
+								options: [
+									{
+										name: 'Resource',
+										value: 1,
+									},
+									{
+										name: 'Project',
+										value: 2,
+									},
+									{
+										name: 'Booking',
+										value: 4,
+									},
+									{
+										name: 'Role Rate',
+										value: 8,
+									},
+									{
+										name: 'Timesheet',
+										value: 16,
+									},
+									{
+										name: 'Requirement',
+										value: 32,
+									},
+								],
+								default: [],
+								required: true,
+							},
+							{
+								displayName: 'Events',
+								name: 'events',
+								type: 'multiOptions',
+								description: 'Select the events to trigger on',
+								options: [
+									{
+										name: 'Create',
+										value: 1,
+									},
+									{
+										name: 'Update',
+										value: 2,
+									},
+									{
+										name: 'Delete',
+										value: 3,
+									},
+									{
+										name: 'Add Task',
+										value: 4,
+									},
+									{
+										name: 'Edit Task',
+										value: 5,
+									},
+									{
+										name: 'Delete Task',
+										value: 6,
+									},
+									{
+										name: 'Add Rate',
+										value: 7,
+									},
+									{
+										name: 'Edit Rate',
+										value: 8,
+									},
+									{
+										name: 'Delete Rate',
+										value: 9,
+									},
+								],
+								default: [],
+								required: true,
+							},
+						],
 					},
 				],
-				default: [],
-				required: true,
-			},
-			{
-				displayName: 'Events',
-				name: 'events',
-				type: 'multiOptions',
-				description: 'Select the events to trigger on',
-				options: [
-					{
-						name: 'Create',
-						value: 1,
-					},
-					{
-						name: 'Update',
-						value: 2,
-					},
-					{
-						name: 'Delete',
-						value: 3,
-					},
-					{
-						name: 'Add Task',
-						value: 4,
-					},
-					{
-						name: 'Edit Task',
-						value: 5,
-					},
-					{
-						name: 'Delete Task',
-						value: 6,
-					},
-					{
-						name: 'Add Rate',
-						value: 7,
-					},
-					{
-						name: 'Edit Rate',
-						value: 8,
-					},
-					{
-						name: 'Delete Rate',
-						value: 9,
-					},
-				],
-				default: [],
-				required: true,
 			},
 		],
 	};
@@ -190,8 +191,9 @@ export class ErsAppTrigger implements INodeType {
 				return false;
 			},
 			async create(this: IHookFunctions): Promise<boolean> {
-				// Get webhook URL override from node parameters
-				const webhookUrlOverride = this.getNodeParameter('webhookUrlOverride', '') as string;
+				// Get webhook configuration from node parameters
+				const webhookParam = this.getNodeParameter('webhook', {}) as { webhookSettings?: { entities?: number[]; events?: number[] } };
+				const webhookConfig = webhookParam.webhookSettings || {};
 				
 				// Get webhook URL - this ensures the webhook is ready
 				const generatedUrl = this.getNodeWebhookUrl('default');
@@ -202,15 +204,8 @@ export class ErsAppTrigger implements INodeType {
 					});
 				}
 				
-				// Apply override function to replace localhost or 192.168.1.76 with override value
-				let webhookUrl: string;
-				if (webhookUrlOverride && webhookUrlOverride.trim() !== '') {
-					// Use override function to replace localhost/192.168.1.76 in the generated URL
-					webhookUrl = overrideWebhookUrl(generatedUrl, webhookUrlOverride);
-				} else {
-					// Use the generated URL as-is
-					webhookUrl = generatedUrl;
-				}
+				// Replace webhook URL host with host.docker.internal:5678 for Docker compatibility
+				const webhookUrl = replaceWebhookUrlForDocker(generatedUrl);
 				
 				const payload = {
 					name: 'n8n',
@@ -364,8 +359,8 @@ export class ErsAppTrigger implements INodeType {
 				// This ensures triggers are updated even when webhook already exists
 
 				// Get selected entities and events
-				const entities = this.getNodeParameter('entities', []) as number[];
-				const events = this.getNodeParameter('events', []) as number[];
+				const entities = webhookConfig.entities || [];
+				const events = webhookConfig.events || [];
 				
 				console.log('[ERS Webhook] Selected entities:', entities);
 				console.log('[ERS Webhook] Selected events:', events);
@@ -470,7 +465,7 @@ export class ErsAppTrigger implements INodeType {
 						try {
 							// Try to access a node parameter - if this works, node still exists (deactivation)
 							// If this fails, node was deleted
-							this.getNodeParameter('entities', []);
+							this.getNodeParameter('webhook', {});
 							isWorkflowDeactivation = true;
 							console.log('[ERS Webhook] Workflow is inactive AND node parameters accessible. This is a workflow deactivation. Skipping webhook deletion.');
 						} catch {
