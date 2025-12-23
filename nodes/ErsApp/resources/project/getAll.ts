@@ -1,19 +1,19 @@
 import type { INodeProperties } from 'n8n-workflow';
 
-const showOnlyForResourceGetResources = {
+const showOnlyForProjectGetAll = {
 	operation: ['getAll'],
-	resource: ['resource'],
+	resource: ['project'],
 };
 
 const API_PAGE_SIZE = 500;
 
-export const resourceGetResourcesDescription: INodeProperties[] = [
+export const projectGetAllDescription: INodeProperties[] = [
 	{
 		displayName: 'Return All',
 		name: 'returnAll',
 		type: 'boolean',
 		displayOptions: {
-			show: showOnlyForResourceGetResources,
+			show: showOnlyForProjectGetAll,
 		},
 		default: false,
 		description: 'Whether to return all results or only up to a given limit',
@@ -40,7 +40,7 @@ export const resourceGetResourcesDescription: INodeProperties[] = [
 		type: 'number',
 		displayOptions: {
 			show: {
-				...showOnlyForResourceGetResources,
+				...showOnlyForProjectGetAll,
 				returnAll: [false],
 			},
 		},
