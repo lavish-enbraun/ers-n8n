@@ -859,6 +859,230 @@ export class ErsApp implements INodeType {
 			}
 		}
 
+		// Handle update operation for resources
+		if (operation === 'update' && resource === 'resource') {
+			console.log('\n[Resource Update] ========== STARTING REQUEST ==========');
+			
+			const resourceId = this.getNodeParameter('resource_id', 0) as number;
+			const resourceTypeId = this.getNodeParameter('resource_type_id', 0, '') as string | number | '';
+			const firstName = this.getNodeParameter('first_name', 0, '') as string;
+			const udfFields = this.getNodeParameter('udfFields', 0, {}) as { field?: Array<{ fieldName?: string; fieldValueText?: string; fieldValueBoolean?: boolean; fieldValueDate?: string; fieldValueSelect?: string; fieldValueMultiSelect?: string | string[]; fieldValueNumber?: number }> };
+
+			console.log('[Resource Update] Raw Parameters:', JSON.stringify({
+				resource_id: resourceId,
+				resource_type_id: resourceTypeId,
+				first_name: firstName,
+				udfFields: udfFields
+			}, null, 2));
+
+			// Parse resource type to get ID and is_human
+			let parsedResourceTypeId: number | string | undefined = undefined;
+			let isHuman = false;
+			if (resourceTypeId && resourceTypeId !== '') {
+				parsedResourceTypeId = resourceTypeId;
+				try {
+					if (typeof resourceTypeId === 'string' && resourceTypeId.trim().startsWith('{')) {
+						const parsed = JSON.parse(resourceTypeId);
+						if (parsed && typeof parsed === 'object') {
+							if ('id' in parsed) {
+								parsedResourceTypeId = parsed.id;
+							}
+							if ('is_human' in parsed) {
+								isHuman = parsed.is_human === true;
+							}
+						}
+					}
+				} catch (e) {
+					console.log('[Resource Update] Error parsing resource_type_id:', e);
+				}
+				if (!isHuman && (typeof parsedResourceTypeId === 'number' || (typeof parsedResourceTypeId === 'string' && !isNaN(parseInt(parsedResourceTypeId))))) {
+					parsedResourceTypeId = typeof parsedResourceTypeId === 'number' ? parsedResourceTypeId : parseInt(parsedResourceTypeId);
+				}
+			}
+
+			console.log('[Resource Update] Parsed resourceTypeId:', parsedResourceTypeId, 'isHuman:', isHuman);
+
+			const nameProperty = isHuman ? 'first_name' : 'name';
+			const extractId = (value: any): any => {
+				if (value === undefined || value === null || value === '') return null;
+				if (typeof value === 'number') return value;
+				if (typeof value === 'string') {
+					try {
+						if (value.trim().startsWith('{')) {
+							const parsed = JSON.parse(value);
+							if (parsed && typeof parsed === 'object' && 'id' in parsed) {
+								return parsed.id;
+							}
+						}
+						const num = parseInt(value);
+						if (!isNaN(num)) return num;
+					} catch (e) {
+						// Ignore
+					}
+					return value;
+				}
+				if (typeof value === 'object' && 'id' in value) {
+					return value.id;
+				}
+				return value;
+			};
+
+			const extractMultiSelectIds = (value: any): any[] => {
+				if (value === undefined || value === null) return [];
+				if (Array.isArray(value)) {
+					if (value.length === 0) return [];
+					return value.map(extractId).filter((id: any) => id !== null && id !== undefined);
+				}
+				const singleId = extractId(value);
+				return singleId !== null && singleId !== undefined ? [singleId] : [];
+			};
+
+			// Build request body (only include fields that are provided)
+			const body: any = {};
+			if (firstName !== undefined && firstName !== null && firstName !== '') {
+				body[nameProperty] = firstName;
+			}
+			if (parsedResourceTypeId !== undefined) {
+				body.resource_type_id = parsedResourceTypeId;
+			}
+
+			// Add UDF fields
+			if (udfFields?.field && Array.isArray(udfFields.field)) {
+				console.log('[Resource Update] Processing UDF fields, count:', udfFields.field.length);
+				udfFields.field.forEach((item, index) => {
+					if (item.fieldName) {
+						try {
+							const fieldData = JSON.parse(item.fieldName);
+							const fieldCode = fieldData.code;
+							console.log(`[Resource Update] UDF Field ${index + 1}:`, fieldCode, 'Type:', fieldData.field_type);
+							
+							if (item.fieldValueText !== undefined && item.fieldValueText !== null && item.fieldValueText !== '') {
+								body[fieldCode] = item.fieldValueText;
+								console.log(`[Resource Update]   -> Text value:`, item.fieldValueText);
+							} else if (item.fieldValueBoolean !== undefined && item.fieldValueBoolean !== null) {
+								body[fieldCode] = item.fieldValueBoolean;
+								console.log(`[Resource Update]   -> Boolean value:`, item.fieldValueBoolean);
+							} else if (item.fieldValueDate !== undefined && item.fieldValueDate !== null && item.fieldValueDate !== '') {
+								body[fieldCode] = new Date(item.fieldValueDate).toISOString().split('T')[0];
+								console.log(`[Resource Update]   -> Date value:`, body[fieldCode]);
+							} else if (item.fieldValueSelect !== undefined && item.fieldValueSelect !== null && item.fieldValueSelect !== '') {
+								const id = extractId(item.fieldValueSelect);
+								if (id !== null && id !== undefined) {
+									body[fieldCode] = id;
+									console.log(`[Resource Update]   -> Select value (ID):`, id);
+								}
+							} else if (item.fieldValueMultiSelect !== undefined && item.fieldValueMultiSelect !== null) {
+								const ids = extractMultiSelectIds(item.fieldValueMultiSelect);
+								if (ids.length > 0) {
+									body[fieldCode] = ids;
+									console.log(`[Resource Update]   -> Multi-Select values (IDs):`, ids);
+								}
+							} else if (item.fieldValueNumber !== undefined && item.fieldValueNumber !== null) {
+								body[fieldCode] = typeof item.fieldValueNumber === 'number' ? item.fieldValueNumber : parseFloat(item.fieldValueNumber);
+								console.log(`[Resource Update]   -> Number value:`, body[fieldCode]);
+							}
+						} catch (e) {
+							console.log('[Resource Update] Error processing UDF field:', item.fieldName, e);
+						}
+					}
+				});
+			}
+
+			// Log request details
+			const requestUrl = `${BASE_URL}${API_BASE_PATH}/resources/${resourceId}`;
+			const requestHeaders = {
+				'Content-Type': 'application/json',
+			};
+			
+			console.log('\n[Resource Update] ========== REQUEST FORMAT ==========');
+			console.log('[Resource Update] HTTP Method: PUT');
+			console.log('[Resource Update] Request URL:', requestUrl);
+			console.log('[Resource Update] Request Headers:');
+			console.log(JSON.stringify(requestHeaders, null, 2));
+			console.log('[Resource Update] Request Body (JSON):');
+			console.log(JSON.stringify(body, null, 2));
+			console.log('[Resource Update] ========================================\n');
+
+			// Make the API call
+			const requestConfig = {
+				method: 'PUT' as const,
+				url: requestUrl,
+				headers: requestHeaders,
+				body,
+			};
+
+			try {
+				const response = await this.helpers.httpRequestWithAuthentication.call(
+					this,
+					'ersAppOAuth2Api',
+					requestConfig,
+				);
+
+				console.log('\n[Resource Update] ========== RESPONSE RECEIVED ==========');
+				console.log('[Resource Update] Response Status: Success');
+				console.log('[Resource Update] Full Response:', JSON.stringify(response, null, 2));
+				console.log('[Resource Update] ========================================\n');
+
+				const responseData = (response as any)?.data || response;
+				return [[{ json: responseData }]];
+			} catch (error: any) {
+				console.log('\n[Resource Update] ========== ERROR ==========');
+				console.log('[Resource Update] Error Message:', error.message || 'Unknown error');
+				if (error.response) {
+					console.log('[Resource Update] Error Response Status:', error.response.status);
+					console.log('[Resource Update] Error Response Data:', JSON.stringify(error.response.data, null, 2));
+				}
+				console.log('[Resource Update] ========================================\n');
+				throw error;
+			}
+		}
+
+		// Handle delete operation for resources
+		if (operation === 'delete' && resource === 'resource') {
+			console.log('\n[Resource Delete] ========== STARTING REQUEST ==========');
+			
+			const resourceId = this.getNodeParameter('resource_id', 0) as number;
+			
+			console.log('[Resource Delete] Resource ID:', resourceId);
+
+			const requestUrl = `${BASE_URL}${API_BASE_PATH}/resources/${resourceId}`;
+			
+			console.log('[Resource Delete] Request URL:', requestUrl);
+			console.log('[Resource Delete] HTTP Method: DELETE');
+			console.log('[Resource Delete] ========================================\n');
+
+			// Make the API call
+			const requestConfig = {
+				method: 'DELETE' as const,
+				url: requestUrl,
+			};
+
+			try {
+				const response = await this.helpers.httpRequestWithAuthentication.call(
+					this,
+					'ersAppOAuth2Api',
+					requestConfig,
+				);
+
+				console.log('\n[Resource Delete] ========== RESPONSE RECEIVED ==========');
+				console.log('[Resource Delete] Response Status: Success');
+				console.log('[Resource Delete] Full Response:', JSON.stringify(response, null, 2));
+				console.log('[Resource Delete] ========================================\n');
+
+				const responseData = (response as any)?.data || response;
+				return [[{ json: responseData }]];
+			} catch (error: any) {
+				console.log('\n[Resource Delete] ========== ERROR ==========');
+				console.log('[Resource Delete] Error Message:', error.message || 'Unknown error');
+				if (error.response) {
+					console.log('[Resource Delete] Error Response Status:', error.response.status);
+					console.log('[Resource Delete] Error Response Data:', JSON.stringify(error.response.data, null, 2));
+				}
+				console.log('[Resource Delete] ========================================\n');
+				throw error;
+			}
+		}
+
 		// For other operations, let n8n handle routing automatically
 		return [[]];
 	}
