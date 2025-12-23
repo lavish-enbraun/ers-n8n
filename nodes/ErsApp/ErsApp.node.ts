@@ -623,11 +623,12 @@ export class ErsApp implements INodeType {
 		},
 	};
 
-	// Execute method for getAll operations
+	// Execute method for getAll operations and create operations (for logging)
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 		const resource = this.getNodeParameter('resource', 0) as string;
 		const operation = this.getNodeParameter('operation', 0) as string;
 
+		// Handle getAll operations
 		if (operation === 'getAll' && (resource === 'resource' || resource === 'project')) {
 			const returnAll = this.getNodeParameter('returnAll', 0, false) as boolean;
 			const limit = this.getNodeParameter('limit', 0, 50) as number | undefined;
@@ -648,6 +649,217 @@ export class ErsApp implements INodeType {
 			// Return items in n8n format
 			return [this.helpers.returnJsonArray(items)];
 		}
+
+		// Handle create operation for resources (intercept to add logging)
+		if (operation === 'create' && resource === 'resource') {
+			console.log('\n[Resource Create] ========== STARTING REQUEST ==========');
+			
+			// Get all parameters
+			const resourceTypeId = this.getNodeParameter('resource_type_id', 0) as string | number;
+			const firstName = this.getNodeParameter('first_name', 0) as string;
+			const startDate = this.getNodeParameter('start_date', 0) as string;
+			const udfFields = this.getNodeParameter('udfFields', 0, {}) as { field?: Array<{ fieldName?: string; fieldValueText?: string; fieldValueBoolean?: boolean; fieldValueDate?: string; fieldValueSelect?: string; fieldValueMultiSelect?: string | string[]; fieldValueNumber?: number }> };
+
+			console.log('[Resource Create] Raw Parameters:', JSON.stringify({
+				resource_type_id: resourceTypeId,
+				first_name: firstName,
+				start_date: startDate,
+				udfFields: udfFields
+			}, null, 2));
+
+			// Parse resource type to get ID and is_human
+			let parsedResourceTypeId: number | string = resourceTypeId;
+			let isHuman = false;
+			if (resourceTypeId) {
+				try {
+					if (typeof resourceTypeId === 'string' && resourceTypeId.trim().startsWith('{')) {
+						const parsed = JSON.parse(resourceTypeId);
+						if (parsed && typeof parsed === 'object') {
+							if ('id' in parsed) {
+								parsedResourceTypeId = parsed.id;
+							}
+							if ('is_human' in parsed) {
+								isHuman = parsed.is_human === true;
+							}
+						}
+					}
+				} catch (e) {
+					console.log('[Resource Create] Error parsing resource_type_id:', e);
+				}
+				if (!isHuman && (typeof parsedResourceTypeId === 'number' || (typeof parsedResourceTypeId === 'string' && !isNaN(parseInt(parsedResourceTypeId))))) {
+					parsedResourceTypeId = typeof parsedResourceTypeId === 'number' ? parsedResourceTypeId : parseInt(parsedResourceTypeId);
+				}
+			}
+
+			console.log('[Resource Create] Parsed resourceTypeId:', parsedResourceTypeId, 'isHuman:', isHuman);
+
+			const nameProperty = isHuman ? 'first_name' : 'name';
+			const extractId = (value: any): any => {
+				if (value === undefined || value === null || value === '') return null;
+				if (typeof value === 'number') return value;
+				if (typeof value === 'string') {
+					try {
+						if (value.trim().startsWith('{')) {
+							const parsed = JSON.parse(value);
+							if (parsed && typeof parsed === 'object' && 'id' in parsed) {
+								return parsed.id;
+							}
+						}
+						const num = parseInt(value);
+						if (!isNaN(num)) return num;
+					} catch (e) {
+						// Ignore
+					}
+					return value;
+				}
+				if (typeof value === 'object' && 'id' in value) {
+					return value.id;
+				}
+				return value;
+			};
+
+			const extractMultiSelectIds = (value: any): any[] => {
+				if (value === undefined || value === null) return [];
+				if (Array.isArray(value)) {
+					if (value.length === 0) return [];
+					return value.map(extractId).filter((id: any) => id !== null && id !== undefined);
+				}
+				const singleId = extractId(value);
+				return singleId !== null && singleId !== undefined ? [singleId] : [];
+			};
+
+			// Build request body
+			const body: any = {
+				[nameProperty]: firstName,
+				start_date: startDate.split('T')[0],
+				resource_type_id: parsedResourceTypeId,
+			};
+
+			// Add UDF fields
+			if (udfFields?.field && Array.isArray(udfFields.field)) {
+				console.log('[Resource Create] Processing UDF fields, count:', udfFields.field.length);
+				udfFields.field.forEach((item, index) => {
+					if (item.fieldName) {
+						try {
+							const fieldData = JSON.parse(item.fieldName);
+							const fieldCode = fieldData.code;
+							console.log(`[Resource Create] UDF Field ${index + 1}:`, fieldCode, 'Type:', fieldData.field_type);
+							
+							if (item.fieldValueText !== undefined && item.fieldValueText !== null && item.fieldValueText !== '') {
+								body[fieldCode] = item.fieldValueText;
+								console.log(`[Resource Create]   -> Text value:`, item.fieldValueText);
+							} else if (item.fieldValueBoolean !== undefined && item.fieldValueBoolean !== null) {
+								body[fieldCode] = item.fieldValueBoolean;
+								console.log(`[Resource Create]   -> Boolean value:`, item.fieldValueBoolean);
+							} else if (item.fieldValueDate !== undefined && item.fieldValueDate !== null && item.fieldValueDate !== '') {
+								body[fieldCode] = new Date(item.fieldValueDate).toISOString().split('T')[0];
+								console.log(`[Resource Create]   -> Date value:`, body[fieldCode]);
+							} else if (item.fieldValueSelect !== undefined && item.fieldValueSelect !== null && item.fieldValueSelect !== '') {
+								const id = extractId(item.fieldValueSelect);
+								if (id !== null && id !== undefined) {
+									body[fieldCode] = id;
+									console.log(`[Resource Create]   -> Select value (ID):`, id);
+								}
+							} else if (item.fieldValueMultiSelect !== undefined && item.fieldValueMultiSelect !== null) {
+								const ids = extractMultiSelectIds(item.fieldValueMultiSelect);
+								if (ids.length > 0) {
+									body[fieldCode] = ids;
+									console.log(`[Resource Create]   -> Multi-Select values (IDs):`, ids);
+								}
+							} else if (item.fieldValueNumber !== undefined && item.fieldValueNumber !== null) {
+								body[fieldCode] = typeof item.fieldValueNumber === 'number' ? item.fieldValueNumber : parseFloat(item.fieldValueNumber);
+								console.log(`[Resource Create]   -> Number value:`, body[fieldCode]);
+							} else {
+								console.log(`[Resource Create]   -> No value provided for field`);
+							}
+						} catch (e) {
+							console.log('[Resource Create] Error processing UDF field:', item.fieldName, e);
+						}
+					}
+				});
+			}
+
+			// Log request details in complete format
+			const requestUrl = `${BASE_URL}${API_BASE_PATH}/resources`;
+			const requestHeaders = {
+				'Content-Type': 'application/json',
+			};
+			
+			console.log('\n[Resource Create] ========== REQUEST FORMAT ==========');
+			console.log('[Resource Create] HTTP Method: POST');
+			console.log('[Resource Create] Request URL:', requestUrl);
+			console.log('[Resource Create] Request Headers:');
+			console.log(JSON.stringify(requestHeaders, null, 2));
+			console.log('[Resource Create] Request Body (JSON):');
+			console.log(JSON.stringify(body, null, 2));
+			console.log('\n[Resource Create] Complete Request Object:');
+			console.log(JSON.stringify({
+				method: 'POST',
+				url: requestUrl,
+				headers: requestHeaders,
+				body: body
+			}, null, 2));
+			console.log('[Resource Create] ========================================\n');
+
+			// Make the API call
+			const requestConfig = {
+				method: 'POST' as const,
+				url: requestUrl,
+				headers: requestHeaders,
+				body,
+			};
+			
+			console.log('[Resource Create] Sending API Request with config:');
+			console.log(JSON.stringify(requestConfig, null, 2));
+			console.log('[Resource Create] Request body type:', typeof body);
+			console.log('[Resource Create] Request body keys:', Object.keys(body || {}));
+			
+			try {
+				const response = await this.helpers.httpRequestWithAuthentication.call(
+					this,
+					'ersAppOAuth2Api',
+					requestConfig,
+				);
+
+				// Log response details
+				console.log('\n[Resource Create] ========== RESPONSE RECEIVED ==========');
+				console.log('[Resource Create] Response Status: Success');
+				console.log('[Resource Create] Response Type:', typeof response);
+				console.log('[Resource Create] Full Response:', JSON.stringify(response, null, 2));
+				if (response && typeof response === 'object') {
+					console.log('[Resource Create] Response Keys:', Object.keys(response));
+				}
+				console.log('[Resource Create] ========================================\n');
+
+				// Return response in n8n format
+				// Extract data property if it exists, otherwise return full response
+				const responseData = (response as any)?.data || response;
+				return [[{ json: responseData }]];
+			} catch (error: any) {
+				// Log error details
+				console.log('\n[Resource Create] ========== ERROR ==========');
+				console.log('[Resource Create] Error occurred during API call');
+				console.log('[Resource Create] Error Message:', error.message || 'Unknown error');
+				console.log('[Resource Create] Error Name:', error.name);
+				console.log('[Resource Create] Error Stack:', error.stack);
+				if (error.response) {
+					console.log('[Resource Create] Error Response Status:', error.response.status);
+					console.log('[Resource Create] Error Response Status Text:', error.response.statusText);
+					console.log('[Resource Create] Error Response Headers:', JSON.stringify(error.response.headers, null, 2));
+					console.log('[Resource Create] Error Response Data:', JSON.stringify(error.response.data, null, 2));
+				}
+				if (error.request) {
+					console.log('[Resource Create] Request was made but no response received');
+					console.log('[Resource Create] Request details:', JSON.stringify(error.request, null, 2));
+				}
+				console.log('[Resource Create] ========================================\n');
+				
+				// Re-throw the error so n8n can handle it
+				throw error;
+			}
+		}
+
+		// For other operations, let n8n handle routing automatically
 		return [[]];
 	}
 }
