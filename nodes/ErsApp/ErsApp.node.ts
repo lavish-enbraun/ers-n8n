@@ -274,6 +274,12 @@ export class ErsApp implements INodeType {
 							}
 							return true; // All fields from this endpoint are already filtered for this resource type
 						})
+						.sort((a: UDFField, b: UDFField) => {
+							// Sort by is_required: true fields first, then false/undefined fields
+							const aRequired = a.is_required === true ? 1 : 0;
+							const bRequired = b.is_required === true ? 1 : 0;
+							return bRequired - aRequired; // Descending: 1 (required) comes before 0 (not required)
+						})
 						.map((field: UDFField) => {
 							// Build description with helpful info
 							let description = field.help_text || field.information_text || '';
@@ -313,6 +319,291 @@ export class ErsApp implements INodeType {
 					return fields;
 				} catch (error) {
 					console.error('Error fetching UDF fields:', error);
+					return [];
+				}
+			},
+
+			// Fetch mandatory user-defined fields (is_required: true) for resources
+			async getResourceUDFFieldsMandatory(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				try {
+					const currentNode = this.getNode();
+					const parameters = currentNode.parameters as { resource_type_id?: number | string };
+					let resourceTypeId = parameters.resource_type_id;
+
+					if (resourceTypeId === '' || resourceTypeId === null || resourceTypeId === undefined) {
+						return [];
+					}
+
+					if (typeof resourceTypeId === 'string') {
+						try {
+							const parsed = JSON.parse(resourceTypeId);
+							if (parsed && typeof parsed === 'object' && 'id' in parsed) {
+								resourceTypeId = parsed.id;
+							}
+						} catch (e) {
+							// Not a JSON string, use as-is
+						}
+					}
+
+					resourceTypeId = String(resourceTypeId);
+
+					interface UDFOption {
+						id: number | string;
+						name: string;
+						color?: string;
+						description?: string;
+						udf_desc_id?: number;
+					}
+
+					interface UDFField {
+						code: string;
+						display_name?: string;
+						field_type?: string;
+						is_system_defined?: boolean;
+						is_required?: boolean;
+						help_text?: string;
+						information_text?: string;
+						options?: UDFOption[];
+						mindate?: string;
+						maxdate?: string;
+						minlength?: number;
+						maxlength?: number;
+						regex?: string;
+					}
+
+					interface ResourceTypeSection {
+						udfs?: UDFField[];
+					}
+
+					interface ResourceTypeResponse {
+						sections?: ResourceTypeSection[];
+					}
+
+					let resourceTypeResponse: ResourceTypeResponse;
+					try {
+						resourceTypeResponse = await this.helpers.httpRequestWithAuthentication.call(
+							this,
+							'ersAppOAuth2Api',
+							{
+								method: 'GET',
+								url: `${BASE_URL}/rest/resources/resourcetype/${resourceTypeId}`,
+								headers: {
+									'Accept': 'application/json',
+								},
+							},
+						) as ResourceTypeResponse;
+					} catch (error: any) {
+						if (error?.message?.includes('access token') || error?.messages?.some((msg: string) => msg.includes('access token'))) {
+							return [];
+						}
+						console.error('Error fetching resource type fields:', error);
+						return [];
+					}
+
+					const udfFields: UDFField[] = [];
+					if (resourceTypeResponse.sections && Array.isArray(resourceTypeResponse.sections)) {
+						resourceTypeResponse.sections.forEach((section) => {
+							if (section.udfs && Array.isArray(section.udfs)) {
+								section.udfs.forEach((udf) => {
+									if (udf.code) {
+										udfFields.push(udf);
+									}
+								});
+							}
+						});
+					}
+
+					if (udfFields.length === 0) {
+						return [];
+					}
+
+					const excludedSystemFields = ['id', 'resource_type_id', 'first_name', 'start_date'];
+					
+					const fields = udfFields
+						.filter((field: UDFField) => {
+							if (field.is_system_defined && excludedSystemFields.includes(field.code)) {
+								return false;
+							}
+							// Only include fields where is_required is true
+							return field.is_required === true;
+						})
+						.map((field: UDFField) => {
+							let description = field.help_text || field.information_text || '';
+							if (field.field_type) {
+								description = description ? `${description} (Type: ${field.field_type})` : `Type: ${field.field_type}`;
+							}
+							if (field.is_required) {
+								description = description ? `${description} - Required` : 'Required field';
+							}
+
+							const normalizedOptions = (field.options || []).map((option) => ({
+								id: option.id,
+								name: option.name,
+								color: option.color,
+							}));
+
+							const fieldData = {
+								code: field.code,
+								field_type: field.field_type || '',
+								options: normalizedOptions,
+								mindate: field.mindate,
+								maxdate: field.maxdate,
+								minlength: field.minlength,
+								maxlength: field.maxlength,
+								regex: field.regex,
+							};
+
+							return {
+								name: field.display_name || field.code,
+								value: JSON.stringify(fieldData),
+								description: description || undefined,
+							};
+						});
+
+					return fields;
+				} catch (error) {
+					console.error('Error fetching mandatory UDF fields:', error);
+					return [];
+				}
+			},
+
+			// Fetch other user-defined fields (is_required: false or undefined) for resources
+			async getResourceUDFFieldsOther(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				try {
+					const currentNode = this.getNode();
+					const parameters = currentNode.parameters as { resource_type_id?: number | string };
+					let resourceTypeId = parameters.resource_type_id;
+
+					if (resourceTypeId === '' || resourceTypeId === null || resourceTypeId === undefined) {
+						return [];
+					}
+
+					if (typeof resourceTypeId === 'string') {
+						try {
+							const parsed = JSON.parse(resourceTypeId);
+							if (parsed && typeof parsed === 'object' && 'id' in parsed) {
+								resourceTypeId = parsed.id;
+							}
+						} catch (e) {
+							// Not a JSON string, use as-is
+						}
+					}
+
+					resourceTypeId = String(resourceTypeId);
+
+					interface UDFOption {
+						id: number | string;
+						name: string;
+						color?: string;
+						description?: string;
+						udf_desc_id?: number;
+					}
+
+					interface UDFField {
+						code: string;
+						display_name?: string;
+						field_type?: string;
+						is_system_defined?: boolean;
+						is_required?: boolean;
+						help_text?: string;
+						information_text?: string;
+						options?: UDFOption[];
+						mindate?: string;
+						maxdate?: string;
+						minlength?: number;
+						maxlength?: number;
+						regex?: string;
+					}
+
+					interface ResourceTypeSection {
+						udfs?: UDFField[];
+					}
+
+					interface ResourceTypeResponse {
+						sections?: ResourceTypeSection[];
+					}
+
+					let resourceTypeResponse: ResourceTypeResponse;
+					try {
+						resourceTypeResponse = await this.helpers.httpRequestWithAuthentication.call(
+							this,
+							'ersAppOAuth2Api',
+							{
+								method: 'GET',
+								url: `${BASE_URL}/rest/resources/resourcetype/${resourceTypeId}`,
+								headers: {
+									'Accept': 'application/json',
+								},
+							},
+						) as ResourceTypeResponse;
+					} catch (error: any) {
+						if (error?.message?.includes('access token') || error?.messages?.some((msg: string) => msg.includes('access token'))) {
+							return [];
+						}
+						console.error('Error fetching resource type fields:', error);
+						return [];
+					}
+
+					const udfFields: UDFField[] = [];
+					if (resourceTypeResponse.sections && Array.isArray(resourceTypeResponse.sections)) {
+						resourceTypeResponse.sections.forEach((section) => {
+							if (section.udfs && Array.isArray(section.udfs)) {
+								section.udfs.forEach((udf) => {
+									if (udf.code) {
+										udfFields.push(udf);
+									}
+								});
+							}
+						});
+					}
+
+					if (udfFields.length === 0) {
+						return [];
+					}
+
+					const excludedSystemFields = ['id', 'resource_type_id', 'first_name', 'start_date'];
+					
+					const fields = udfFields
+						.filter((field: UDFField) => {
+							if (field.is_system_defined && excludedSystemFields.includes(field.code)) {
+								return false;
+							}
+							// Only include fields where is_required is false or undefined
+							return field.is_required !== true;
+						})
+						.map((field: UDFField) => {
+							let description = field.help_text || field.information_text || '';
+							if (field.field_type) {
+								description = description ? `${description} (Type: ${field.field_type})` : `Type: ${field.field_type}`;
+							}
+
+							const normalizedOptions = (field.options || []).map((option) => ({
+								id: option.id,
+								name: option.name,
+								color: option.color,
+							}));
+
+							const fieldData = {
+								code: field.code,
+								field_type: field.field_type || '',
+								options: normalizedOptions,
+								mindate: field.mindate,
+								maxdate: field.maxdate,
+								minlength: field.minlength,
+								maxlength: field.maxlength,
+								regex: field.regex,
+							};
+
+							return {
+								name: field.display_name || field.code,
+								value: JSON.stringify(fieldData),
+								description: description || undefined,
+							};
+						});
+
+					return fields;
+				} catch (error) {
+					console.error('Error fetching other UDF fields:', error);
 					return [];
 				}
 			},
@@ -658,13 +949,15 @@ export class ErsApp implements INodeType {
 			const resourceTypeId = this.getNodeParameter('resource_type_id', 0) as string | number;
 			const firstName = this.getNodeParameter('first_name', 0) as string;
 			const startDate = this.getNodeParameter('start_date', 0) as string;
-			const udfFields = this.getNodeParameter('udfFields', 0, {}) as { field?: Array<{ fieldName?: string; fieldValueText?: string; fieldValueBoolean?: boolean; fieldValueDate?: string; fieldValueSelect?: string; fieldValueMultiSelect?: string | string[]; fieldValueNumber?: number }> };
+			const mandatoryFields = this.getNodeParameter('mandatoryFields', 0, {}) as { field?: Array<{ fieldName?: string; fieldValueText?: string; fieldValueBoolean?: boolean; fieldValueDate?: string; fieldValueSelect?: string; fieldValueMultiSelect?: string | string[]; fieldValueNumber?: number }> };
+			const otherFields = this.getNodeParameter('otherFields', 0, {}) as { field?: Array<{ fieldName?: string; fieldValueText?: string; fieldValueBoolean?: boolean; fieldValueDate?: string; fieldValueSelect?: string; fieldValueMultiSelect?: string | string[]; fieldValueNumber?: number }> };
 
 			console.log('[Resource Create] Raw Parameters:', JSON.stringify({
 				resource_type_id: resourceTypeId,
 				first_name: firstName,
 				start_date: startDate,
-				udfFields: udfFields
+				mandatoryFields: mandatoryFields,
+				otherFields: otherFields
 			}, null, 2));
 
 			// Parse resource type to get ID and is_human
@@ -735,49 +1028,57 @@ export class ErsApp implements INodeType {
 				resource_type_id: parsedResourceTypeId,
 			};
 
-			// Add UDF fields
-			if (udfFields?.field && Array.isArray(udfFields.field)) {
-				console.log('[Resource Create] Processing UDF fields, count:', udfFields.field.length);
-				udfFields.field.forEach((item, index) => {
-					if (item.fieldName) {
-						try {
-							const fieldData = JSON.parse(item.fieldName);
-							const fieldCode = fieldData.code;
-							console.log(`[Resource Create] UDF Field ${index + 1}:`, fieldCode, 'Type:', fieldData.field_type);
-							
-							if (item.fieldValueText !== undefined && item.fieldValueText !== null && item.fieldValueText !== '') {
-								body[fieldCode] = item.fieldValueText;
-								console.log(`[Resource Create]   -> Text value:`, item.fieldValueText);
-							} else if (item.fieldValueBoolean !== undefined && item.fieldValueBoolean !== null) {
-								body[fieldCode] = item.fieldValueBoolean;
-								console.log(`[Resource Create]   -> Boolean value:`, item.fieldValueBoolean);
-							} else if (item.fieldValueDate !== undefined && item.fieldValueDate !== null && item.fieldValueDate !== '') {
-								body[fieldCode] = new Date(item.fieldValueDate).toISOString().split('T')[0];
-								console.log(`[Resource Create]   -> Date value:`, body[fieldCode]);
-							} else if (item.fieldValueSelect !== undefined && item.fieldValueSelect !== null && item.fieldValueSelect !== '') {
-								const id = extractId(item.fieldValueSelect);
-								if (id !== null && id !== undefined) {
-									body[fieldCode] = id;
-									console.log(`[Resource Create]   -> Select value (ID):`, id);
+			// Helper function to process UDF fields
+			const processUDFFields = (fields: { field?: Array<{ fieldName?: string; fieldValueText?: string; fieldValueBoolean?: boolean; fieldValueDate?: string; fieldValueSelect?: string; fieldValueMultiSelect?: string | string[]; fieldValueNumber?: number }> }, fieldType: string) => {
+				if (fields?.field && Array.isArray(fields.field)) {
+					console.log(`[Resource Create] Processing ${fieldType} fields, count:`, fields.field.length);
+					fields.field.forEach((item, index) => {
+						if (item.fieldName) {
+							try {
+								const fieldData = JSON.parse(item.fieldName);
+								const fieldCode = fieldData.code;
+								console.log(`[Resource Create] ${fieldType} Field ${index + 1}:`, fieldCode, 'Type:', fieldData.field_type);
+								
+								if (item.fieldValueText !== undefined && item.fieldValueText !== null && item.fieldValueText !== '') {
+									body[fieldCode] = item.fieldValueText;
+									console.log(`[Resource Create]   -> Text value:`, item.fieldValueText);
+								} else if (item.fieldValueBoolean !== undefined && item.fieldValueBoolean !== null) {
+									body[fieldCode] = item.fieldValueBoolean;
+									console.log(`[Resource Create]   -> Boolean value:`, item.fieldValueBoolean);
+								} else if (item.fieldValueDate !== undefined && item.fieldValueDate !== null && item.fieldValueDate !== '') {
+									body[fieldCode] = new Date(item.fieldValueDate).toISOString().split('T')[0];
+									console.log(`[Resource Create]   -> Date value:`, body[fieldCode]);
+								} else if (item.fieldValueSelect !== undefined && item.fieldValueSelect !== null && item.fieldValueSelect !== '') {
+									const id = extractId(item.fieldValueSelect);
+									if (id !== null && id !== undefined) {
+										body[fieldCode] = id;
+										console.log(`[Resource Create]   -> Select value (ID):`, id);
+									}
+								} else if (item.fieldValueMultiSelect !== undefined && item.fieldValueMultiSelect !== null) {
+									const ids = extractMultiSelectIds(item.fieldValueMultiSelect);
+									if (ids.length > 0) {
+										body[fieldCode] = ids;
+										console.log(`[Resource Create]   -> Multi-Select values (IDs):`, ids);
+									}
+								} else if (item.fieldValueNumber !== undefined && item.fieldValueNumber !== null) {
+									body[fieldCode] = typeof item.fieldValueNumber === 'number' ? item.fieldValueNumber : parseFloat(item.fieldValueNumber);
+									console.log(`[Resource Create]   -> Number value:`, body[fieldCode]);
+								} else {
+									console.log(`[Resource Create]   -> No value provided for field`);
 								}
-							} else if (item.fieldValueMultiSelect !== undefined && item.fieldValueMultiSelect !== null) {
-								const ids = extractMultiSelectIds(item.fieldValueMultiSelect);
-								if (ids.length > 0) {
-									body[fieldCode] = ids;
-									console.log(`[Resource Create]   -> Multi-Select values (IDs):`, ids);
-								}
-							} else if (item.fieldValueNumber !== undefined && item.fieldValueNumber !== null) {
-								body[fieldCode] = typeof item.fieldValueNumber === 'number' ? item.fieldValueNumber : parseFloat(item.fieldValueNumber);
-								console.log(`[Resource Create]   -> Number value:`, body[fieldCode]);
-							} else {
-								console.log(`[Resource Create]   -> No value provided for field`);
+							} catch (e) {
+								console.log(`[Resource Create] Error processing ${fieldType} field:`, item.fieldName, e);
 							}
-						} catch (e) {
-							console.log('[Resource Create] Error processing UDF field:', item.fieldName, e);
 						}
-					}
-				});
-			}
+					});
+				}
+			};
+
+			// Add mandatory UDF fields
+			processUDFFields(mandatoryFields, 'Mandatory');
+			
+			// Add other UDF fields
+			processUDFFields(otherFields, 'Other');
 
 			// Log request details in complete format
 			const requestUrl = `${BASE_URL}${API_BASE_PATH}/resources`;
