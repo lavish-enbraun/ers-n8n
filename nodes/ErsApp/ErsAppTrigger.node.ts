@@ -9,7 +9,7 @@ export class ErsAppTrigger implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'ERS App Trigger',
 		name: 'ersAppTrigger',
-		icon: 'file:ersApp.svg',
+		icon: { light: 'file:ersApp.svg', dark: 'file:ersApp.dark.svg' },
 		group: ['trigger'],
 		version: 1,
 		description: 'Triggers the workflow when ERS App sends a webhook',

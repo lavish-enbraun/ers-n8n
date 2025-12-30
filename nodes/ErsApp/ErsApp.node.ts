@@ -29,13 +29,6 @@ export class ErsApp implements INodeType {
 		inputs: [NodeConnectionTypes.Main],
 		outputs: [NodeConnectionTypes.Main],
 		credentials: [{ name: 'ersAppOAuth2Api', required: true }],
-		requestDefaults: {
-			baseURL: `${BASE_URL}/login/oauth/authorize`,
-			headers: {
-				Accept: 'application/json',
-				'Content-Type': 'application/json',
-			},
-		},
 		properties: [
 			{
 				displayName: 'Entity Type',

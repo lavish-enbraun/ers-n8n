@@ -19,13 +19,6 @@ export const resourceCreateDescription: INodeProperties[] = [
 		},
 		default: '',
 		description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
-		routing: {
-			send: {
-				property: 'resource_type_id',
-				type: 'body',
-				value: '={{ (() => { try { if (typeof $value === "string") { const parsed = JSON.parse($value); if (parsed && typeof parsed === "object" && "id" in parsed) { return parsed.id; } } } catch (e) { } return $value; })() }}',
-			},
-		},
 	},
 	{
 		displayName: 'Resource Name',
@@ -37,12 +30,6 @@ export const resourceCreateDescription: INodeProperties[] = [
 		},
 		default: '',
 		description: 'First name of the resource',
-		routing: {
-			send: {
-				property: '={{ (() => { try { if ($parameter.resource_type_id) { if (typeof $parameter.resource_type_id === "string") { const parsed = JSON.parse($parameter.resource_type_id); if (parsed && typeof parsed === "object" && "is_human" in parsed) { return parsed.is_human ? "first_name" : "name"; } } } } catch (e) { } return "first_name"; })() }}',
-				type: 'body',
-			},
-		},
 	},
 	{
 		displayName: 'Start Date',
@@ -54,12 +41,6 @@ export const resourceCreateDescription: INodeProperties[] = [
 		},
 		default: '',
 		description: 'Start date of the resource',
-		routing: {
-			send: {
-				property: 'start_date',
-				type: 'body',
-			},
-		},
 	},
 	{
 		displayName: 'User Defined Fields',

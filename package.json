@@ -28,7 +28,7 @@
     "dist"
   ],
   "n8n": {
-    "n8nNodesApiVersion": 1,
+    "n8nNodesApiVersion": 2,
     "strict": true,
     "credentials": [
       "dist/credentials/ErsAppOAuth2Api.credentials.js"
