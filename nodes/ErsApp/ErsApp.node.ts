@@ -264,6 +264,12 @@ export class ErsApp implements INodeType {
 							}
 							return true; // All fields from this endpoint are already filtered for this resource type
 						})
+						.sort((a: UDFField, b: UDFField) => {
+							// Sort by is_required: true fields first, then false/undefined fields
+							const aRequired = a.is_required === true ? 1 : 0;
+							const bRequired = b.is_required === true ? 1 : 0;
+							return bRequired - aRequired; // Descending: 1 (required) comes before 0 (not required)
+						})
 						.map((field: UDFField) => {
 							// Build description with helpful info
 							let description = field.help_text || field.information_text || '';
@@ -303,6 +309,291 @@ export class ErsApp implements INodeType {
 					return fields;
 				} catch (error) {
 					console.error('Error fetching UDF fields:', error);
+					return [];
+				}
+			},
+
+			// Fetch mandatory user-defined fields (is_required: true) for resources
+			async getResourceUDFFieldsMandatory(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				try {
+					const currentNode = this.getNode();
+					const parameters = currentNode.parameters as { resource_type_id?: number | string };
+					let resourceTypeId = parameters.resource_type_id;
+
+					if (resourceTypeId === '' || resourceTypeId === null || resourceTypeId === undefined) {
+						return [];
+					}
+
+					if (typeof resourceTypeId === 'string') {
+						try {
+							const parsed = JSON.parse(resourceTypeId);
+							if (parsed && typeof parsed === 'object' && 'id' in parsed) {
+								resourceTypeId = parsed.id;
+							}
+						} catch (e) {
+							// Not a JSON string, use as-is
+						}
+					}
+
+					resourceTypeId = String(resourceTypeId);
+
+					interface UDFOption {
+						id: number | string;
+						name: string;
+						color?: string;
+						description?: string;
+						udf_desc_id?: number;
+					}
+
+					interface UDFField {
+						code: string;
+						display_name?: string;
+						field_type?: string;
+						is_system_defined?: boolean;
+						is_required?: boolean;
+						help_text?: string;
+						information_text?: string;
+						options?: UDFOption[];
+						mindate?: string;
+						maxdate?: string;
+						minlength?: number;
+						maxlength?: number;
+						regex?: string;
+					}
+
+					interface ResourceTypeSection {
+						udfs?: UDFField[];
+					}
+
+					interface ResourceTypeResponse {
+						sections?: ResourceTypeSection[];
+					}
+
+					let resourceTypeResponse: ResourceTypeResponse;
+					try {
+						resourceTypeResponse = await this.helpers.httpRequestWithAuthentication.call(
+							this,
+							'ersAppOAuth2Api',
+							{
+								method: 'GET',
+								url: `${BASE_URL}/rest/resources/resourcetype/${resourceTypeId}`,
+								headers: {
+									'Accept': 'application/json',
+								},
+							},
+						) as ResourceTypeResponse;
+					} catch (error: any) {
+						if (error?.message?.includes('access token') || error?.messages?.some((msg: string) => msg.includes('access token'))) {
+							return [];
+						}
+						console.error('Error fetching resource type fields:', error);
+						return [];
+					}
+
+					const udfFields: UDFField[] = [];
+					if (resourceTypeResponse.sections && Array.isArray(resourceTypeResponse.sections)) {
+						resourceTypeResponse.sections.forEach((section) => {
+							if (section.udfs && Array.isArray(section.udfs)) {
+								section.udfs.forEach((udf) => {
+									if (udf.code) {
+										udfFields.push(udf);
+									}
+								});
+							}
+						});
+					}
+
+					if (udfFields.length === 0) {
+						return [];
+					}
+
+					const excludedSystemFields = ['id', 'resource_type_id', 'first_name', 'start_date'];
+					
+					const fields = udfFields
+						.filter((field: UDFField) => {
+							if (field.is_system_defined && excludedSystemFields.includes(field.code)) {
+								return false;
+							}
+							// Only include fields where is_required is true
+							return field.is_required === true;
+						})
+						.map((field: UDFField) => {
+							let description = field.help_text || field.information_text || '';
+							if (field.field_type) {
+								description = description ? `${description} (Type: ${field.field_type})` : `Type: ${field.field_type}`;
+							}
+							if (field.is_required) {
+								description = description ? `${description} - Required` : 'Required field';
+							}
+
+							const normalizedOptions = (field.options || []).map((option) => ({
+								id: option.id,
+								name: option.name,
+								color: option.color,
+							}));
+
+							const fieldData = {
+								code: field.code,
+								field_type: field.field_type || '',
+								options: normalizedOptions,
+								mindate: field.mindate,
+								maxdate: field.maxdate,
+								minlength: field.minlength,
+								maxlength: field.maxlength,
+								regex: field.regex,
+							};
+
+							return {
+								name: field.display_name || field.code,
+								value: JSON.stringify(fieldData),
+								description: description || undefined,
+							};
+						});
+
+					return fields;
+				} catch (error) {
+					console.error('Error fetching mandatory UDF fields:', error);
+					return [];
+				}
+			},
+
+			// Fetch other user-defined fields (is_required: false or undefined) for resources
+			async getResourceUDFFieldsOther(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				try {
+					const currentNode = this.getNode();
+					const parameters = currentNode.parameters as { resource_type_id?: number | string };
+					let resourceTypeId = parameters.resource_type_id;
+
+					if (resourceTypeId === '' || resourceTypeId === null || resourceTypeId === undefined) {
+						return [];
+					}
+
+					if (typeof resourceTypeId === 'string') {
+						try {
+							const parsed = JSON.parse(resourceTypeId);
+							if (parsed && typeof parsed === 'object' && 'id' in parsed) {
+								resourceTypeId = parsed.id;
+							}
+						} catch (e) {
+							// Not a JSON string, use as-is
+						}
+					}
+
+					resourceTypeId = String(resourceTypeId);
+
+					interface UDFOption {
+						id: number | string;
+						name: string;
+						color?: string;
+						description?: string;
+						udf_desc_id?: number;
+					}
+
+					interface UDFField {
+						code: string;
+						display_name?: string;
+						field_type?: string;
+						is_system_defined?: boolean;
+						is_required?: boolean;
+						help_text?: string;
+						information_text?: string;
+						options?: UDFOption[];
+						mindate?: string;
+						maxdate?: string;
+						minlength?: number;
+						maxlength?: number;
+						regex?: string;
+					}
+
+					interface ResourceTypeSection {
+						udfs?: UDFField[];
+					}
+
+					interface ResourceTypeResponse {
+						sections?: ResourceTypeSection[];
+					}
+
+					let resourceTypeResponse: ResourceTypeResponse;
+					try {
+						resourceTypeResponse = await this.helpers.httpRequestWithAuthentication.call(
+							this,
+							'ersAppOAuth2Api',
+							{
+								method: 'GET',
+								url: `${BASE_URL}/rest/resources/resourcetype/${resourceTypeId}`,
+								headers: {
+									'Accept': 'application/json',
+								},
+							},
+						) as ResourceTypeResponse;
+					} catch (error: any) {
+						if (error?.message?.includes('access token') || error?.messages?.some((msg: string) => msg.includes('access token'))) {
+							return [];
+						}
+						console.error('Error fetching resource type fields:', error);
+						return [];
+					}
+
+					const udfFields: UDFField[] = [];
+					if (resourceTypeResponse.sections && Array.isArray(resourceTypeResponse.sections)) {
+						resourceTypeResponse.sections.forEach((section) => {
+							if (section.udfs && Array.isArray(section.udfs)) {
+								section.udfs.forEach((udf) => {
+									if (udf.code) {
+										udfFields.push(udf);
+									}
+								});
+							}
+						});
+					}
+
+					if (udfFields.length === 0) {
+						return [];
+					}
+
+					const excludedSystemFields = ['id', 'resource_type_id', 'first_name', 'start_date'];
+					
+					const fields = udfFields
+						.filter((field: UDFField) => {
+							if (field.is_system_defined && excludedSystemFields.includes(field.code)) {
+								return false;
+							}
+							// Only include fields where is_required is false or undefined
+							return field.is_required !== true;
+						})
+						.map((field: UDFField) => {
+							let description = field.help_text || field.information_text || '';
+							if (field.field_type) {
+								description = description ? `${description} (Type: ${field.field_type})` : `Type: ${field.field_type}`;
+							}
+
+							const normalizedOptions = (field.options || []).map((option) => ({
+								id: option.id,
+								name: option.name,
+								color: option.color,
+							}));
+
+							const fieldData = {
+								code: field.code,
+								field_type: field.field_type || '',
+								options: normalizedOptions,
+								mindate: field.mindate,
+								maxdate: field.maxdate,
+								minlength: field.minlength,
+								maxlength: field.maxlength,
+								regex: field.regex,
+							};
+
+							return {
+								name: field.display_name || field.code,
+								value: JSON.stringify(fieldData),
+								description: description || undefined,
+							};
+						});
+
+					return fields;
+				} catch (error) {
+					console.error('Error fetching other UDF fields:', error);
 					return [];
 				}
 			},
@@ -509,32 +800,50 @@ export class ErsApp implements INodeType {
 				try {
 					// Get the current node parameters to find the selected field
 					const currentNode = this.getNode();
-					const parameters = currentNode.parameters as { udfFields?: { field?: Array<{ fieldName?: string }> } };
+					const parameters = currentNode.parameters as { 
+						mandatoryFields?: { field?: Array<{ fieldName?: string }> };
+						otherFields?: { field?: Array<{ fieldName?: string }> };
+					};
 					
-					const udfFields = parameters.udfFields;
-					if (!udfFields || !udfFields.field || !Array.isArray(udfFields.field) || udfFields.field.length === 0) {
-						// Return empty option to allow empty string default
-						return [{ name: '', value: '' }];
-					}
-
-					// Find the fieldName from the current item being edited
-					// In n8n, when loadOptionsMethod is called for a field in a fixedCollection,
-					// we need to find the fieldName from the current item context
-					// Try all items and use the one with a valid fieldName (prefer the last one as it's likely the current item)
+					// Check both mandatoryFields and otherFields
+					const mandatoryFields = parameters.mandatoryFields;
+					const otherFields = parameters.otherFields;
+					
+					// Try to find fieldName from mandatoryFields first, then otherFields
 					let fieldName: string | undefined;
 					
-					// First, try to get from the last item (most likely the one being edited)
-					for (let i = udfFields.field.length - 1; i >= 0; i--) {
-						const item = udfFields.field[i];
-						if (item?.fieldName && typeof item.fieldName === 'string' && item.fieldName.trim() !== '') {
-							fieldName = item.fieldName;
-							break;
+					// Check mandatoryFields
+					if (mandatoryFields?.field && Array.isArray(mandatoryFields.field) && mandatoryFields.field.length > 0) {
+						// First, try to get from the last item (most likely the one being edited)
+						for (let i = mandatoryFields.field.length - 1; i >= 0; i--) {
+							const item = mandatoryFields.field[i];
+							if (item?.fieldName && typeof item.fieldName === 'string' && item.fieldName.trim() !== '') {
+								fieldName = item.fieldName;
+								break;
+							}
+						}
+						
+						// If still no fieldName found, try the first item
+						if (!fieldName && mandatoryFields.field[0]?.fieldName) {
+							fieldName = mandatoryFields.field[0].fieldName as string;
 						}
 					}
 					
-					// If still no fieldName found, try the first item
-					if (!fieldName && udfFields.field[0]?.fieldName) {
-						fieldName = udfFields.field[0].fieldName as string;
+					// If not found in mandatoryFields, check otherFields
+					if (!fieldName && otherFields?.field && Array.isArray(otherFields.field) && otherFields.field.length > 0) {
+						// First, try to get from the last item (most likely the one being edited)
+						for (let i = otherFields.field.length - 1; i >= 0; i--) {
+							const item = otherFields.field[i];
+							if (item?.fieldName && typeof item.fieldName === 'string' && item.fieldName.trim() !== '') {
+								fieldName = item.fieldName;
+								break;
+							}
+						}
+						
+						// If still no fieldName found, try the first item
+						if (!fieldName && otherFields.field[0]?.fieldName) {
+							fieldName = otherFields.field[0].fieldName as string;
+						}
 					}
 					
 					// If no fieldName found in any item, return empty
