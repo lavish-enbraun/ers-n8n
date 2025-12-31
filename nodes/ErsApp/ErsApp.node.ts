@@ -511,18 +511,33 @@ export class ErsApp implements INodeType {
 					const currentNode = this.getNode();
 					const parameters = currentNode.parameters as { udfFields?: { field?: Array<{ fieldName?: string }> } };
 					
-					// Try to get the fieldName from the current context
-					// This is tricky because we need to know which item in the array we're editing
-					// For now, we'll get the first field's fieldName
 					const udfFields = parameters.udfFields;
 					if (!udfFields || !udfFields.field || !Array.isArray(udfFields.field) || udfFields.field.length === 0) {
 						// Return empty option to allow empty string default
 						return [{ name: '', value: '' }];
 					}
 
-					// Get the first field's fieldName (in practice, n8n will call this for the current item)
-					const fieldName = udfFields.field[0]?.fieldName as string;
+					// Find the fieldName from the current item being edited
+					// In n8n, when loadOptionsMethod is called for a field in a fixedCollection,
+					// we need to find the fieldName from the current item context
+					// Try all items and use the one with a valid fieldName (prefer the last one as it's likely the current item)
+					let fieldName: string | undefined;
 					
+					// First, try to get from the last item (most likely the one being edited)
+					for (let i = udfFields.field.length - 1; i >= 0; i--) {
+						const item = udfFields.field[i];
+						if (item?.fieldName && typeof item.fieldName === 'string' && item.fieldName.trim() !== '') {
+							fieldName = item.fieldName;
+							break;
+						}
+					}
+					
+					// If still no fieldName found, try the first item
+					if (!fieldName && udfFields.field[0]?.fieldName) {
+						fieldName = udfFields.field[0].fieldName as string;
+					}
+					
+					// If no fieldName found in any item, return empty
 					if (!fieldName || fieldName === '') {
 						// Return empty option to allow empty string default
 						return [{ name: '', value: '' }];
@@ -537,25 +552,32 @@ export class ErsApp implements INodeType {
 					let fieldData: FieldData;
 					try {
 						fieldData = JSON.parse(fieldName);
-					} catch {
+					} catch (parseError) {
+						console.error('Error parsing fieldName JSON:', parseError, 'fieldName:', fieldName);
 						// Return empty option to allow empty string default
 						return [{ name: '', value: '' }];
 					}
 
 					// Return options if available
 					if (fieldData.options && Array.isArray(fieldData.options) && fieldData.options.length > 0) {
-						const options = fieldData.options.map((option) => ({
-							name: option.name,
-							value: option.id,
-							description: option.color ? `Color: ${option.color}` : undefined,
-						}));
+						const options = fieldData.options.map((option) => {
+							// Ensure we have both name and id
+							const optionName = option.name || String(option.id);
+							const optionId = option.id;
+							return {
+								name: optionName,
+								value: optionId,
+								description: option.color ? `Color: ${option.color}` : undefined,
+							};
+						});
 						// Add empty option at the beginning to allow empty string default
 						return [{ name: '', value: '' }, ...options];
 					}
 
 					// Return empty option to allow empty string default
 					return [{ name: '', value: '' }];
-				} catch {
+				} catch (error) {
+					console.error('Error in getResourceUDFFieldOptions:', error);
 					// Return empty option to allow empty string default
 					return [{ name: '', value: '' }];
 				}
@@ -568,18 +590,33 @@ export class ErsApp implements INodeType {
 					const currentNode = this.getNode();
 					const parameters = currentNode.parameters as { udfFields?: { field?: Array<{ fieldName?: string }> } };
 					
-					// Try to get the fieldName from the current context
-					// This is tricky because we need to know which item in the array we're editing
-					// For now, we'll get the first field's fieldName
 					const udfFields = parameters.udfFields;
 					if (!udfFields || !udfFields.field || !Array.isArray(udfFields.field) || udfFields.field.length === 0) {
 						// Return empty option to allow empty string default
 						return [{ name: '', value: '' }];
 					}
 
-					// Get the first field's fieldName (in practice, n8n will call this for the current item)
-					const fieldName = udfFields.field[0]?.fieldName as string;
+					// Find the fieldName from the current item being edited
+					// In n8n, when loadOptionsMethod is called for a field in a fixedCollection,
+					// we need to find the fieldName from the current item context
+					// Try all items and use the one with a valid fieldName (prefer the last one as it's likely the current item)
+					let fieldName: string | undefined;
 					
+					// First, try to get from the last item (most likely the one being edited)
+					for (let i = udfFields.field.length - 1; i >= 0; i--) {
+						const item = udfFields.field[i];
+						if (item?.fieldName && typeof item.fieldName === 'string' && item.fieldName.trim() !== '') {
+							fieldName = item.fieldName;
+							break;
+						}
+					}
+					
+					// If still no fieldName found, try the first item
+					if (!fieldName && udfFields.field[0]?.fieldName) {
+						fieldName = udfFields.field[0].fieldName as string;
+					}
+					
+					// If no fieldName found in any item, return empty
 					if (!fieldName || fieldName === '') {
 						// Return empty option to allow empty string default
 						return [{ name: '', value: '' }];
@@ -594,25 +631,32 @@ export class ErsApp implements INodeType {
 					let fieldData: FieldData;
 					try {
 						fieldData = JSON.parse(fieldName);
-					} catch {
+					} catch (parseError) {
+						console.error('Error parsing fieldName JSON:', parseError, 'fieldName:', fieldName);
 						// Return empty option to allow empty string default
 						return [{ name: '', value: '' }];
 					}
 
 					// Return options if available
 					if (fieldData.options && Array.isArray(fieldData.options) && fieldData.options.length > 0) {
-						const options = fieldData.options.map((option) => ({
-							name: option.name,
-							value: option.id,
-							description: option.color ? `Color: ${option.color}` : undefined,
-						}));
+						const options = fieldData.options.map((option) => {
+							// Ensure we have both name and id
+							const optionName = option.name || String(option.id);
+							const optionId = option.id;
+							return {
+								name: optionName,
+								value: optionId,
+								description: option.color ? `Color: ${option.color}` : undefined,
+							};
+						});
 						// Add empty option at the beginning to allow empty string default
 						return [{ name: '', value: '' }, ...options];
 					}
 
 					// Return empty option to allow empty string default
 					return [{ name: '', value: '' }];
-				} catch {
+				} catch (error) {
+					console.error('Error in getProjectUDFFieldOptions:', error);
 					// Return empty option to allow empty string default
 					return [{ name: '', value: '' }];
 				}
