@@ -407,7 +407,7 @@ export class ErsApp implements INodeType {
 						return [];
 					}
 
-					const excludedSystemFields = ['id', 'resource_type_id', 'first_name', 'start_date'];
+					const excludedSystemFields = ['id', 'resource_type_id', 'first_name', 'start_date', 'name'];
 					
 					const fields = udfFields
 						.filter((field: UDFField) => {
