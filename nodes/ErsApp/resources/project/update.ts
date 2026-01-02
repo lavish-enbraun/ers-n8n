@@ -32,13 +32,6 @@ export const projectUpdateDescription: INodeProperties[] = [
 		},
 		default: '',
 		description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
-		routing: {
-			send: {
-				property: 'project_type_id',
-				type: 'body',
-				value: '={{ (() => { try { if (typeof $value === "string") { const parsed = JSON.parse($value); if (parsed && typeof parsed === "object" && "id" in parsed) { return parsed.id; } } } catch (e) { } return $value; })() }}',
-			},
-		},
 	},
 	{
 		displayName: 'Title',

@@ -755,6 +755,12 @@ export class ErsApp implements INodeType {
 							// Only include fields that are available for this project type
 							return availableFieldCodes.includes(field.code);
 						})
+						.sort((a: UDFField, b: UDFField) => {
+							// Sort by is_required: true fields first, then false/undefined fields
+							const aRequired = a.is_required === true ? 1 : 0;
+							const bRequired = b.is_required === true ? 1 : 0;
+							return bRequired - aRequired; // Descending: 1 (required) comes before 0 (not required)
+						})
 						.map((field: UDFField) => {
 							// Build description with helpful info
 							let description = field.help_text || field.information_text || '';
@@ -765,11 +771,18 @@ export class ErsApp implements INodeType {
 								description = description ? `${description} - Required` : 'Required field';
 							}
 
+							// Normalize options to only include id, name, and color
+							const normalizedOptions = (field.options || []).map((option) => ({
+								id: option.id,
+								name: option.name,
+								color: option.color,
+							}));
+
 							// Store field metadata as JSON string in the value
 							const fieldData = {
 								code: field.code,
 								field_type: field.field_type,
-								options: field.options || [],
+								options: normalizedOptions,
 								mindate: field.mindate,
 								maxdate: field.maxdate,
 								minlength: field.minlength,
@@ -795,6 +808,285 @@ export class ErsApp implements INodeType {
 				}
 			},
 
+			// Fetch mandatory user-defined fields (is_required: true) for projects
+			async getProjectUDFFieldsMandatory(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				try {
+					const currentNode = this.getNode();
+					const parameters = currentNode.parameters as { project_type_id?: number | string };
+					let projectTypeId = parameters.project_type_id;
+
+					if (projectTypeId === '' || projectTypeId === null || projectTypeId === undefined) {
+						return [];
+					}
+
+					projectTypeId = String(projectTypeId);
+
+					// Fetch available fields for this project type
+					const availableFieldCodes: string[] = [];
+					try {
+						const projectTypeResponse = await this.helpers.httpRequestWithAuthentication.call(
+							this,
+							'ersAppOAuth2Api',
+							{
+								method: 'GET',
+								url: `${BASE_URL}/rest/projects/projecttype/${projectTypeId}`,
+								headers: {
+									'Accept': 'application/json',
+								},
+							},
+						) as { sections?: Array<{ udfs?: Array<{ code?: string }> }> };
+						
+						if (projectTypeResponse.sections && Array.isArray(projectTypeResponse.sections)) {
+							projectTypeResponse.sections.forEach((section) => {
+								if (section.udfs && Array.isArray(section.udfs)) {
+									section.udfs.forEach((udf) => {
+										if (udf.code) {
+											availableFieldCodes.push(udf.code);
+										}
+									});
+								}
+							});
+						}
+					} catch (error: any) {
+						if (error?.message?.includes('access token') || error?.messages?.some((msg: string) => msg.includes('access token'))) {
+							return [];
+						}
+						console.error('Error fetching project type fields:', error);
+						return [];
+					}
+
+					if (availableFieldCodes.length === 0) {
+						return [];
+					}
+
+					interface UDFField {
+						code: string;
+						display_name: string;
+						field_type: string;
+						is_system_defined: boolean;
+						is_required: boolean;
+						availability: number;
+						help_text?: string;
+						information_text?: string;
+						options?: Array<{ id: number | string; name: string; color?: string }>;
+						mindate?: string;
+						maxdate?: string;
+						minlength?: number;
+						maxlength?: number;
+						regex?: string;
+					}
+					interface UDFResponse {
+						data: UDFField[];
+					}
+
+					const udfResponse = await this.helpers.httpRequestWithAuthentication.call(
+						this,
+						'ersAppOAuth2Api',
+						{
+							method: 'GET',
+							url: `${BASE_URL}/rest/projects/udf`,
+							headers: {
+								'Accept': 'application/json',
+							},
+						},
+					) as UDFResponse;
+
+					if (!udfResponse.data || !Array.isArray(udfResponse.data)) {
+						return [];
+					}
+
+					const excludedSystemFields = ['id', 'project_type_id', 'title'];
+					
+					const fields = udfResponse.data
+						.filter((field: UDFField) => {
+							if (field.is_system_defined && excludedSystemFields.includes(field.code)) {
+								return false;
+							}
+							if (!availableFieldCodes.includes(field.code)) {
+								return false;
+							}
+							// Only include fields where is_required is true
+							return field.is_required === true;
+						})
+						.map((field: UDFField) => {
+							let description = field.help_text || field.information_text || '';
+							if (field.field_type) {
+								description = description ? `${description} (Type: ${field.field_type})` : `Type: ${field.field_type}`;
+							}
+							if (field.is_required) {
+								description = description ? `${description} - Required` : 'Required field';
+							}
+
+							// Normalize options to only include id, name, and color
+							const normalizedOptions = (field.options || []).map((option) => ({
+								id: option.id,
+								name: option.name,
+								color: option.color,
+							}));
+
+							const fieldData = {
+								code: field.code,
+								field_type: field.field_type,
+								options: normalizedOptions,
+								mindate: field.mindate,
+								maxdate: field.maxdate,
+								minlength: field.minlength,
+								maxlength: field.maxlength,
+								regex: field.regex,
+							};
+
+							return {
+								name: field.display_name || field.code,
+								value: JSON.stringify(fieldData),
+								description: description || undefined,
+							};
+						});
+
+					return fields;
+				} catch (error) {
+					console.error('Error fetching mandatory project UDF fields:', error);
+					return [];
+				}
+			},
+
+			// Fetch other user-defined fields (is_required: false or undefined) for projects
+			async getProjectUDFFieldsOther(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				try {
+					const currentNode = this.getNode();
+					const parameters = currentNode.parameters as { project_type_id?: number | string };
+					let projectTypeId = parameters.project_type_id;
+
+					if (projectTypeId === '' || projectTypeId === null || projectTypeId === undefined) {
+						return [];
+					}
+
+					projectTypeId = String(projectTypeId);
+
+					// Fetch available fields for this project type
+					const availableFieldCodes: string[] = [];
+					try {
+						const projectTypeResponse = await this.helpers.httpRequestWithAuthentication.call(
+							this,
+							'ersAppOAuth2Api',
+							{
+								method: 'GET',
+								url: `${BASE_URL}/rest/projects/projecttype/${projectTypeId}`,
+								headers: {
+									'Accept': 'application/json',
+								},
+							},
+						) as { sections?: Array<{ udfs?: Array<{ code?: string }> }> };
+						
+						if (projectTypeResponse.sections && Array.isArray(projectTypeResponse.sections)) {
+							projectTypeResponse.sections.forEach((section) => {
+								if (section.udfs && Array.isArray(section.udfs)) {
+									section.udfs.forEach((udf) => {
+										if (udf.code) {
+											availableFieldCodes.push(udf.code);
+										}
+									});
+								}
+							});
+						}
+					} catch (error: any) {
+						if (error?.message?.includes('access token') || error?.messages?.some((msg: string) => msg.includes('access token'))) {
+							return [];
+						}
+						console.error('Error fetching project type fields:', error);
+						return [];
+					}
+
+					if (availableFieldCodes.length === 0) {
+						return [];
+					}
+
+					interface UDFField {
+						code: string;
+						display_name: string;
+						field_type: string;
+						is_system_defined: boolean;
+						is_required: boolean;
+						availability: number;
+						help_text?: string;
+						information_text?: string;
+						options?: Array<{ id: number | string; name: string; color?: string }>;
+						mindate?: string;
+						maxdate?: string;
+						minlength?: number;
+						maxlength?: number;
+						regex?: string;
+					}
+					interface UDFResponse {
+						data: UDFField[];
+					}
+
+					const udfResponse = await this.helpers.httpRequestWithAuthentication.call(
+						this,
+						'ersAppOAuth2Api',
+						{
+							method: 'GET',
+							url: `${BASE_URL}/rest/projects/udf`,
+							headers: {
+								'Accept': 'application/json',
+							},
+						},
+					) as UDFResponse;
+
+					if (!udfResponse.data || !Array.isArray(udfResponse.data)) {
+						return [];
+					}
+
+					const excludedSystemFields = ['id', 'project_type_id', 'title'];
+					
+					const fields = udfResponse.data
+						.filter((field: UDFField) => {
+							if (field.is_system_defined && excludedSystemFields.includes(field.code)) {
+								return false;
+							}
+							if (!availableFieldCodes.includes(field.code)) {
+								return false;
+							}
+							// Only include fields where is_required is false or undefined
+							return field.is_required !== true;
+						})
+						.map((field: UDFField) => {
+							let description = field.help_text || field.information_text || '';
+							if (field.field_type) {
+								description = description ? `${description} (Type: ${field.field_type})` : `Type: ${field.field_type}`;
+							}
+
+							// Normalize options to only include id, name, and color
+							const normalizedOptions = (field.options || []).map((option) => ({
+								id: option.id,
+								name: option.name,
+								color: option.color,
+							}));
+
+							const fieldData = {
+								code: field.code,
+								field_type: field.field_type,
+								options: normalizedOptions,
+								mindate: field.mindate,
+								maxdate: field.maxdate,
+								minlength: field.minlength,
+								maxlength: field.maxlength,
+								regex: field.regex,
+							};
+
+							return {
+								name: field.display_name || field.code,
+								value: JSON.stringify(fieldData),
+								description: description || undefined,
+							};
+						});
+
+					return fields;
+				} catch (error) {
+					console.error('Error fetching other project UDF fields:', error);
+					return [];
+				}
+			},
+
 			// Get options for dropdown/select fields
 			async getResourceUDFFieldOptions(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 				try {
@@ -803,13 +1095,15 @@ export class ErsApp implements INodeType {
 					const parameters = currentNode.parameters as { 
 						mandatoryFields?: { field?: Array<{ fieldName?: string }> };
 						otherFields?: { field?: Array<{ fieldName?: string }> };
+						udfFields?: { field?: Array<{ fieldName?: string }> };
 					};
 					
-					// Check both mandatoryFields and otherFields
+					// Check mandatoryFields, otherFields, and udfFields
 					const mandatoryFields = parameters.mandatoryFields;
 					const otherFields = parameters.otherFields;
+					const udfFields = parameters.udfFields;
 					
-					// Try to find fieldName from mandatoryFields first, then otherFields
+					// Try to find fieldName from mandatoryFields first, then otherFields, then udfFields
 					let fieldName: string | undefined;
 					
 					// Check mandatoryFields
@@ -843,6 +1137,23 @@ export class ErsApp implements INodeType {
 						// If still no fieldName found, try the first item
 						if (!fieldName && otherFields.field[0]?.fieldName) {
 							fieldName = otherFields.field[0].fieldName as string;
+						}
+					}
+					
+					// If not found in mandatoryFields or otherFields, check udfFields (for update operations)
+					if (!fieldName && udfFields?.field && Array.isArray(udfFields.field) && udfFields.field.length > 0) {
+						// First, try to get from the last item (most likely the one being edited)
+						for (let i = udfFields.field.length - 1; i >= 0; i--) {
+							const item = udfFields.field[i];
+							if (item?.fieldName && typeof item.fieldName === 'string' && item.fieldName.trim() !== '') {
+								fieldName = item.fieldName;
+								break;
+							}
+						}
+						
+						// If still no fieldName found, try the first item
+						if (!fieldName && udfFields.field[0]?.fieldName) {
+							fieldName = udfFields.field[0].fieldName as string;
 						}
 					}
 					
@@ -897,32 +1208,69 @@ export class ErsApp implements INodeType {
 				try {
 					// Get the current node parameters to find the selected field
 					const currentNode = this.getNode();
-					const parameters = currentNode.parameters as { udfFields?: { field?: Array<{ fieldName?: string }> } };
+					const parameters = currentNode.parameters as { 
+						mandatoryFields?: { field?: Array<{ fieldName?: string }> };
+						otherFields?: { field?: Array<{ fieldName?: string }> };
+						udfFields?: { field?: Array<{ fieldName?: string }> };
+					};
 					
+					// Check mandatoryFields, otherFields, and udfFields
+					const mandatoryFields = parameters.mandatoryFields;
+					const otherFields = parameters.otherFields;
 					const udfFields = parameters.udfFields;
-					if (!udfFields || !udfFields.field || !Array.isArray(udfFields.field) || udfFields.field.length === 0) {
-						// Return empty option to allow empty string default
-						return [{ name: '', value: '' }];
-					}
-
-					// Find the fieldName from the current item being edited
-					// In n8n, when loadOptionsMethod is called for a field in a fixedCollection,
-					// we need to find the fieldName from the current item context
-					// Try all items and use the one with a valid fieldName (prefer the last one as it's likely the current item)
+					
+					// Try to find fieldName from mandatoryFields first, then otherFields, then udfFields
 					let fieldName: string | undefined;
 					
-					// First, try to get from the last item (most likely the one being edited)
-					for (let i = udfFields.field.length - 1; i >= 0; i--) {
-						const item = udfFields.field[i];
-						if (item?.fieldName && typeof item.fieldName === 'string' && item.fieldName.trim() !== '') {
-							fieldName = item.fieldName;
-							break;
+					// Check mandatoryFields
+					if (mandatoryFields?.field && Array.isArray(mandatoryFields.field) && mandatoryFields.field.length > 0) {
+						// First, try to get from the last item (most likely the one being edited)
+						for (let i = mandatoryFields.field.length - 1; i >= 0; i--) {
+							const item = mandatoryFields.field[i];
+							if (item?.fieldName && typeof item.fieldName === 'string' && item.fieldName.trim() !== '') {
+								fieldName = item.fieldName;
+								break;
+							}
+						}
+						
+						// If still no fieldName found, try the first item
+						if (!fieldName && mandatoryFields.field[0]?.fieldName) {
+							fieldName = mandatoryFields.field[0].fieldName as string;
 						}
 					}
 					
-					// If still no fieldName found, try the first item
-					if (!fieldName && udfFields.field[0]?.fieldName) {
-						fieldName = udfFields.field[0].fieldName as string;
+					// If not found in mandatoryFields, check otherFields
+					if (!fieldName && otherFields?.field && Array.isArray(otherFields.field) && otherFields.field.length > 0) {
+						// First, try to get from the last item (most likely the one being edited)
+						for (let i = otherFields.field.length - 1; i >= 0; i--) {
+							const item = otherFields.field[i];
+							if (item?.fieldName && typeof item.fieldName === 'string' && item.fieldName.trim() !== '') {
+								fieldName = item.fieldName;
+								break;
+							}
+						}
+						
+						// If still no fieldName found, try the first item
+						if (!fieldName && otherFields.field[0]?.fieldName) {
+							fieldName = otherFields.field[0].fieldName as string;
+						}
+					}
+					
+					// If not found in mandatoryFields or otherFields, check udfFields (for update operations)
+					if (!fieldName && udfFields?.field && Array.isArray(udfFields.field) && udfFields.field.length > 0) {
+						// First, try to get from the last item (most likely the one being edited)
+						for (let i = udfFields.field.length - 1; i >= 0; i--) {
+							const item = udfFields.field[i];
+							if (item?.fieldName && typeof item.fieldName === 'string' && item.fieldName.trim() !== '') {
+								fieldName = item.fieldName;
+								break;
+							}
+						}
+						
+						// If still no fieldName found, try the first item
+						if (!fieldName && udfFields.field[0]?.fieldName) {
+							fieldName = udfFields.field[0].fieldName as string;
+						}
 					}
 					
 					// If no fieldName found in any item, return empty
