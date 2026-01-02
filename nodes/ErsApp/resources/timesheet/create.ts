@@ -19,12 +19,6 @@ export const timesheetCreateDescription: INodeProperties[] = [
 		},
 		default: '',
 		description: 'ID of the resource',
-		routing: {
-			send: {
-				property: 'resource_id',
-				type: 'body',
-			},
-		},
 	},
 	{
 		displayName: 'Project ID',
@@ -39,12 +33,6 @@ export const timesheetCreateDescription: INodeProperties[] = [
 		},
 		default: '',
 		description: 'ID of the project',
-		routing: {
-			send: {
-				property: 'project_id',
-				type: 'body',
-			},
-		},
 	},
 	{
 		displayName: 'Date',
@@ -59,13 +47,6 @@ export const timesheetCreateDescription: INodeProperties[] = [
 		},
 		default: '',
 		description: 'Date for the timesheet entry',
-		routing: {
-			send: {
-				property: 'date',
-				type: 'body',
-				value: '={{ new Date($value).toISOString().split("T")[0] }}',
-			},
-		},
 	},
 	{
 		displayName: 'Hours',
@@ -79,12 +60,6 @@ export const timesheetCreateDescription: INodeProperties[] = [
 		},
 		default: 0,
 		description: 'Number of hours for the timesheet entry',
-		routing: {
-			send: {
-				property: 'hours',
-				type: 'body',
-			},
-		},
 	},
 	{
 		displayName: 'Comment',
@@ -98,12 +73,6 @@ export const timesheetCreateDescription: INodeProperties[] = [
 		},
 		default: '',
 		description: 'Comment for the timesheet entry',
-		routing: {
-			send: {
-				property: 'comment',
-				type: 'body',
-			},
-		},
 	},
 ];
 

@@ -51,12 +51,6 @@ export const ratesUpdateDescription: INodeProperties[] = [
 		},
 		default: 0,
 		description: 'Cost rate in dollars',
-		routing: {
-			send: {
-				property: 'cost_rate',
-				type: 'body',
-			},
-		},
 	},
 	{
 		displayName: 'Billing Rate (in $)',
@@ -67,12 +61,6 @@ export const ratesUpdateDescription: INodeProperties[] = [
 		},
 		default: 0,
 		description: 'Billing rate in dollars',
-		routing: {
-			send: {
-				property: 'billing_rate',
-				type: 'body',
-			},
-		},
 	},
 	{
 		displayName: 'Effective Date',
@@ -84,13 +72,6 @@ export const ratesUpdateDescription: INodeProperties[] = [
 		},
 		default: '',
 		description: 'Effective date for the rate',
-		routing: {
-			send: {
-				property: 'effective_date',
-				type: 'body',
-				value: '={{ new Date($value).toISOString().split("T")[0] }}',
-			},
-		},
 	},
 ];
 
