@@ -30,6 +30,7 @@ export const bookingDescription: INodeProperties[] = [
 						url: `${BASE_URL}${API_BASE_PATH}/bookings`,
 						headers: {
 							'Content-Type': 'application/json',
+							Accept: 'application/json',
 						},
 						body: '={{ (() => { const formatTime = (dateStr) => { if (!dateStr) return ""; const d = new Date(dateStr); if (isNaN(d.getTime())) return ""; const year = d.getFullYear(); const month = String(d.getMonth() + 1).padStart(2, "0"); const day = String(d.getDate()).padStart(2, "0"); let hours = d.getHours(); let minutes = d.getMinutes(); const rounded = Math.round(minutes / 15) * 15; if (rounded === 60) { minutes = 0; hours += 1; } else { minutes = rounded; } const hrs = String(hours).padStart(2, "0"); const mins = String(minutes).padStart(2, "0"); return `${year}-${month}-${day}T${hrs}:${mins}:00`; }; return { resource_id: $parameter.resource_id, project_id: $parameter.project_id, start_time: formatTime($parameter.start_time), end_time: formatTime($parameter.end_time) }; })() }}',
 					},
@@ -46,6 +47,7 @@ export const bookingDescription: INodeProperties[] = [
 						url: `={{ "${BASE_URL}${API_BASE_PATH}/bookings/" + $parameter.booking_id }}`,
 						headers: {
 							'Content-Type': 'application/json',
+							Accept: 'application/json',
 						},
 						body: '={{ (() => { const formatTime = (dateStr) => { if (!dateStr) return ""; const d = new Date(dateStr); if (isNaN(d.getTime())) return ""; const year = d.getFullYear(); const month = String(d.getMonth() + 1).padStart(2, "0"); const day = String(d.getDate()).padStart(2, "0"); let hours = d.getHours(); let minutes = d.getMinutes(); const rounded = Math.round(minutes / 15) * 15; if (rounded === 60) { minutes = 0; hours += 1; } else { minutes = rounded; } const hrs = String(hours).padStart(2, "0"); const mins = String(minutes).padStart(2, "0"); return `${year}-${month}-${day}T${hrs}:${mins}:00`; }; return { resource_id: $parameter.resource_id, project_id: $parameter.project_id, start_time: formatTime($parameter.start_time), end_time: formatTime($parameter.end_time) }; })() }}',
 					},

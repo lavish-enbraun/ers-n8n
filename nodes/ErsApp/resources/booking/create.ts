@@ -19,12 +19,6 @@ export const bookingCreateDescription: INodeProperties[] = [
 		},
 		default: undefined,
 		description: 'Unique ID of the resource',
-		routing: {
-			send: {
-				property: 'resource_id',
-				type: 'body',
-			},
-		},
 	},
 	{
 		displayName: 'Project ID',
@@ -39,12 +33,6 @@ export const bookingCreateDescription: INodeProperties[] = [
 		},
 		default: undefined,
 		description: 'Unique ID of the project',
-		routing: {
-			send: {
-				property: 'project_id',
-				type: 'body',
-			},
-		},
 	},
 	{
 		displayName: 'Start Time',
