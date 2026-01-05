@@ -19,12 +19,6 @@ export const requirementCreateDescription: INodeProperties[] = [
 		},
 		default: undefined,
 		description: 'ID of the project object for which this requirement object is being created',
-		routing: {
-			send: {
-				property: 'project_id',
-				type: 'body',
-			},
-		},
 	},
 	{
 		displayName: 'Start Time',
@@ -63,12 +57,6 @@ export const requirementCreateDescription: INodeProperties[] = [
 		},
 		default: 0,
 		description: 'Effort value for the requirement. Defines how much effort is needed to complete the task (0-99999999.99).',
-		routing: {
-			send: {
-				property: 'effort',
-				type: 'body',
-			},
-		},
 	},
 	{
 		displayName: 'Unit',
@@ -92,12 +80,6 @@ export const requirementCreateDescription: INodeProperties[] = [
 		],
 		default: 2,
 		description: 'Unit in which effort is defined (2 for Hours, 4 for Full Time Equivalent)',
-		routing: {
-			send: {
-				property: 'unit',
-				type: 'body',
-			},
-		},
 	},
 	{
 		displayName: 'Additional Fields',
@@ -115,12 +97,6 @@ export const requirementCreateDescription: INodeProperties[] = [
 				type: 'boolean',
 				default: false,
 				description: 'Whether to allow multi-allocation for the requirement',
-				routing: {
-					send: {
-						property: 'allow_multi_allocation',
-						type: 'body',
-					},
-				},
 			},
 			{
 				displayName: 'Conditions',
@@ -128,46 +104,8 @@ export const requirementCreateDescription: INodeProperties[] = [
 				type: 'fixedCollection',
 				default: {},
 				description: 'Array of conditions for the requirement',
-				routing: {
-					send: {
-						property: 'conditions',
-						type: 'body',
-					},
-				},
 				typeOptions: {
 					multipleValues: true,
-				},
-			},
-			{
-				displayName: 'Flexi Range Duration',
-				name: 'flexi_range_duration',
-				type: 'number',
-				typeOptions: {
-					minValue: 0,
-				},
-				default: undefined,
-				description: 'Flexible range duration for the requirement',
-				routing: {
-					send: {
-						property: 'flexi_range_duration',
-						type: 'body',
-					},
-				},
-			},
-			{
-				displayName: 'Flexi Range Unit',
-				name: 'flexi_range_unit',
-				type: 'number',
-				typeOptions: {
-					minValue: 0,
-				},
-				default: undefined,
-				description: 'Flexible range unit for the requirement',
-				routing: {
-					send: {
-						property: 'flexi_range_unit',
-						type: 'body',
-					},
 				},
 			},
 			{
@@ -179,12 +117,6 @@ export const requirementCreateDescription: INodeProperties[] = [
 				},
 				default: undefined,
 				description: 'ID of the role object that the resource needs to perform for the requirement',
-				routing: {
-					send: {
-						property: 'role_id',
-						type: 'body',
-					},
-				},
 			},
 			{
 				displayName: 'Sync to Booking',
@@ -192,12 +124,6 @@ export const requirementCreateDescription: INodeProperties[] = [
 				type: 'boolean',
 				default: false,
 				description: 'Whether to sync the requirement to booking',
-				routing: {
-					send: {
-						property: 'sync_to_booking',
-						type: 'body',
-					},
-				},
 			},
 			{
 				displayName: 'Tags',
@@ -205,12 +131,6 @@ export const requirementCreateDescription: INodeProperties[] = [
 				type: 'string',
 				default: [],
 				description: 'Array of tags for the requirement',
-				routing: {
-					send: {
-						property: 'tags',
-						type: 'body',
-					},
-				},
 				typeOptions: {
 					multipleValues: true,
 				},
@@ -224,12 +144,6 @@ export const requirementCreateDescription: INodeProperties[] = [
 				},
 				default: undefined,
 				description: 'ID of the task object within the project that needs to be done in this requirement',
-				routing: {
-					send: {
-						property: 'task_id',
-						type: 'body',
-					},
-				},
 			},
 		],
 	},
