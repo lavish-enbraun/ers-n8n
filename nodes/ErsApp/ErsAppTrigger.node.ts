@@ -3,7 +3,62 @@ import {
 	IWebhookResponseData,
 	INodeType,
 	INodeTypeDescription,
+	IHookFunctions,
+	NodeApiError,
+	LoggerProxy as Logger,
 } from 'n8n-workflow';
+import { BASE_URL } from './constants';
+
+/**
+ * Maps entity IDs to their valid event IDs
+ */
+const ENTITY_VALID_EVENTS: Record<number, number[]> = {
+	1: [1, 2, 3, 7, 8, 9],   // Resource
+	2: [1, 2, 3, 4, 5, 6, 7, 8, 9], // Project
+	4: [1, 2, 3],             // Booking
+	8: [1, 2, 3],              // Role Rate
+	16: [7, 8, 9],            // Timesheet
+	32: [1, 2, 3],            // Requirement
+};
+
+/**
+ * Filters events to only include those valid for the given entity
+ * @param entity - The entity ID
+ * @param events - Array of event IDs to filter
+ * @returns Array of valid event IDs for the entity
+ */
+function getValidEventsForEntity(entity: number, events: number[]): number[] {
+	const validEvents = ENTITY_VALID_EVENTS[entity];
+	if (!validEvents) {
+		console.warn(`[ERS Webhook] Unknown entity ID: ${entity}. Allowing all events.`);
+		return events;
+	}
+	
+	const filtered = events.filter(event => validEvents.includes(event));
+	if (filtered.length !== events.length) {
+		const removed = events.filter(event => !validEvents.includes(event));
+		console.log(`[ERS Webhook] Entity ${entity}: Filtered out invalid events: ${removed.join(', ')}`);
+	}
+	
+	return filtered;
+}
+
+/**
+ * Replaces webhook URL host with host.docker.internal:5678 for Docker compatibility
+ * @param webhookUrl - The original webhook URL
+ * @returns The webhook URL with host.docker.internal:5678 as the host
+ */
+function replaceWebhookUrlForDocker(webhookUrl: string): string {
+	// Extract protocol and path from the original URL
+	const urlMatch = webhookUrl.match(/^(https?:\/\/)([^\/]+)(.*)$/);
+	if (!urlMatch) {
+		return webhookUrl;
+	}
+	
+	const [, protocol, , path] = urlMatch;
+	// Replace with host.docker.internal:5678
+	return `${protocol}host.docker.internal:5678${path}`;
+}
 
 export class ErsAppTrigger implements INodeType {
 	description: INodeTypeDescription = {
@@ -12,13 +67,14 @@ export class ErsAppTrigger implements INodeType {
 		icon: { light: 'file:ersApp.svg', dark: 'file:ersApp.dark.svg' },
 		group: ['trigger'],
 		version: 1,
-		description: 'Triggers the workflow when ERS App sends a webhook',
+		description: 'Triggers the workflow when ERS App sends a webhook event',
 		defaults: {
 			name: 'ERS App Trigger',
 		},
 		usableAsTool: true,
 		inputs: [],
 		outputs: ['main'],
+		credentials: [{ name: 'ersAppOAuth2Api', required: true }],
 		webhooks: [
 			{
 				name: 'default',
@@ -27,7 +83,496 @@ export class ErsAppTrigger implements INodeType {
 				path: 'ersapp',
 			},
 		],
-		properties: [],
+		properties: [
+			{
+				displayName: 'ERS Webhook',
+				name: 'webhook',
+				type: 'fixedCollection',
+				default: {},
+				description: 'Configure the ERS webhook trigger settings',
+				options: [
+					{
+						name: 'webhookSettings',
+						displayName: 'Webhook Settings',
+						values: [
+							{
+								displayName: 'Entities',
+								name: 'entities',
+								type: 'multiOptions',
+								description: 'Select the entities to monitor for events',
+								options: [
+									{
+										name: 'Resource',
+										value: 1,
+									},
+									{
+										name: 'Project',
+										value: 2,
+									},
+									{
+										name: 'Booking',
+										value: 4,
+									},
+									{
+										name: 'Role Rate',
+										value: 8,
+									},
+									{
+										name: 'Timesheet',
+										value: 16,
+									},
+									{
+										name: 'Requirement',
+										value: 32,
+									},
+								],
+								default: [],
+								required: true,
+							},
+							{
+								displayName: 'Events',
+								name: 'events',
+								type: 'multiOptions',
+								description: 'Select the events to trigger on',
+								options: [
+									{
+										name: 'Create',
+										value: 1,
+									},
+									{
+										name: 'Update',
+										value: 2,
+									},
+									{
+										name: 'Delete',
+										value: 3,
+									},
+									{
+										name: 'Add Task',
+										value: 4,
+									},
+									{
+										name: 'Edit Task',
+										value: 5,
+									},
+									{
+										name: 'Delete Task',
+										value: 6,
+									},
+									{
+										name: 'Add Rate',
+										value: 7,
+									},
+									{
+										name: 'Edit Rate',
+										value: 8,
+									},
+									{
+										name: 'Delete Rate',
+										value: 9,
+									},
+								],
+								default: [],
+								required: true,
+							},
+						],
+					},
+				],
+			},
+		],
+	};
+
+	webhookMethods = {
+		default: {
+			async checkExists(this: IHookFunctions): Promise<boolean> {
+				// Always return false to ensure create() method is always called
+				// This allows triggers to be updated whenever entities/events change
+				// The create() method already handles checking for existing webhooks
+				return false;
+			},
+			async create(this: IHookFunctions): Promise<boolean> {
+				// Get webhook configuration from node parameters
+				const webhookParam = this.getNodeParameter('webhook', {}) as { webhookSettings?: { entities?: number[]; events?: number[] } };
+				const webhookConfig = webhookParam.webhookSettings || {};
+				
+				// Get webhook URL - this ensures the webhook is ready
+				const generatedUrl = this.getNodeWebhookUrl('default');
+				
+				if (!generatedUrl) {
+					throw new NodeApiError(this.getNode(), {
+						message: 'Failed to get webhook URL. Please ensure the workflow is saved and activated.',
+					});
+				}
+				
+				// Replace webhook URL host with host.docker.internal:5678 for Docker compatibility
+				const webhookUrl = replaceWebhookUrlForDocker(generatedUrl);
+				
+				const payload = {
+					name: 'n8n',
+					status: true,
+					signed: false,
+					url: webhookUrl,
+				};
+
+				try {
+					// Get OAuth2 credentials - n8n stores tokens in the credentials object
+					const credentials = await this.getCredentials('ersAppOAuth2Api');
+					
+					// OAuth2 tokens can be stored in different locations
+					const creds = credentials as Record<string, unknown>;
+					const accessToken = 
+						(creds.access_token as string | undefined) || 
+						(creds.accessToken as string | undefined) || 
+						((creds.oauthTokenData as Record<string, unknown> | undefined)?.access_token as string | undefined) ||
+						((creds.data as Record<string, unknown> | undefined)?.access_token as string | undefined);
+
+				if (!accessToken) {
+
+					const keys = Object.keys(creds);
+					console.error('[ERS Webhook] OAuth2 access token not found. Available credential keys:', keys);
+					throw new NodeApiError(this.getNode(), {
+						message: `OAuth2 access token not found. Please authenticate the credentials first. Available credential keys: ${keys.join(', ')}`,
+					});
+				}
+
+				// Check if webhook already exists
+				const staticData = this.getWorkflowStaticData('node');
+				let webhookId: number | string | undefined = staticData.webhookId as number | string | undefined;
+				let webhookExists = false;
+
+				// Step 1: Check if webhook exists by getting all webhooks
+				const getWebhooksUrl = `${BASE_URL}/rest/webhooks`;
+				console.log('[ERS Webhook] ========== CHECKING FOR EXISTING WEBHOOK ==========');
+				console.log('[ERS Webhook] Request URL:', getWebhooksUrl);
+				console.log('[ERS Webhook] Request Method: GET');
+				console.log('[ERS Webhook] Request Headers:', {
+					Authorization: `Bearer ${accessToken.substring(0, 20)}...` // Log partial token for security
+				});
+				
+				const getWebhooksResponse = await this.helpers.httpRequest({
+					method: 'GET',
+					url: getWebhooksUrl,
+					headers: {
+						Authorization: `Bearer ${accessToken}`,
+					},
+					json: true,
+				}) as Record<string, unknown>;
+
+				console.log('[ERS Webhook] ========== GET WEBHOOKS RESPONSE ==========');
+				console.log('[ERS Webhook] Response Status: Success');
+				console.log('[ERS Webhook] Response Body:', JSON.stringify(getWebhooksResponse, null, 2));
+				console.log('[ERS Webhook] ===========================================');
+					
+				// Extract webhook ID from GET response by matching the URL
+				const webhooksData = getWebhooksResponse.data as Array<Record<string, unknown>> | undefined;
+				if (webhooksData && Array.isArray(webhooksData)) {
+					// Find the webhook we're looking for by matching the URL
+					const existingWebhook = webhooksData.find(wh => {
+						const whUrl = wh.url as string | undefined;
+						return whUrl && whUrl === webhookUrl;
+					});
+					
+					if (existingWebhook && existingWebhook.id) {
+						webhookId = existingWebhook.id as number | string;
+						webhookExists = true;
+						staticData.webhookId = webhookId;
+						console.log('[ERS Webhook] Found existing webhook with ID:', webhookId);
+					}
+				}
+
+				// Step 2: Create webhook only if it doesn't exist
+				if (!webhookExists) {
+					console.log('[ERS Webhook] Webhook does not exist. Creating new webhook...');
+					const webhookRequestUrl = `${BASE_URL}/rest/webhooks`;
+					console.log('[ERS Webhook] ========== WEBHOOK CREATION REQUEST ==========');
+					console.log('[ERS Webhook] Request URL:', webhookRequestUrl);
+					console.log('[ERS Webhook] Request Method: POST');
+					console.log('[ERS Webhook] Request Payload:', JSON.stringify(payload, null, 2));
+					console.log('[ERS Webhook] Request Headers:', {
+						'Content-Type': 'application/json',
+						Authorization: `Bearer ${accessToken.substring(0, 20)}...`
+					});
+					
+					const webhookResponse = await this.helpers.httpRequest({
+							method: 'POST',
+							url: webhookRequestUrl,
+							headers: {
+								'Content-Type': 'application/json',
+								Authorization: `Bearer ${accessToken}`,
+							},
+							body: payload,
+							json: true,
+						}) as Record<string, unknown>;
+
+					console.log('[ERS Webhook] ========== WEBHOOK CREATION RESPONSE ==========');
+					console.log('[ERS Webhook] Response Status: Success');
+					console.log('[ERS Webhook] Response Body:', JSON.stringify(webhookResponse, null, 2));
+					console.log('[ERS Webhook] ============================================');
+					
+					// Get the webhook ID from the GET response again (after creation)
+					// Re-fetch to get the newly created webhook
+					const getWebhooksResponseAfterCreate = await this.helpers.httpRequest({
+						method: 'GET',
+						url: getWebhooksUrl,
+						headers: {
+							Authorization: `Bearer ${accessToken}`,
+						},
+						json: true,
+					}) as Record<string, unknown>;
+
+					const webhooksDataAfterCreate = getWebhooksResponseAfterCreate.data as Array<Record<string, unknown>> | undefined;
+					if (webhooksDataAfterCreate && Array.isArray(webhooksDataAfterCreate)) {
+						const createdWebhook = webhooksDataAfterCreate.find(wh => {
+							const whUrl = wh.url as string | undefined;
+							return whUrl && whUrl === webhookUrl;
+						});
+						
+						if (createdWebhook && createdWebhook.id) {
+							webhookId = createdWebhook.id as number | string;
+							staticData.webhookId = webhookId;
+							console.log('[ERS Webhook] Created new webhook with ID:', webhookId);
+						} else {
+							throw new NodeApiError(this.getNode(), {
+								message: `Webhook created but could not find it in the list. Searched for URL: ${webhookUrl}`,
+							});
+						}
+					} else {
+						throw new NodeApiError(this.getNode(), {
+							message: 'Webhook created but failed to retrieve webhook list to get ID.',
+						});
+					}
+				} else {
+					console.log('[ERS Webhook] Using existing webhook. Skipping webhook creation.');
+				}
+
+				// Ensure we have a webhook ID at this point
+				if (!webhookId) {
+					console.error('[ERS Webhook] No webhook ID available. Cannot proceed with trigger update.');
+					throw new NodeApiError(this.getNode(), {
+						message: 'Failed to get webhook ID. Cannot proceed with trigger update.',
+					});
+				}
+					
+				console.log('[ERS Webhook] Proceeding to update triggers with webhook ID:', webhookId);
+				
+				// Step 3: Always update triggers whenever entities or events change
+				// This ensures triggers are updated even when webhook already exists
+
+				// Get selected entities and events
+				const entities = webhookConfig.entities || [];
+				const events = webhookConfig.events || [];
+				
+				console.log('[ERS Webhook] Selected entities:', entities);
+				console.log('[ERS Webhook] Selected events:', events);
+
+				if (entities.length === 0 || events.length === 0) {
+					console.warn('[ERS Webhook] No entities or events selected. Skipping trigger update.');
+					return true;
+				}
+
+				// Build triggers array - each entity gets only valid events for that entity
+				const triggers = entities.map(entity => {
+					const validEvents = getValidEventsForEntity(entity, events);
+					return {
+						entity,
+						events: validEvents,
+					};
+				}).filter(trigger => trigger.events.length > 0); // Remove triggers with no valid events
+
+				if (triggers.length === 0) {
+					console.warn('[ERS Webhook] No valid triggers after filtering. All selected events are invalid for the selected entities.');
+					return true;
+				}
+
+				const triggerPayload = {
+					status: true,
+					triggers: triggers,
+				};
+
+				// Step 3: POST request to /rest/webhooks/${id}/triggers to create/update triggers
+				// Using POST as it handles both creation and updates
+				const triggerRequestUrl = `${BASE_URL}/rest/webhooks/${webhookId}/triggers`;
+				console.log('[ERS Webhook] ========== TRIGGER UPDATE REQUEST ==========');
+				console.log('[ERS Webhook] Request URL:', triggerRequestUrl);
+				console.log('[ERS Webhook] Request Method: POST');
+				console.log('[ERS Webhook] Webhook ID:', webhookId);
+				console.log('[ERS Webhook] Request Payload:', JSON.stringify(triggerPayload, null, 2));
+				console.log('[ERS Webhook] Request Headers:', {
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${accessToken.substring(0, 20)}...`
+				});
+				
+				const triggerResponse = await this.helpers.httpRequest({
+					method: 'POST',
+					url: triggerRequestUrl,
+					headers: {
+						'Content-Type': 'application/json',
+						Authorization: `Bearer ${accessToken}`,
+					},
+					body: triggerPayload,
+					json: true,
+				});
+
+				console.log('[ERS Webhook] ========== TRIGGER UPDATE RESPONSE ==========');
+				console.log('[ERS Webhook] Response Status: Success');
+				console.log('[ERS Webhook] Response Body:', JSON.stringify(triggerResponse, null, 2));
+				console.log('[ERS Webhook] ==============================================');
+					// ERS will immediately try to validate the webhook URL
+					// The webhook handler will respond to the challenge
+					return true;
+				} catch (error) {
+					const errorMessage = error instanceof Error ? error.message : String(error);
+					console.error('[ERS Webhook] ========== ERROR OCCURRED ==========');
+					console.error('[ERS Webhook] Error Message:', errorMessage);
+					console.error('[ERS Webhook] Full Error:', error);
+					if (error && typeof error === 'object' && 'response' in error) {
+						const httpError = error as { response?: { status?: number; statusText?: string; data?: unknown } };
+						console.error('[ERS Webhook] HTTP Status:', httpError.response?.status);
+						console.error('[ERS Webhook] HTTP Status Text:', httpError.response?.statusText);
+						console.error('[ERS Webhook] Error Response Body:', JSON.stringify(httpError.response?.data, null, 2));
+					}
+					console.error('[ERS Webhook] ====================================');
+					throw new NodeApiError(this.getNode(), {
+						message: `Failed to register webhook or update triggers: ${errorMessage}`,
+					});
+				}
+			},
+			async delete(this: IHookFunctions): Promise<boolean> {
+				// This method is called by n8n when:
+				// - The node is manually deleted from the workflow UI
+				// - The workflow is deactivated
+				// We only want to delete the webhook when the node is actually removed, not when workflow is deactivated
+				console.log('[ERS Webhook] ========== DELETE METHOD CALLED ==========');
+				try {
+					// Get workflow and node info for logging
+					const workflow = this.getWorkflow();
+					const workflowActive = (workflow as { active?: boolean }).active;
+					const currentNode = this.getNode();
+					
+					console.log('[ERS Webhook] Workflow active state:', workflowActive);
+					console.log('[ERS Webhook] Current node name:', currentNode?.name || 'unknown');
+					console.log('[ERS Webhook] Current node ID:', currentNode?.id || 'unknown');
+					
+					// Try to determine if this is a workflow deactivation vs node deletion
+					// When workflow is deactivated, it's usually inactive
+					// When node is deleted, workflow is usually still active
+					// However, to be safe, we'll check if we can still access node parameters
+					// If we can't access parameters reliably, assume node deletion
+					let isWorkflowDeactivation = false;
+					if (workflowActive === false) {
+						// Workflow is inactive - likely a deactivation
+						// But verify by checking if we can still access the node
+						try {
+							// Try to access a node parameter - if this works, node still exists (deactivation)
+							// If this fails, node was deleted
+							this.getNodeParameter('webhook', {});
+							isWorkflowDeactivation = true;
+							console.log('[ERS Webhook] Workflow is inactive AND node parameters accessible. This is a workflow deactivation. Skipping webhook deletion.');
+						} catch {
+							// Can't access node parameters - node was likely deleted
+							isWorkflowDeactivation = false;
+							console.log('[ERS Webhook] Workflow is inactive but cannot access node parameters. Assuming node deletion. Proceeding with webhook deletion.');
+						}
+					}
+					
+					// If it's a workflow deactivation, skip deletion
+					if (isWorkflowDeactivation) {
+						return true;
+					}
+					
+					// Otherwise, proceed with deletion (node was manually deleted)
+					console.log('[ERS Webhook] Node deletion detected. Proceeding with webhook deletion.');
+					
+					// Get webhook ID from static data
+					const staticData = this.getWorkflowStaticData('node');
+					const webhookId = staticData.webhookId as number | string | undefined;
+
+					if (!webhookId) {
+						console.log('[ERS Webhook] No webhook ID found in static data. Webhook may have already been deleted or never created.');
+						return true;
+					}
+
+					// Get OAuth2 credentials
+					const credentials = await this.getCredentials('ersAppOAuth2Api');
+					
+					// OAuth2 tokens can be stored in different locations
+					// Check common locations for the access token
+					const creds = credentials as Record<string, unknown>;
+					const accessToken = 
+						(creds.access_token as string | undefined) || 
+						(creds.accessToken as string | undefined) || 
+						((creds.oauthTokenData as Record<string, unknown> | undefined)?.access_token as string | undefined) ||
+						((creds.data as Record<string, unknown> | undefined)?.access_token as string | undefined);
+
+					if (!accessToken) {
+						console.warn('[ERS Webhook] OAuth2 access token not found. Cannot delete webhook from server.');
+						// Clear the webhook ID from static data even if we can't delete it
+						delete staticData.webhookId;
+						return true;
+					}
+
+					// Delete webhook from ERS App API with force_delete_triggers parameter
+					const deleteWebhookUrl = `${BASE_URL}/rest/webhooks/${webhookId}?force_delete_logs=true&force_delete_triggers=true`;
+					console.log('[ERS Webhook] ========== WEBHOOK DELETION REQUEST ==========');
+					console.log('[ERS Webhook] Request URL:', deleteWebhookUrl);
+					console.log('[ERS Webhook] Request Method: DELETE');
+					console.log('[ERS Webhook] Webhook ID:', webhookId);
+					console.log('[ERS Webhook] Force Delete Triggers: true');
+					console.log('[ERS Webhook] Request Headers:', {
+						Authorization: `Bearer ${accessToken.substring(0, 20)}...` // Log partial token for security
+					});
+
+					await this.helpers.httpRequest({
+						method: 'DELETE',
+						url: deleteWebhookUrl,
+						headers: {
+							Authorization: `Bearer ${accessToken}`,
+						},
+						json: true,
+					});
+
+					console.log('[ERS Webhook] ========== WEBHOOK DELETION SUCCESS ==========');
+					console.log('[ERS Webhook] Webhook successfully deleted from ERS App API');
+					console.log('[ERS Webhook] ===============================================');
+
+					// Clear the webhook ID from static data
+					delete staticData.webhookId;
+
+					return true;
+				} catch (error) {
+					const errorMessage = error instanceof Error ? error.message : String(error);
+					console.error('[ERS Webhook] ========== WEBHOOK DELETION ERROR ==========');
+					console.error('[ERS Webhook] Error Message:', errorMessage);
+					console.error('[ERS Webhook] Full Error:', error);
+					
+					if (error && typeof error === 'object' && 'response' in error) {
+						const httpError = error as { response?: { status?: number; statusText?: string; data?: unknown } };
+						console.error('[ERS Webhook] HTTP Status:', httpError.response?.status);
+						console.error('[ERS Webhook] HTTP Status Text:', httpError.response?.statusText);
+						console.error('[ERS Webhook] Error Response Body:', JSON.stringify(httpError.response?.data, null, 2));
+						
+						// If webhook not found (404), it's already deleted, so we can consider it successful
+						if (httpError.response?.status === 404) {
+							console.log('[ERS Webhook] Webhook not found on server (404). It may have already been deleted.');
+							const staticData = this.getWorkflowStaticData('node');
+							delete staticData.webhookId;
+							return true;
+						}
+					}
+					
+					console.error('[ERS Webhook] ===========================================');
+					
+					// Even if deletion fails, clear the static data to avoid issues
+					const staticData = this.getWorkflowStaticData('node');
+					delete staticData.webhookId;
+					
+					// Log the error but don't throw - we don't want to prevent node deletion
+					// The webhook may have already been deleted or the API may be unavailable
+					console.warn('[ERS Webhook] Failed to delete webhook from server, but continuing with node deletion.');
+					return true;
+				}
+			},
+		},
 	};
 
 	async webhook(this: IWebhookFunctions): Promise<IWebhookResponseData> {
@@ -35,12 +580,17 @@ export class ErsAppTrigger implements INodeType {
 		const res = this.getResponseObject();
 
 		if (req.method === 'GET') {
-			// console.log('🔍 Verification request received:', req.query);
-			
+			// Handle GET challenge requests from ERS
 			// Some systems send ?challenge=<token>
+			Logger.info('[ERS Webhook] GET request received', { query: req.query });
+			console.log('[ERS Webhook] GET request received', { query: req.query });
 			if (req.query.challenge) {
+				Logger.info('[ERS Webhook] Challenge token received (GET)', { challenge: req.query.challenge });
+				console.log('[ERS Webhook] Challenge token received (GET)', { challenge: req.query.challenge });
 				res.status(200).json({ challenge: req.query.challenge });
 			} else {
+				Logger.info('[ERS Webhook] GET request without challenge token');
+				console.log('[ERS Webhook] GET request without challenge token');
 				res.status(200).send('OK');
 			}
 			
@@ -50,28 +600,33 @@ export class ErsAppTrigger implements INodeType {
 		// Handle POST requests
 		if (req.method === 'POST') {
 			const body = req.body || {};
-			const challengeField = this.getNodeParameter('challengeField', '') as string || 'challenge';
+			const challengeField = 'challenge';
 			
-			// Log request details for debugging
-			// console.log('POST Request received');
-			// console.log('Body:', JSON.stringify(body, null, 2));
+			Logger.info('[ERS Webhook] POST request received', { body });
+			console.log('[ERS Webhook] POST request received', { body });
 			
 			// Check if this is a challenge request by looking for the challenge field in the payload
 			const isChallenge = body && typeof body === 'object' && challengeField in body;
 			
 			if (isChallenge) {
-				// console.log('Challenge detected! Field:', challengeField, 'Value:', body[challengeField]);
-				// console.log('Echoing challenge payload back as response');
-				
+				const challengeValue = (body as Record<string, unknown>)[challengeField];
+				Logger.info('[ERS Webhook] Challenge token received (POST)', { 
+					challenge: challengeValue,
+					fullPayload: body 
+				});
+				console.log('[ERS Webhook] Challenge token received (POST)', { 
+					challenge: challengeValue,
+					fullPayload: body 
+				});
 				// Return the same payload as the HTTP response
 				// This is how the target application verifies the webhook URL
 				res.status(200).json(body);
 				return { noWebhookResponse: true };
 			}
 
-			// Regular POST webhook
-			// console.log('📩 Webhook received (not a challenge):', body);
-
+			Logger.info('[ERS Webhook] POST request is not a challenge - treating as regular webhook event', { body });
+			console.log('[ERS Webhook] POST request is not a challenge - treating as regular webhook event', { body });
+			// Regular POST webhook event from ERS
 			return {
 				workflowData: [this.helpers.returnJsonArray(body)],
 			};
