@@ -65,18 +65,28 @@ export const resourceDescription: INodeProperties[] = [
 					},
 				},
 			},
-			{
-				name: 'Get Many',
-				value: 'getAll',
-				action: 'Get many resources',
-				description: 'Retrieve a list of resources',
-				routing: {
-					request: {
-						method: 'GET',
-						url: `${BASE_URL}${API_BASE_PATH}/resources`,
-					},
+		{
+			name: 'Get Many',
+			value: 'getAll',
+			action: 'Get many resources',
+			description: 'Retrieve a list of resources',
+			routing: {
+				request: {
+					method: 'GET',
+					url: `${BASE_URL}${API_BASE_PATH}/resources`,
+				},
+				output: {
+					postReceive: [
+						{
+							type: 'rootProperty',
+							properties: {
+								property: 'data',
+							},
+						},
+					],
 				},
 			},
+		},
 		],
 		default: 'create',
 	},

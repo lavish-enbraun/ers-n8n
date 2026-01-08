@@ -65,18 +65,28 @@ export const requirementDescription: INodeProperties[] = [
 					},
 				},
 			},
-			{
-				name: 'Get Many',
-				value: 'getAll',
-				action: 'Get many requirements',
-				description: 'Retrieve a list of requirements',
-				routing: {
-					request: {
-						method: 'GET',
-						url: `${BASE_URL}${API_BASE_PATH}/requirements`,
-					},
+		{
+			name: 'Get Many',
+			value: 'getAll',
+			action: 'Get many requirements',
+			description: 'Retrieve a list of requirements',
+			routing: {
+				request: {
+					method: 'GET',
+					url: `${BASE_URL}${API_BASE_PATH}/requirements`,
+				},
+				output: {
+					postReceive: [
+						{
+							type: 'rootProperty',
+							properties: {
+								property: 'data',
+							},
+						},
+					],
 				},
 			},
+		},
 		],
 		default: 'create',
 	},

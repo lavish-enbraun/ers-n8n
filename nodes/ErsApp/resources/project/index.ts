@@ -65,18 +65,28 @@ export const projectDescription: INodeProperties[] = [
 					},
 				},
 			},
-			{
-				name: 'Get Many',
-				value: 'getAll',
-				action: 'Get many projects',
-				description: 'Retrieve a list of many projects',
-				routing: {
-					request: {
-						method: 'GET',
-						url: `${BASE_URL}${API_BASE_PATH}/projects`,
-					},
+		{
+			name: 'Get Many',
+			value: 'getAll',
+			action: 'Get many projects',
+			description: 'Retrieve a list of many projects',
+			routing: {
+				request: {
+					method: 'GET',
+					url: `${BASE_URL}${API_BASE_PATH}/projects`,
+				},
+				output: {
+					postReceive: [
+						{
+							type: 'rootProperty',
+							properties: {
+								property: 'data',
+							},
+						},
+					],
 				},
 			},
+		},
 		],
 		default: 'create',
 	},

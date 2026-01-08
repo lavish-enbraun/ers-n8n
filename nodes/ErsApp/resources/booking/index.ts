@@ -65,18 +65,28 @@ export const bookingDescription: INodeProperties[] = [
 					},
 				},
 			},
-			{
-				name: 'Get Many',
-				value: 'getAll',
-				action: 'Get bookings',
-				description: 'Retrieve a list of many bookings',
-				routing: {
-					request: {
-						method: 'GET',
-						url: `${BASE_URL}${API_BASE_PATH}/bookings`,
-					},
+		{
+			name: 'Get Many',
+			value: 'getAll',
+			action: 'Get bookings',
+			description: 'Retrieve a list of many bookings',
+			routing: {
+				request: {
+					method: 'GET',
+					url: `${BASE_URL}${API_BASE_PATH}/bookings`,
+				},
+				output: {
+					postReceive: [
+						{
+							type: 'rootProperty',
+							properties: {
+								property: 'data',
+							},
+						},
+					],
 				},
 			},
+		},
 		],
 		default: 'create',
 	},
