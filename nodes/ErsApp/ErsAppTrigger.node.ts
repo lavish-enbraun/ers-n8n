@@ -185,9 +185,16 @@ export class ErsAppTrigger implements INodeType {
 	webhookMethods = {
 		default: {
 			async checkExists(this: IHookFunctions): Promise<boolean> {
-				// Always return false to ensure create() method is always called
-				// This allows triggers to be updated whenever entities/events change
-				// The create() method already handles checking for existing webhooks
+				// Check if webhook already exists in static data
+				const staticData = this.getWorkflowStaticData('node');
+				const webhookId = staticData.webhookId as number | string | undefined;
+				
+				if (webhookId) {
+					console.log('[ERS Webhook] Webhook already registered with ID:', webhookId);
+					return true;
+				}
+				
+				// No webhook ID in static data, need to create one
 				return false;
 			},
 			async create(this: IHookFunctions): Promise<boolean> {
