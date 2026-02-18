@@ -1,0 +1,77 @@
+import type { INodeProperties } from 'n8n-workflow';
+
+const showOnlyForRatesCreate = {
+	operation: ['create'],
+	resource: ['rates'],
+};
+
+export const ratesCreateDescription: INodeProperties[] = [
+	{
+		displayName: 'Entity Type',
+		name: 'entity_type',
+		type: 'options',
+		required: true,
+		displayOptions: {
+			show: showOnlyForRatesCreate,
+		},
+		options: [
+			{
+				name: 'Resource',
+				value: 'resources',
+			},
+			{
+				name: 'Project',
+				value: 'projects',
+			},
+			{
+				name: 'Roles',
+				value: 'roles',
+			},
+		],
+		default: 'resources',
+		description: 'Select the entity type for which to create a rate',
+	},
+	{
+		displayName: 'Entity ID',
+		name: 'entity_id',
+		type: 'string',
+		required: true,
+		displayOptions: {
+			show: showOnlyForRatesCreate,
+		},
+		default: '',
+		description: 'ID of the resource, project, or role',
+	},
+	{
+		displayName: 'Cost Rate (in $)',
+		name: 'cost_rate',
+		type: 'number',
+		displayOptions: {
+			show: showOnlyForRatesCreate,
+		},
+		default: 0,
+		description: 'Cost rate in dollars',
+	},
+	{
+		displayName: 'Billing Rate (in $)',
+		name: 'billing_rate',
+		type: 'number',
+		displayOptions: {
+			show: showOnlyForRatesCreate,
+		},
+		default: 0,
+		description: 'Billing rate in dollars',
+	},
+	{
+		displayName: 'Effective Date',
+		name: 'effective_date',
+		type: 'dateTime',
+		required: true,
+		displayOptions: {
+			show: showOnlyForRatesCreate,
+		},
+		default: '',
+		description: 'Effective date for the rate',
+	},
+];
+

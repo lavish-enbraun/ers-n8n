@@ -1,46 +1,35 @@
 import type { INodeProperties } from 'n8n-workflow';
 
-const showOnlyForResourceCreate = {
+const showOnlyForProjectCreate = {
 	operation: ['create'],
-	resource: ['resource'],
+	resource: ['project'],
 };
 
-export const resourceCreateDescription: INodeProperties[] = [
+export const projectCreateDescription: INodeProperties[] = [
 	{
-		displayName: 'Resource Type Name or ID',
-		name: 'resource_type_id',
+		displayName: 'Project Type Name or ID',
+		name: 'project_type_id',
 		type: 'options',
 		required: true,
 		displayOptions: {
-			show: showOnlyForResourceCreate,
+			show: showOnlyForProjectCreate,
 		},
 		typeOptions: {
-			loadOptionsMethod: 'getResourceTypes',
+			loadOptionsMethod: 'getProjectTypes',
 		},
 		default: '',
 		description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
 	},
 	{
-		displayName: 'Resource Name',
-		name: 'first_name',
+		displayName: 'Title',
+		name: 'title',
 		type: 'string',
 		required: true,
 		displayOptions: {
-			show: showOnlyForResourceCreate,
+			show: showOnlyForProjectCreate,
 		},
 		default: '',
-		description: 'First name of the resource',
-	},
-	{
-		displayName: 'Start Date',
-		name: 'start_date',
-		type: 'dateTime',
-		required: true,
-		displayOptions: {
-			show: showOnlyForResourceCreate,
-		},
-		default: '',
-		description: 'Start date of the resource',
+		description: 'Title of the project',
 	},
 	{
 		displayName: 'Mandatory Fields',
@@ -49,11 +38,11 @@ export const resourceCreateDescription: INodeProperties[] = [
 		placeholder: 'Add Mandatory Field',
 		displayOptions: {
 			show: {
-				...showOnlyForResourceCreate,
-				resource_type_id: [
+				...showOnlyForProjectCreate,
+				project_type_id: [
 					{
 						_cnd: {
-							regex: '.+', // Show when resource_type_id has any value
+							regex: '.+', // Show when project_type_id has any value
 						},
 					},
 				],
@@ -63,7 +52,7 @@ export const resourceCreateDescription: INodeProperties[] = [
 		typeOptions: {
 			multipleValues: true,
 		},
-		description: 'Mandatory user-defined fields from eResource Scheduler. Fields are fetched dynamically based on the selected Resource Type. After selecting a field, fill ONLY the appropriate value field that matches the field type (Text for TEXT/EMAIL/ENAME, Number for NUMBER/INTEGER, Date for DATE, Boolean for BOOLEAN/CHECKBOX, Select for dropdowns with options, Multi-Select for multi-select dropdowns).',
+		description: 'Mandatory user-defined fields from eResource Scheduler. Fields are fetched dynamically based on the selected Project Type. After selecting a field, fill ONLY the appropriate value field that matches the field type (Text for TEXT/EMAIL/ENAME, Number for NUMBER/INTEGER, Date for DATE, Boolean for BOOLEAN/CHECKBOX, Select for dropdowns with options, Multi-Select for multi-select dropdowns).',
 		options: [
 			{
 				displayName: 'Field',
@@ -74,7 +63,7 @@ export const resourceCreateDescription: INodeProperties[] = [
 						name: 'fieldName',
 						type: 'options',
 						typeOptions: {
-							loadOptionsMethod: 'getResourceUDFFieldsMandatory',
+							loadOptionsMethod: 'getProjectUDFFieldsMandatory',
 						},
 						default: '',
 						description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
@@ -127,7 +116,7 @@ export const resourceCreateDescription: INodeProperties[] = [
 						type: 'options',
 						noDataExpression: true,
 						typeOptions: {
-							loadOptionsMethod: 'getResourceUDFFieldOptions',
+							loadOptionsMethod: 'getProjectUDFFieldOptions',
 							multipleValues: true,
 						},
 						default: [],
@@ -188,7 +177,7 @@ export const resourceCreateDescription: INodeProperties[] = [
 						type: 'options',
 						noDataExpression: true,
 						typeOptions: {
-							loadOptionsMethod: 'getResourceUDFFieldOptions',
+							loadOptionsMethod: 'getProjectUDFFieldOptions',
 						},
 						default: '',
 						displayOptions: {
@@ -277,11 +266,11 @@ export const resourceCreateDescription: INodeProperties[] = [
 		placeholder: 'Add Other Field',
 		displayOptions: {
 			show: {
-				...showOnlyForResourceCreate,
-				resource_type_id: [
+				...showOnlyForProjectCreate,
+				project_type_id: [
 					{
 						_cnd: {
-							regex: '.+', // Show when resource_type_id has any value
+							regex: '.+', // Show when project_type_id has any value
 						},
 					},
 				],
@@ -291,7 +280,7 @@ export const resourceCreateDescription: INodeProperties[] = [
 		typeOptions: {
 			multipleValues: true,
 		},
-		description: 'Other user-defined fields from eResource Scheduler. Fields are fetched dynamically based on the selected Resource Type. After selecting a field, fill ONLY the appropriate value field that matches the field type (Text for TEXT/EMAIL/ENAME, Number for NUMBER/INTEGER, Date for DATE, Boolean for BOOLEAN/CHECKBOX, Select for dropdowns with options, Multi-Select for multi-select dropdowns).',
+		description: 'Other user-defined fields from eResource Scheduler. Fields are fetched dynamically based on the selected Project Type. After selecting a field, fill ONLY the appropriate value field that matches the field type (Text for TEXT/EMAIL/ENAME, Number for NUMBER/INTEGER, Date for DATE, Boolean for BOOLEAN/CHECKBOX, Select for dropdowns with options, Multi-Select for multi-select dropdowns).',
 		options: [
 			{
 				displayName: 'Field',
@@ -302,7 +291,7 @@ export const resourceCreateDescription: INodeProperties[] = [
 						name: 'fieldName',
 						type: 'options',
 						typeOptions: {
-							loadOptionsMethod: 'getResourceUDFFieldsOther',
+							loadOptionsMethod: 'getProjectUDFFieldsOther',
 						},
 						default: '',
 						description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
@@ -355,7 +344,7 @@ export const resourceCreateDescription: INodeProperties[] = [
 						type: 'options',
 						noDataExpression: true,
 						typeOptions: {
-							loadOptionsMethod: 'getResourceUDFFieldOptions',
+							loadOptionsMethod: 'getProjectUDFFieldOptions',
 							multipleValues: true,
 						},
 						default: [],
@@ -416,7 +405,7 @@ export const resourceCreateDescription: INodeProperties[] = [
 						type: 'options',
 						noDataExpression: true,
 						typeOptions: {
-							loadOptionsMethod: 'getResourceUDFFieldOptions',
+							loadOptionsMethod: 'getProjectUDFFieldOptions',
 						},
 						default: '',
 						displayOptions: {
