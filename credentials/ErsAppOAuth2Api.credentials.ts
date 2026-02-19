@@ -46,6 +46,12 @@ export class ErsAppOAuth2Api implements ICredentialType {
             default: 'authorizationCode',
         },
         {
+            displayName: 'Auth URI Query Parameters',
+            name: 'authQueryParameters',
+            type: 'hidden',
+            default: 'response_type=code',
+        },
+        {
             displayName: 'Authorization URL',
             name: 'authUrl',
             type: 'hidden',
