@@ -30,6 +30,7 @@ export const ratesDescription: INodeProperties[] = [
 						headers: {
 							'Content-Type': 'application/json',
 							Accept: 'application/json',
+							Authorization: '={{ $parameter.authentication === "accessToken" && $credentials.accessToken ? "Bearer " + $credentials.accessToken : undefined }}',
 						},
 						body: '={{ { ...($parameter.cost_rate !== undefined && $parameter.cost_rate !== null ? { cost_rate: $parameter.cost_rate } : {}), ...($parameter.billing_rate !== undefined && $parameter.billing_rate !== null ? { billing_rate: $parameter.billing_rate } : {}), effective_date: new Date($parameter.effective_date).toISOString().split("T")[0] } }}',
 					},
@@ -47,6 +48,7 @@ export const ratesDescription: INodeProperties[] = [
 						headers: {
 							'Content-Type': 'application/json',
 							Accept: 'application/json',
+							Authorization: '={{ $parameter.authentication === "accessToken" && $credentials.accessToken ? "Bearer " + $credentials.accessToken : undefined }}',
 						},
 						body: '={{ { ...($parameter.cost_rate !== undefined && $parameter.cost_rate !== null ? { cost_rate: $parameter.cost_rate } : {}), ...($parameter.billing_rate !== undefined && $parameter.billing_rate !== null ? { billing_rate: $parameter.billing_rate } : {}), effective_date: new Date($parameter.effective_date).toISOString().split("T")[0], replace_existing_rate: true } }}',
 					},
@@ -61,6 +63,9 @@ export const ratesDescription: INodeProperties[] = [
 					request: {
 						method: 'DELETE',
 						url: `={{ "${BASE_URL}${API_BASE_PATH}/" + $parameter.entity_type + "/" + $parameter.entity_id + "/rates/" + $parameter.rate_id }}`,
+						headers: {
+							Authorization: '={{ $parameter.authentication === "accessToken" && $credentials.accessToken ? "Bearer " + $credentials.accessToken : undefined }}',
+						},
 					},
 				},
 			},

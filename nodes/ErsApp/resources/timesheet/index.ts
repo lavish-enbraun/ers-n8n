@@ -30,6 +30,7 @@ export const timesheetDescription: INodeProperties[] = [
 						headers: {
 							'Content-Type': 'application/json',
 							Accept: 'application/json',
+							Authorization: '={{ $parameter.authentication === "accessToken" && $credentials.accessToken ? "Bearer " + $credentials.accessToken : undefined }}',
 						},
 						body: '={{ { resource_id: $parameter.resource_id, project_id: $parameter.project_id, date: new Date($parameter.date).toISOString().split("T")[0], ...($parameter.hours !== undefined && $parameter.hours !== null ? { hours: $parameter.hours } : {}), ...($parameter.comment ? { comment: $parameter.comment } : {}) } }}',
 					},
@@ -47,6 +48,7 @@ export const timesheetDescription: INodeProperties[] = [
 						headers: {
 							'Content-Type': 'application/json',
 							Accept: 'application/json',
+							Authorization: '={{ $parameter.authentication === "accessToken" && $credentials.accessToken ? "Bearer " + $credentials.accessToken : undefined }}',
 						},
 						body: '={{ { ...($parameter.resource_id !== undefined && $parameter.resource_id !== null ? { resource_id: $parameter.resource_id } : {}), ...($parameter.project_id !== undefined && $parameter.project_id !== null ? { project_id: $parameter.project_id } : {}), ...($parameter.date ? { date: new Date($parameter.date).toISOString().split("T")[0] } : {}), ...($parameter.hours !== undefined && $parameter.hours !== null ? { hours: $parameter.hours } : {}), ...($parameter.comment ? { comment: $parameter.comment } : {}) } }}',
 					},
@@ -61,6 +63,9 @@ export const timesheetDescription: INodeProperties[] = [
 					request: {
 						method: 'DELETE',
 						url: `={{ "${BASE_URL}${API_BASE_PATH}/timesheet/" + $parameter.timesheet_id }}`,
+						headers: {
+							Authorization: '={{ $parameter.authentication === "accessToken" && $credentials.accessToken ? "Bearer " + $credentials.accessToken : undefined }}',
+						},
 					},
 				},
 			},
