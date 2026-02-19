@@ -74,7 +74,26 @@ export class ErsAppTrigger implements INodeType {
 		usableAsTool: true,
 		inputs: [],
 		outputs: ['main'],
-		credentials: [{ name: 'ersAppOAuth2Api', required: true }],
+		credentials: [
+			{
+				name: 'ersAppOAuth2Api',
+				required: true,
+				displayOptions: {
+					show: {
+						authentication: ['oAuth2'],
+					},
+				},
+			},
+			{
+				name: 'ersAppAccessTokenApi',
+				required: true,
+				displayOptions: {
+					show: {
+						authentication: ['accessToken'],
+					},
+				},
+			},
+		],
 		webhooks: [
 			{
 				name: 'default',
@@ -84,6 +103,23 @@ export class ErsAppTrigger implements INodeType {
 			},
 		],
 		properties: [
+			{
+				displayName: 'Authentication',
+				name: 'authentication',
+				type: 'options',
+				options: [
+					{
+						// eslint-disable-next-line n8n-nodes-base/node-param-display-name-miscased
+						name: 'OAuth2 (recommended)',
+						value: 'oAuth2',
+					},
+					{
+						name: 'Access Token',
+						value: 'accessToken',
+					},
+				],
+				default: 'oAuth2',
+			},
 			{
 				displayName: 'ERS Webhook',
 				name: 'webhook',

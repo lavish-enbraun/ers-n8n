@@ -31,7 +31,8 @@
     "n8nNodesApiVersion": 2,
     "strict": true,
     "credentials": [
-      "dist/credentials/ErsAppOAuth2Api.credentials.js"
+      "dist/credentials/ErsAppOAuth2Api.credentials.js",
+      "dist/credentials/ErsAppAccessTokenApi.credentials.js"
     ],
     "nodes": [
       "dist/nodes/ErsApp/ErsApp.node.js",
@@ -48,6 +49,6 @@
     "typescript": "5.9.2"
   },
   "peerDependencies": {
-    "n8n-workflow": "*"
+    "n8n-workflow": "^2.7.4"
   }
 }
