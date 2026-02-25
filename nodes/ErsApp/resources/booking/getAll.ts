@@ -17,8 +17,8 @@ export const bookingGetAllDescription: INodeProperties[] = [
 			minValue: 1,
 			maxValue: 5000,
 		},
-		default: 500,
-		description: 'The limit keyword is used to limit the number of records returned from a result set. Default value is 500. Maximum value is 5000.',
+		default: 50,
+		description: 'Max number of results to return',
 		routing: {
 			send: {
 				type: 'query',

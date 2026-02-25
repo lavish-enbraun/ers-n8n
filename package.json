@@ -32,7 +32,7 @@
     "strict": true,
     "credentials": [
       "dist/credentials/ErsAppOAuth2Api.credentials.js",
-      "dist/credentials/ErsAppOAuth2V2Api.credentials.js",
+      "dist/credentials/ErsAppOAuth2V2OAuth2Api.credentials.js",
       "dist/credentials/ErsAppAccessTokenApi.credentials.js"
     ],
     "nodes": [

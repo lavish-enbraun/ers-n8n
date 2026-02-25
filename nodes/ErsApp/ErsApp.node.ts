@@ -1,17 +1,46 @@
-import { 
-	NodeConnectionTypes, 
-	type INodeType, 
+import {
+	NodeConnectionTypes,
+	type INodeType,
 	type INodeTypeDescription,
 	type ILoadOptionsFunctions,
-	type INodePropertyOptions 
+	type INodePropertyOptions,
 } from 'n8n-workflow';
-import { BASE_URL} from './constants';
+import { BASE_URL } from './constants';
 import { resourceDescription } from './resources/resource';
 import { projectDescription } from './resources/project';
 import { bookingDescription } from './resources/booking';
 import { requirementDescription } from './resources/requirement';
 import { ratesDescription } from './resources/rates';
 import { timesheetDescription } from './resources/timesheet';
+
+interface AccessTokenErrorShape {
+	message?: string;
+	messages?: Array<string | { message?: string }>;
+}
+
+function isAccessTokenError(error: unknown): error is AccessTokenErrorShape {
+	const err = error as AccessTokenErrorShape;
+
+	if (typeof err.message === 'string' && err.message.includes('access token')) {
+		return true;
+	}
+
+	if (Array.isArray(err.messages)) {
+		return err.messages.some((msg) => {
+			if (typeof msg === 'string') {
+				return msg.includes('access token');
+			}
+
+			if (msg && typeof msg === 'object' && 'message' in msg && typeof msg.message === 'string') {
+				return msg.message.includes('access token');
+			}
+
+			return false;
+		});
+	}
+
+	return false;
+}
 
 export class ErsApp implements INodeType {
 	description: INodeTypeDescription = {
@@ -39,7 +68,7 @@ export class ErsApp implements INodeType {
 				},
 			},
 			{
-				name: 'ersAppOAuth2V2Api',
+				name: 'ersAppOAuth2V2OAuth2Api',
 				required: true,
 				displayOptions: {
 					show: {
@@ -69,7 +98,7 @@ export class ErsApp implements INodeType {
 						value: 'oAuth2',
 					},
 					{
-						name: 'OAuth2 (configurable)',
+						name: 'OAuth2 (Configurable)',
 						value: 'oAuth2V2',
 					},
 					{
@@ -94,7 +123,7 @@ export class ErsApp implements INodeType {
 						value: 'project',
 					},
 					{
-						name: 'Rates',
+						name: 'Rate',
 						value: 'rates',
 					},
 					{
@@ -131,7 +160,7 @@ export class ErsApp implements INodeType {
 						auth === 'accessToken'
 							? 'ersAppAccessTokenApi'
 							: auth === 'oAuth2V2'
-								? 'ersAppOAuth2V2Api'
+								? 'ersAppOAuth2V2OAuth2Api'
 								: 'ersAppOAuth2Api';
 					const response = await this.helpers.httpRequestWithAuthentication.call(
 						this,
@@ -191,12 +220,10 @@ export class ErsApp implements INodeType {
 					);
 
 					return typesWithDetails;
-				} catch (error: any) {
-					// Silently handle missing access token errors (expected when credentials aren't authenticated yet)
-					if (error?.message?.includes('access token') || error?.messages?.some((msg: string) => msg.includes('access token'))) {
+				} catch (error: unknown) {
+					if (isAccessTokenError(error)) {
 						return [];
 					}
-					// Log other unexpected errors
 					console.error('Error fetching resource types:', error);
 					return [];
 				}
@@ -213,7 +240,7 @@ export class ErsApp implements INodeType {
 						parameters.authentication === 'accessToken'
 							? 'ersAppAccessTokenApi'
 							: parameters.authentication === 'oAuth2V2'
-								? 'ersAppOAuth2V2Api'
+								? 'ersAppOAuth2V2OAuth2Api'
 								: 'ersAppOAuth2Api';
 
 					// Debug: Log the parameter value to help diagnose issues
@@ -232,7 +259,7 @@ export class ErsApp implements INodeType {
 							if (parsed && typeof parsed === 'object' && 'id' in parsed) {
 								resourceTypeId = parsed.id;
 							}
-						} catch (e) {
+						} catch {
 							// Not a JSON string, use as-is
 						}
 					}
@@ -286,9 +313,8 @@ export class ErsApp implements INodeType {
 								},
 							},
 						) as ResourceTypeResponse;
-					} catch (error: any) {
-						// Silently handle missing access token errors (expected when credentials aren't authenticated yet)
-						if (error?.message?.includes('access token') || error?.messages?.some((msg: string) => msg.includes('access token'))) {
+					} catch (error: unknown) {
+						if (isAccessTokenError(error)) {
 							return [];
 						}
 						console.error('Error fetching resource type fields:', error);
@@ -385,7 +411,7 @@ export class ErsApp implements INodeType {
 						parameters.authentication === 'accessToken'
 							? 'ersAppAccessTokenApi'
 							: parameters.authentication === 'oAuth2V2'
-								? 'ersAppOAuth2V2Api'
+								? 'ersAppOAuth2V2OAuth2Api'
 								: 'ersAppOAuth2Api';
 
 					if (resourceTypeId === '' || resourceTypeId === null || resourceTypeId === undefined) {
@@ -398,7 +424,7 @@ export class ErsApp implements INodeType {
 							if (parsed && typeof parsed === 'object' && 'id' in parsed) {
 								resourceTypeId = parsed.id;
 							}
-						} catch (e) {
+						} catch {
 							// Not a JSON string, use as-is
 						}
 					}
@@ -450,8 +476,8 @@ export class ErsApp implements INodeType {
 								},
 							},
 						) as ResourceTypeResponse;
-					} catch (error: any) {
-						if (error?.message?.includes('access token') || error?.messages?.some((msg: string) => msg.includes('access token'))) {
+					} catch (error: unknown) {
+						if (isAccessTokenError(error)) {
 							return [];
 						}
 						console.error('Error fetching resource type fields:', error);
@@ -535,7 +561,7 @@ export class ErsApp implements INodeType {
 						parameters.authentication === 'accessToken'
 							? 'ersAppAccessTokenApi'
 							: parameters.authentication === 'oAuth2V2'
-								? 'ersAppOAuth2V2Api'
+								? 'ersAppOAuth2V2OAuth2Api'
 								: 'ersAppOAuth2Api';
 
 					if (resourceTypeId === '' || resourceTypeId === null || resourceTypeId === undefined) {
@@ -548,7 +574,7 @@ export class ErsApp implements INodeType {
 							if (parsed && typeof parsed === 'object' && 'id' in parsed) {
 								resourceTypeId = parsed.id;
 							}
-						} catch (e) {
+						} catch {
 							// Not a JSON string, use as-is
 						}
 					}
@@ -600,8 +626,8 @@ export class ErsApp implements INodeType {
 								},
 							},
 						) as ResourceTypeResponse;
-					} catch (error: any) {
-						if (error?.message?.includes('access token') || error?.messages?.some((msg: string) => msg.includes('access token'))) {
+					} catch (error: unknown) {
+						if (isAccessTokenError(error)) {
 							return [];
 						}
 						console.error('Error fetching resource type fields:', error);
@@ -680,7 +706,7 @@ export class ErsApp implements INodeType {
 						auth === 'accessToken'
 							? 'ersAppAccessTokenApi'
 							: auth === 'oAuth2V2'
-								? 'ersAppOAuth2V2Api'
+								? 'ersAppOAuth2V2OAuth2Api'
 								: 'ersAppOAuth2Api';
 					const response = await this.helpers.httpRequestWithAuthentication.call(
 						this,
@@ -705,12 +731,10 @@ export class ErsApp implements INodeType {
 							value: type.id,
 							description: type.description || undefined,
 						}));
-				} catch (error: any) {
-					// Silently handle missing access token errors (expected when credentials aren't authenticated yet)
-					if (error?.message?.includes('access token') || error?.messages?.some((msg: string) => msg.includes('access token'))) {
+				} catch (error: unknown) {
+					if (isAccessTokenError(error)) {
 						return [];
 					}
-					// Log other unexpected errors
 					console.error('Error fetching project types:', error);
 					return [];
 				}
@@ -727,7 +751,7 @@ export class ErsApp implements INodeType {
 						parameters.authentication === 'accessToken'
 							? 'ersAppAccessTokenApi'
 							: parameters.authentication === 'oAuth2V2'
-								? 'ersAppOAuth2V2Api'
+								? 'ersAppOAuth2V2OAuth2Api'
 								: 'ersAppOAuth2Api';
 
 					// Debug: Log the parameter value to help diagnose issues
@@ -774,9 +798,8 @@ export class ErsApp implements INodeType {
 						if (availableFieldCodes.length === 0) {
 							console.warn(`No field codes found for project type ${projectTypeId}. Response structure:`, JSON.stringify(projectTypeResponse, null, 2));
 						}
-					} catch (error: any) {
-						// Silently handle missing access token errors (expected when credentials aren't authenticated yet)
-						if (error?.message?.includes('access token') || error?.messages?.some((msg: string) => msg.includes('access token'))) {
+					} catch (error: unknown) {
+						if (isAccessTokenError(error)) {
 							return [];
 						}
 						console.error('Error fetching project type fields:', error);
@@ -885,9 +908,8 @@ export class ErsApp implements INodeType {
 						});
 
 					return fields;
-				} catch (error: any) {
-					// Silently handle missing access token errors (expected when credentials aren't authenticated yet)
-					if (error?.message?.includes('access token') || error?.messages?.some((msg: string) => msg.includes('access token'))) {
+				} catch (error: unknown) {
+					if (isAccessTokenError(error)) {
 						return [];
 					}
 					console.error('Error fetching UDF fields:', error);
@@ -905,7 +927,7 @@ export class ErsApp implements INodeType {
 						parameters.authentication === 'accessToken'
 							? 'ersAppAccessTokenApi'
 							: parameters.authentication === 'oAuth2V2'
-								? 'ersAppOAuth2V2Api'
+								? 'ersAppOAuth2V2OAuth2Api'
 								: 'ersAppOAuth2Api';
 
 					if (projectTypeId === '' || projectTypeId === null || projectTypeId === undefined) {
@@ -940,8 +962,8 @@ export class ErsApp implements INodeType {
 								}
 							});
 						}
-					} catch (error: any) {
-						if (error?.message?.includes('access token') || error?.messages?.some((msg: string) => msg.includes('access token'))) {
+					} catch (error: unknown) {
+						if (isAccessTokenError(error)) {
 							return [];
 						}
 						console.error('Error fetching project type fields:', error);
@@ -1082,8 +1104,8 @@ export class ErsApp implements INodeType {
 								}
 							});
 						}
-					} catch (error: any) {
-						if (error?.message?.includes('access token') || error?.messages?.some((msg: string) => msg.includes('access token'))) {
+					} catch (error: unknown) {
+						if (isAccessTokenError(error)) {
 							return [];
 						}
 						console.error('Error fetching project type fields:', error);

@@ -61,7 +61,7 @@ function getValidEventsForEntity(entity: number, events: number[]): number[] {
  */
 function replaceWebhookUrlForDocker(webhookUrl: string): string {
 	// Extract protocol and path from the original URL
-	const urlMatch = webhookUrl.match(/^(https?:\/\/)([^\/]+)(.*)$/);
+	const urlMatch = webhookUrl.match(/^(https?:\/\/)([^/]+)(.*)$/);
 	if (!urlMatch) {
 		return webhookUrl;
 	}
@@ -80,7 +80,7 @@ export class ErsAppTrigger implements INodeType {
 		version: 1,
 		description: 'Triggers the workflow when ERS sends a webhook event',
 		defaults: {
-			name: 'ERS Webhook Trigger',
+			name: 'ERS Trigger',
 		},
 		usableAsTool: true,
 		inputs: [],
@@ -96,7 +96,7 @@ export class ErsAppTrigger implements INodeType {
 				},
 			},
 			{
-				name: 'ersAppOAuth2V2Api',
+				name: 'ersAppOAuth2V2OAuth2Api',
 				required: true,
 				displayOptions: {
 					show: {
@@ -134,7 +134,7 @@ export class ErsAppTrigger implements INodeType {
 						value: 'oAuth2',
 					},
 					{
-						name: 'OAuth2 (configurable)',
+						name: 'OAuth2 (Configurable)',
 						value: 'oAuth2V2',
 					},
 					{
@@ -260,7 +260,7 @@ export class ErsAppTrigger implements INodeType {
 						auth === 'accessToken'
 							? 'ersAppAccessTokenApi'
 							: auth === 'oAuth2V2'
-								? 'ersAppOAuth2V2Api'
+								? 'ersAppOAuth2V2OAuth2Api'
 								: 'ersAppOAuth2Api';
 
 					// Get credentials - n8n stores tokens in the credentials object
@@ -484,7 +484,7 @@ export class ErsAppTrigger implements INodeType {
 						auth === 'accessToken'
 							? 'ersAppAccessTokenApi'
 							: auth === 'oAuth2V2'
-								? 'ersAppOAuth2V2Api'
+								? 'ersAppOAuth2V2OAuth2Api'
 								: 'ersAppOAuth2Api';
 
 					// Get credentials

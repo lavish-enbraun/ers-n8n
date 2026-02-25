@@ -1,12 +1,12 @@
-import type { 
-	ICredentialType, 
-	INodeProperties, 
+import type {
+	ICredentialType,
+	INodeProperties,
 	IconFile,
 } from 'n8n-workflow';
 import { BASE_URL, OAUTH_REDIRECT_URL } from '../nodes/ErsApp/constants';
 
-export class ErsAppOAuth2V2Api implements ICredentialType {
-	name = 'ersAppOAuth2V2Api';
+export class ErsAppOAuth2V2OAuth2Api implements ICredentialType {
+	name = 'ersAppOAuth2V2OAuth2Api';
 
 	extends = ['oAuth2Api'];
 

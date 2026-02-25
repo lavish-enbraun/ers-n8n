@@ -131,7 +131,7 @@ export const resourceUpdateDescription: INodeProperties[] = [
 							loadOptionsMethod: 'getResourceUDFFieldOptions',
 							multipleValues: true,
 						},
-						default: [],
+						default: '',
 						displayOptions: {
 							show: {
 								fieldName: [
@@ -153,7 +153,7 @@ export const resourceUpdateDescription: INodeProperties[] = [
 								],
 							},
 						},
-						description: 'Select multiple options from the dropdown. Selected values will be sent as an array of IDs. Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
+						description: 'Select multiple options from the dropdown. Selected values will be sent as an array of IDs. Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
 					},
 					{
 						displayName: 'Field Value (Number)',
