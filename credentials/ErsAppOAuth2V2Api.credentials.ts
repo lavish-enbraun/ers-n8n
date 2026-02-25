@@ -3,15 +3,15 @@ import type {
 	INodeProperties, 
 	IconFile,
 } from 'n8n-workflow';
-import { BASE_URL, CLIENT_ID, CLIENT_SECRET, OAUTH_REDIRECT_URL } from '../nodes/ErsApp/constants';
+import { BASE_URL, OAUTH_REDIRECT_URL } from '../nodes/ErsApp/constants';
 
-export class ErsAppOAuth2Api implements ICredentialType {
-	name = 'ersAppOAuth2Api';
+export class ErsAppOAuth2V2Api implements ICredentialType {
+	name = 'ersAppOAuth2V2Api';
 
 	extends = ['oAuth2Api'];
 
 	// eslint-disable-next-line n8n-nodes-base/cred-class-field-display-name-missing-api, n8n-nodes-base/cred-class-field-display-name-missing-oauth2
-	displayName = 'Sign in with eResource Scheduler';
+	displayName = 'Sign in with eResource Scheduler (Configurable)';
 
 	icon: { light: IconFile; dark: IconFile } = {
 		light: 'file:../nodes/ErsApp/ersApp.svg',
@@ -25,24 +25,31 @@ export class ErsAppOAuth2Api implements ICredentialType {
 		{
 			displayName: 'Client ID',
 			name: 'clientId',
-			type: 'hidden',
-			default: CLIENT_ID,
+			type: 'string',
+			default: '',
+			required: true,
 		},
 		{
 			displayName: 'Client Secret',
 			name: 'clientSecret',
-			type: 'hidden',
+			type: 'string',
 			typeOptions: {
 				password: true,
 			},
+			default: '',
 			required: true,
-			default: CLIENT_SECRET,
 		},
 		{
 			displayName: 'Grant Type',
 			name: 'grantType',
 			type: 'hidden',
 			default: 'authorizationCode',
+		},
+		{
+			displayName: 'Auth URI Query Parameters',
+			name: 'authQueryParameters',
+			type: 'hidden',
+			default: 'response_type=code',
 		},
 		{
 			displayName: 'Authorization URL',
@@ -54,13 +61,7 @@ export class ErsAppOAuth2Api implements ICredentialType {
 			displayName: 'Access Token URL',
 			name: 'accessTokenUrl',
 			type: 'hidden',
-			default: `${BASE_URL}/login/oauth/token?client_source=system`,
-		},
-		{
-			displayName: 'Auth URI Query Parameters',
-			name: 'authQueryParameters',
-			type: 'hidden',
-			default: 'client_source=system',
+			default: `${BASE_URL}/login/oauth/token`,
 		},
 		{
 			displayName: 'Scope',
@@ -82,3 +83,4 @@ export class ErsAppOAuth2Api implements ICredentialType {
 		},
 	];
 }
+

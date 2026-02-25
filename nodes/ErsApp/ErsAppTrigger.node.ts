@@ -85,6 +85,15 @@ export class ErsAppTrigger implements INodeType {
 				},
 			},
 			{
+				name: 'ersAppOAuth2V2Api',
+				required: true,
+				displayOptions: {
+					show: {
+						authentication: ['oAuth2V2'],
+					},
+				},
+			},
+			{
 				name: 'ersAppAccessTokenApi',
 				required: true,
 				displayOptions: {
@@ -112,6 +121,10 @@ export class ErsAppTrigger implements INodeType {
 						// eslint-disable-next-line n8n-nodes-base/node-param-display-name-miscased
 						name: 'OAuth2 (recommended)',
 						value: 'oAuth2',
+					},
+					{
+						name: 'OAuth2 (configurable)',
+						value: 'oAuth2V2',
 					},
 					{
 						name: 'Access Token',
@@ -258,8 +271,17 @@ export class ErsAppTrigger implements INodeType {
 				};
 
 				try {
-					// Get OAuth2 credentials - n8n stores tokens in the credentials object
-					const credentials = await this.getCredentials('ersAppOAuth2Api');
+					// Get selected authentication type
+					const auth = this.getNodeParameter('authentication', 'oAuth2') as string;
+					const credentialName =
+						auth === 'accessToken'
+							? 'ersAppAccessTokenApi'
+							: auth === 'oAuth2V2'
+								? 'ersAppOAuth2V2Api'
+								: 'ersAppOAuth2Api';
+
+					// Get credentials - n8n stores tokens in the credentials object
+					const credentials = await this.getCredentials(credentialName);
 					
 					// OAuth2 tokens can be stored in different locations
 					const creds = credentials as Record<string, unknown>;
@@ -535,8 +557,17 @@ export class ErsAppTrigger implements INodeType {
 						return true;
 					}
 
-					// Get OAuth2 credentials
-					const credentials = await this.getCredentials('ersAppOAuth2Api');
+					// Get selected authentication type
+					const auth = this.getNodeParameter('authentication', 'oAuth2') as string;
+					const credentialName =
+						auth === 'accessToken'
+							? 'ersAppAccessTokenApi'
+							: auth === 'oAuth2V2'
+								? 'ersAppOAuth2V2Api'
+								: 'ersAppOAuth2Api';
+
+					// Get credentials
+					const credentials = await this.getCredentials(credentialName);
 					
 					// OAuth2 tokens can be stored in different locations
 					// Check common locations for the access token
