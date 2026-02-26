@@ -1,11 +1,18 @@
 {
   "name": "n8n-nodes-ers-app",
   "version": "0.1.0",
-  "description": "n8n node to interact with the Ers App API and manage resources",
+  "description": "n8n community node for the eResource Scheduler (ERS App) API to manage resources, projects, bookings, requirements, and timehseets in n8n workflows.",
   "license": "MIT",
-  "homepage": "",
+  "homepage": "https://github.com/lavish-enbraun/ers-n8n#readme",
   "keywords": [
-    "n8n-community-node-package"
+    "n8n-community-node-package",
+    "n8n",
+    "ers",
+    "eResource Scheduler",
+    "resource-planning",
+    "scheduling",
+    "api",
+    "integration"
   ],
   "author": {
     "name": "lavish",
@@ -14,6 +21,9 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/lavish-enbraun/ers-n8n.git"
+  },
+  "bugs": {
+    "url": "https://github.com/lavish-enbraun/ers-n8n/issues"
   },
   "scripts": {
     "build": "n8n-node build",
