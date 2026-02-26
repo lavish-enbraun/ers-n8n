@@ -10,7 +10,6 @@ import { resourceDescription } from './resources/resource';
 import { projectDescription } from './resources/project';
 import { bookingDescription } from './resources/booking';
 import { requirementDescription } from './resources/requirement';
-import { ratesDescription } from './resources/rates';
 import { timesheetDescription } from './resources/timesheet';
 
 interface AccessTokenErrorShape {
@@ -123,10 +122,6 @@ export class ErsApp implements INodeType {
 						value: 'project',
 					},
 					{
-						name: 'Rate',
-						value: 'rates',
-					},
-					{
 						name: 'Requirement',
 						value: 'requirement',
 					},
@@ -145,7 +140,6 @@ export class ErsApp implements INodeType {
 			...projectDescription,
 			...bookingDescription,
 			...requirementDescription,
-			...ratesDescription,
 			...timesheetDescription,
 		],
 	};

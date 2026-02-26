@@ -145,11 +145,65 @@ export class ErsAppTrigger implements INodeType {
 				default: 'oAuth2',
 			},
 			{
-				displayName: 'ERS Webhook',
+				displayName: 'Entities',
+				name: 'entities',
+				type: 'multiOptions',
+				description: 'Select the entities to monitor for events',
+				options: [
+					{
+						name: 'Resource',
+						value: 1,
+					},
+					{
+						name: 'Project',
+						value: 2,
+					},
+					{
+						name: 'Booking',
+						value: 4,
+					},
+					{
+						name: 'Timesheet',
+						value: 16,
+					},
+					{
+						name: 'Requirement',
+						value: 32,
+					},
+				],
+				default: [],
+				required: true,
+			},
+			{
+				displayName: 'Events',
+				name: 'events',
+				type: 'multiOptions',
+				description: 'Select the events to trigger on',
+				options: [
+					{
+						name: 'Create',
+						value: 1,
+					},
+					{
+						name: 'Update',
+						value: 2,
+					},
+					{
+						name: 'Delete',
+						value: 3,
+					},
+				],
+				default: [],
+				required: true,
+			},
+			{
+				// Legacy configuration kept for backwards compatibility with
+				// existing workflows that used the nested webhook settings.
+				displayName: 'ERS Webhook (Legacy)',
 				name: 'webhook',
 				type: 'fixedCollection',
 				default: {},
-				description: 'Configure the ERS webhook trigger settings',
+				description: 'Legacy ERS webhook trigger settings (hidden in new workflows)',
 				options: [
 					{
 						name: 'webhookSettings',
@@ -210,6 +264,13 @@ export class ErsAppTrigger implements INodeType {
 						],
 					},
 				],
+				displayOptions: {
+					show: {
+						// This value is never set for authentication,
+						// so the legacy field stays hidden in the UI.
+						authentication: ['__never__'],
+					},
+				},
 			},
 		],
 	};
@@ -230,10 +291,6 @@ export class ErsAppTrigger implements INodeType {
 				return false;
 			},
 			async create(this: IHookFunctions): Promise<boolean> {
-				// Get webhook configuration from node parameters
-				const webhookParam = this.getNodeParameter('webhook', {}) as { webhookSettings?: { entities?: number[]; events?: number[] } };
-				const webhookConfig = webhookParam.webhookSettings || {};
-				
 				// Get webhook URL - this ensures the webhook is ready
 				const generatedUrl = this.getNodeWebhookUrl('default');
 				
@@ -387,9 +444,27 @@ export class ErsAppTrigger implements INodeType {
 				// Step 3: Always update triggers whenever entities or events change
 				// This ensures triggers are updated even when webhook already exists
 
-				// Get selected entities and events
-				const entities = webhookConfig.entities || [];
-				const events = webhookConfig.events || [];
+				// Get selected entities and events from the new top-level
+				// parameters so they are always visible in the UI.
+				let entities = this.getNodeParameter('entities', []) as number[];
+				let events = this.getNodeParameter('events', []) as number[];
+
+				// Backwards compatibility: if no entities/events are set on the
+				// new fields, fall back to the legacy nested webhook settings
+				// for existing workflows.
+				if (entities.length === 0 || events.length === 0) {
+					const legacyWebhookParam = this.getNodeParameter('webhook', {}) as {
+						webhookSettings?: { entities?: number[]; events?: number[] };
+					};
+					const legacyConfig = legacyWebhookParam.webhookSettings || {};
+
+					if (Array.isArray(legacyConfig.entities) && legacyConfig.entities.length > 0) {
+						entities = legacyConfig.entities;
+					}
+					if (Array.isArray(legacyConfig.events) && legacyConfig.events.length > 0) {
+						events = legacyConfig.events;
+					}
+				}
 				
 				console.log('[ERS Webhook] Selected entities:', entities);
 				console.log('[ERS Webhook] Selected events:', events);
