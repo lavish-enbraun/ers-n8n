@@ -5,6 +5,7 @@ import { resourceCreateDescription } from './create';
 import { resourceUpdateDescription } from './update';
 import { resourceDeleteDescription } from './delete';
 import { resourceGetOneDescription } from './get';
+import { resourceSearchDescription } from './search';
 
 const showOnlyForResources = {
 	resource: ['resource'],
@@ -111,6 +112,36 @@ export const resourceDescription: INodeProperties[] = [
 				},
 			},
 		},
+			{
+				name: 'Search',
+				value: 'search',
+				action: 'Search resources',
+				description:
+					'Search for resources using the flexible /v1/resources/search endpoint with a raw JSON filter body as documented in the eRS Cloud API (Search Resources section).',
+				routing: {
+					request: {
+						method: 'POST',
+						url: `${BASE_URL}${API_BASE_PATH}/resources/search`,
+						headers: {
+							'Content-Type': 'application/json',
+							Accept: 'application/json',
+							Authorization:
+								'={{ $parameter.authentication === "accessToken" && $credentials.accessToken ? "Bearer " + $credentials.accessToken : undefined }}',
+						},
+						body: '={{ (() => { if (!$parameter.searchBodyJson) { throw new Error("Search Body cannot be empty"); } let body; if (typeof $parameter.searchBodyJson === "string") { try { body = JSON.parse($parameter.searchBodyJson); } catch (e) { throw new Error("Search Body must be valid JSON"); } } else { body = $parameter.searchBodyJson; } return body; })() }}',
+					},
+					output: {
+						postReceive: [
+							{
+								type: 'rootProperty',
+								properties: {
+									property: 'data',
+								},
+							},
+						],
+					},
+				},
+			},
 		],
 		default: 'create',
 	},
@@ -119,5 +150,6 @@ export const resourceDescription: INodeProperties[] = [
 	...resourceUpdateDescription,
 	...resourceDeleteDescription,
 	...resourceGetOneDescription,
+	...resourceSearchDescription,
 ];
 

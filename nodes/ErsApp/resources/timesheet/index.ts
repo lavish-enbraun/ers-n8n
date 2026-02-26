@@ -4,6 +4,7 @@ import { timesheetCreateDescription } from './create';
 import { timesheetUpdateDescription } from './update';
 import { timesheetDeleteDescription } from './delete';
 import { timesheetGetOneDescription } from './get';
+import { timesheetSearchDescription } from './search';
 
 const showOnlyForTimesheet = {
 	resource: ['timesheet'],
@@ -85,6 +86,36 @@ export const timesheetDescription: INodeProperties[] = [
 					},
 				},
 			},
+			{
+				name: 'Search',
+				value: 'search',
+				action: 'Search timesheet entries',
+				description:
+					'Search for timesheet entries using the flexible /v1/timesheet/search endpoint with a raw JSON filter body as documented in the eRS Cloud API (Search Timesheet Entries section).',
+				routing: {
+					request: {
+						method: 'POST',
+						url: `${BASE_URL}${API_BASE_PATH}/timesheet/search`,
+						headers: {
+							'Content-Type': 'application/json',
+							Accept: 'application/json',
+							Authorization:
+								'={{ $parameter.authentication === "accessToken" && $credentials.accessToken ? "Bearer " + $credentials.accessToken : undefined }}',
+						},
+						body: '={{ (() => { if (!$parameter.searchBodyJson) { throw new Error("Search Body cannot be empty"); } let body; if (typeof $parameter.searchBodyJson === "string") { try { body = JSON.parse($parameter.searchBodyJson); } catch (e) { throw new Error("Search Body must be valid JSON"); } } else { body = $parameter.searchBodyJson; } return body; })() }}',
+					},
+					output: {
+						postReceive: [
+							{
+								type: 'rootProperty',
+								properties: {
+									property: 'data',
+								},
+							},
+						],
+					},
+				},
+			},
 		],
 		default: 'create',
 	},
@@ -92,5 +123,6 @@ export const timesheetDescription: INodeProperties[] = [
 	...timesheetUpdateDescription,
 	...timesheetDeleteDescription,
 	...timesheetGetOneDescription,
+	...timesheetSearchDescription,
 ];
 
