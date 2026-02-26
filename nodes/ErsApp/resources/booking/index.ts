@@ -117,7 +117,7 @@ export const bookingDescription: INodeProperties[] = [
 				value: 'search',
 				action: 'Search bookings',
 				description:
-					'Search for bookings using the flexible /v1/bookings/search endpoint with a raw JSON filter body as documented in the eRS Cloud API (Search Bookings section).',
+					'Search for bookings using the flexible /v1/bookings/search endpoint with a raw JSON filter body as documented in the eRS Cloud API (Search Bookings section)',
 				routing: {
 					request: {
 						method: 'POST',

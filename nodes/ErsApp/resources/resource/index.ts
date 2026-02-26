@@ -117,7 +117,7 @@ export const resourceDescription: INodeProperties[] = [
 				value: 'search',
 				action: 'Search resources',
 				description:
-					'Search for resources using the flexible /v1/resources/search endpoint with a raw JSON filter body as documented in the eRS Cloud API (Search Resources section).',
+					'Search for resources using the flexible /v1/resources/search endpoint with a raw JSON filter body as documented in the eRS Cloud API (Search Resources section)',
 				routing: {
 					request: {
 						method: 'POST',

@@ -117,7 +117,7 @@ export const projectDescription: INodeProperties[] = [
 				value: 'search',
 				action: 'Search projects',
 				description:
-					'Search for projects using the flexible /v1/projects/search endpoint with a raw JSON filter body as documented in the eRS Cloud API (Search Projects section).',
+					'Search for projects using the flexible /v1/projects/search endpoint with a raw JSON filter body as documented in the eRS Cloud API (Search Projects section)',
 				routing: {
 					request: {
 						method: 'POST',

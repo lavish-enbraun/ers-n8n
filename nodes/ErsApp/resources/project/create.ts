@@ -111,7 +111,7 @@ export const projectCreateDescription: INodeProperties[] = [
 						description: 'Fill this for DATE field types',
 					},
 					{
-						displayName: 'Field Value (Multi-Select) Name or ID',
+						displayName: 'Field Value (Multi-Select) Names or IDs',
 						name: 'fieldValueMultiSelect',
 						type: 'multiOptions',
 						noDataExpression: true,
@@ -340,7 +340,7 @@ export const projectCreateDescription: INodeProperties[] = [
 						description: 'Fill this for DATE field types',
 					},
 					{
-						displayName: 'Field Value (Multi-Select) Name or ID',
+						displayName: 'Field Value (Multi-Select) Names or IDs',
 						name: 'fieldValueMultiSelect',
 						type: 'multiOptions',
 						noDataExpression: true,

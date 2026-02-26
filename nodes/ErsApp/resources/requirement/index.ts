@@ -117,7 +117,7 @@ export const requirementDescription: INodeProperties[] = [
 				value: 'search',
 				action: 'Search requirements',
 				description:
-					'Search for requirements using the flexible /v1/requirements/search endpoint with a raw JSON filter body as documented in the eRS Cloud API (Search Requirements section).',
+					'Search for requirements using the flexible /v1/requirements/search endpoint with a raw JSON filter body as documented in the eRS Cloud API (Search Requirements section)',
 				routing: {
 					request: {
 						method: 'POST',

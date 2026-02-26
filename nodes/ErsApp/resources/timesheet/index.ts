@@ -91,7 +91,7 @@ export const timesheetDescription: INodeProperties[] = [
 				value: 'search',
 				action: 'Search timesheet entries',
 				description:
-					'Search for timesheet entries using the flexible /v1/timesheet/search endpoint with a raw JSON filter body as documented in the eRS Cloud API (Search Timesheet Entries section).',
+					'Search for timesheet entries using the flexible /v1/timesheet/search endpoint with a raw JSON filter body as documented in the eRS Cloud API (Search Timesheet Entries section)',
 				routing: {
 					request: {
 						method: 'POST',
