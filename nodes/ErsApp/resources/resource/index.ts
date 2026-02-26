@@ -4,6 +4,7 @@ import { resourceGetResourcesDescription } from './getAll';
 import { resourceCreateDescription } from './create';
 import { resourceUpdateDescription } from './update';
 import { resourceDeleteDescription } from './delete';
+import { resourceGetOneDescription } from './get';
 
 const showOnlyForResources = {
 	resource: ['resource'],
@@ -95,6 +96,21 @@ export const resourceDescription: INodeProperties[] = [
 				},
 			},
 		},
+		{
+			name: 'Get One',
+			value: 'get',
+			action: 'Get a resource',
+			description: 'Retrieve a single resource by ID',
+			routing: {
+				request: {
+					method: 'GET',
+					url: `={{ "${BASE_URL}${API_BASE_PATH}/resources/" + $parameter.resource_id }}`,
+					headers: {
+						Authorization: '={{ $parameter.authentication === "accessToken" && $credentials.accessToken ? "Bearer " + $credentials.accessToken : undefined }}',
+					},
+				},
+			},
+		},
 		],
 		default: 'create',
 	},
@@ -102,5 +118,6 @@ export const resourceDescription: INodeProperties[] = [
 	...resourceCreateDescription,
 	...resourceUpdateDescription,
 	...resourceDeleteDescription,
+	...resourceGetOneDescription,
 ];
 

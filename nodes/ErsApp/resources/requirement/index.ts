@@ -4,6 +4,7 @@ import { requirementCreateDescription } from './create';
 import { requirementUpdateDescription } from './update';
 import { requirementDeleteDescription } from './delete';
 import { requirementGetAllDescription } from './getAll';
+import { requirementGetOneDescription } from './get';
 
 const showOnlyForRequirements = {
 	resource: ['requirement'],
@@ -95,6 +96,21 @@ export const requirementDescription: INodeProperties[] = [
 				},
 			},
 		},
+		{
+			name: 'Get One',
+			value: 'get',
+			action: 'Get a requirement',
+			description: 'Retrieve a single requirement by ID',
+			routing: {
+				request: {
+					method: 'GET',
+					url: `={{ "${BASE_URL}${API_BASE_PATH}/requirements/" + $parameter.requirement_id }}`,
+					headers: {
+						Authorization: '={{ $parameter.authentication === "accessToken" && $credentials.accessToken ? "Bearer " + $credentials.accessToken : undefined }}',
+					},
+				},
+			},
+		},
 		],
 		default: 'create',
 	},
@@ -102,5 +118,6 @@ export const requirementDescription: INodeProperties[] = [
 	...requirementUpdateDescription,
 	...requirementDeleteDescription,
 	...requirementGetAllDescription,
+	...requirementGetOneDescription,
 ];
 

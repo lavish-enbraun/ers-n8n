@@ -4,6 +4,7 @@ import { bookingCreateDescription } from './create';
 import { bookingUpdateDescription } from './update';
 import { bookingDeleteDescription } from './delete';
 import { bookingGetAllDescription } from './getAll';
+import { bookingGetOneDescription } from './get';
 
 const showOnlyForBookings = {
 	resource: ['booking'],
@@ -95,6 +96,21 @@ export const bookingDescription: INodeProperties[] = [
 				},
 			},
 		},
+		{
+			name: 'Get One',
+			value: 'get',
+			action: 'Get a booking',
+			description: 'Retrieve a single booking by ID',
+			routing: {
+				request: {
+					method: 'GET',
+					url: `={{ "${BASE_URL}${API_BASE_PATH}/bookings/" + $parameter.booking_id }}`,
+					headers: {
+						Authorization: '={{ $parameter.authentication === "accessToken" && $credentials.accessToken ? "Bearer " + $credentials.accessToken : undefined }}',
+					},
+				},
+			},
+		},
 		],
 		default: 'create',
 	},
@@ -102,5 +118,6 @@ export const bookingDescription: INodeProperties[] = [
 	...bookingCreateDescription,
 	...bookingUpdateDescription,
 	...bookingDeleteDescription,
+	...bookingGetOneDescription,
 ];
 

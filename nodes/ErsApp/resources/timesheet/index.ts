@@ -3,6 +3,7 @@ import { BASE_URL, API_BASE_PATH } from '../../constants';
 import { timesheetCreateDescription } from './create';
 import { timesheetUpdateDescription } from './update';
 import { timesheetDeleteDescription } from './delete';
+import { timesheetGetOneDescription } from './get';
 
 const showOnlyForTimesheet = {
 	resource: ['timesheet'],
@@ -69,11 +70,27 @@ export const timesheetDescription: INodeProperties[] = [
 					},
 				},
 			},
+			{
+				name: 'Get One',
+				value: 'get',
+				action: 'Get a timesheet entry',
+				description: 'Retrieve a single timesheet entry by ID',
+				routing: {
+					request: {
+						method: 'GET',
+						url: `={{ "${BASE_URL}${API_BASE_PATH}/timesheet/" + $parameter.timesheet_id }}`,
+						headers: {
+							Authorization: '={{ $parameter.authentication === "accessToken" && $credentials.accessToken ? "Bearer " + $credentials.accessToken : undefined }}',
+						},
+					},
+				},
+			},
 		],
 		default: 'create',
 	},
 	...timesheetCreateDescription,
 	...timesheetUpdateDescription,
 	...timesheetDeleteDescription,
+	...timesheetGetOneDescription,
 ];
 

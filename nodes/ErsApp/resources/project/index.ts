@@ -4,6 +4,7 @@ import { projectCreateDescription } from './create';
 import { projectUpdateDescription } from './update';
 import { projectDeleteDescription } from './delete';
 import { projectGetAllDescription } from './getAll';
+import { projectGetOneDescription } from './get';
 
 const showOnlyForProjects = {
 	resource: ['project'],
@@ -95,6 +96,21 @@ export const projectDescription: INodeProperties[] = [
 				},
 			},
 		},
+		{
+			name: 'Get One',
+			value: 'get',
+			action: 'Get a project',
+			description: 'Retrieve a single project by ID',
+			routing: {
+				request: {
+					method: 'GET',
+					url: `={{ "${BASE_URL}${API_BASE_PATH}/projects/" + $parameter.project_id }}`,
+					headers: {
+						Authorization: '={{ $parameter.authentication === "accessToken" && $credentials.accessToken ? "Bearer " + $credentials.accessToken : undefined }}',
+					},
+				},
+			},
+		},
 		],
 		default: 'create',
 	},
@@ -102,5 +118,6 @@ export const projectDescription: INodeProperties[] = [
 	...projectCreateDescription,
 	...projectUpdateDescription,
 	...projectDeleteDescription,
+	...projectGetOneDescription,
 ];
 
