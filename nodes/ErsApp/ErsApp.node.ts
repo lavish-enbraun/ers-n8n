@@ -62,7 +62,7 @@ export class ErsApp implements INodeType {
 				required: true,
 				displayOptions: {
 					show: {
-						authentication: ['oAuth2', 'oAuth2V2'],
+						authentication: ['oAuth2'],
 					},
 				},
 			},
@@ -86,10 +86,6 @@ export class ErsApp implements INodeType {
 						// eslint-disable-next-line n8n-nodes-base/node-param-display-name-miscased
 						name: 'OAuth2 (recommended)',
 						value: 'oAuth2',
-					},
-					{
-						name: 'OAuth2 (Configurable)',
-						value: 'oAuth2V2',
 					},
 					{
 						name: 'Access Token',
