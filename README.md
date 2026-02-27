@@ -92,7 +92,6 @@ In n8n:
 1. Go to **Credentials → New**.
 2. Search for one of the following:
    - **ERS App OAuth2 API**
-   - **ERS App OAuth2 V2 OAuth2 API**
    - **ERS App Access Token API**
 3. Select the credential type that matches how your ERS App tenant is configured.
 
@@ -129,7 +128,7 @@ Below are high-level examples to help you get started quickly.
 3. Add an **eResource Scheduler** node:
    - **Resource**: `Resource`
    - **Operation**: `Get All`
-   - **Credentials**: Select your `ERS App OAuth2 API` (or other appropriate) credentials.
+   - **Credentials**: Select your `ERS OAuth2` (or `ERS Access Token`) credentials.
 4. Optionally add a **Set** or **Code** node after it to transform or log the data.
 5. Execute the workflow manually; you should see a list of resources returned from ERS App.
 
@@ -317,7 +316,6 @@ npm run lint:fix
 ```text
 ers-n8n/
 ├── credentials/                     # OAuth2 and access token credential definitions
-│   ├── ErsAppOAuth2Api.credentials.ts
 │   ├── ErsAppOAuth2V2OAuth2Api.credentials.ts
 │   └── ErsAppAccessTokenApi.credentials.ts
 ├── nodes/                           # Node implementations

@@ -87,20 +87,11 @@ export class ErsAppTrigger implements INodeType {
 		outputs: ['main'],
 		credentials: [
 			{
-				name: 'ersAppOAuth2Api',
-				required: true,
-				displayOptions: {
-					show: {
-						authentication: ['oAuth2'],
-					},
-				},
-			},
-			{
 				name: 'ersAppOAuth2V2OAuth2Api',
 				required: true,
 				displayOptions: {
 					show: {
-						authentication: ['oAuth2V2'],
+						authentication: ['oAuth2', 'oAuth2V2'],
 					},
 				},
 			},
@@ -316,9 +307,7 @@ export class ErsAppTrigger implements INodeType {
 					const credentialName =
 						auth === 'accessToken'
 							? 'ersAppAccessTokenApi'
-							: auth === 'oAuth2V2'
-								? 'ersAppOAuth2V2OAuth2Api'
-								: 'ersAppOAuth2Api';
+							: 'ersAppOAuth2V2OAuth2Api';
 
 					// Get credentials - n8n stores tokens in the credentials object
 					const credentials = await this.getCredentials(credentialName);
@@ -558,9 +547,7 @@ export class ErsAppTrigger implements INodeType {
 					const credentialName =
 						auth === 'accessToken'
 							? 'ersAppAccessTokenApi'
-							: auth === 'oAuth2V2'
-								? 'ersAppOAuth2V2OAuth2Api'
-								: 'ersAppOAuth2Api';
+							: 'ersAppOAuth2V2OAuth2Api';
 
 					// Get credentials
 					const credentials = await this.getCredentials(credentialName);

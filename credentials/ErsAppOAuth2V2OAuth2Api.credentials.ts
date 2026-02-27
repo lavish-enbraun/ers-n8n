@@ -11,7 +11,7 @@ export class ErsAppOAuth2V2OAuth2Api implements ICredentialType {
 	extends = ['oAuth2Api'];
 
 	// eslint-disable-next-line n8n-nodes-base/cred-class-field-display-name-missing-api, n8n-nodes-base/cred-class-field-display-name-missing-oauth2
-	displayName = 'Sign in with eResource Scheduler (Configurable)';
+	displayName = 'Sign in with eResource Scheduler OAuth2';
 
 	icon: { light: IconFile; dark: IconFile } = {
 		light: 'file:../nodes/ErsApp/ersApp.svg',

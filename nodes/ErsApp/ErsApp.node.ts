@@ -58,20 +58,11 @@ export class ErsApp implements INodeType {
 		outputs: [NodeConnectionTypes.Main],
 		credentials: [
 			{
-				name: 'ersAppOAuth2Api',
-				required: true,
-				displayOptions: {
-					show: {
-						authentication: ['oAuth2'],
-					},
-				},
-			},
-			{
 				name: 'ersAppOAuth2V2OAuth2Api',
 				required: true,
 				displayOptions: {
 					show: {
-						authentication: ['oAuth2V2'],
+						authentication: ['oAuth2', 'oAuth2V2'],
 					},
 				},
 			},
@@ -153,9 +144,7 @@ export class ErsApp implements INodeType {
 					const credentialType =
 						auth === 'accessToken'
 							? 'ersAppAccessTokenApi'
-							: auth === 'oAuth2V2'
-								? 'ersAppOAuth2V2OAuth2Api'
-								: 'ersAppOAuth2Api';
+							: 'ersAppOAuth2V2OAuth2Api';
 					const response = await this.helpers.httpRequestWithAuthentication.call(
 						this,
 						credentialType,
@@ -233,9 +222,7 @@ export class ErsApp implements INodeType {
 					const credentialType =
 						parameters.authentication === 'accessToken'
 							? 'ersAppAccessTokenApi'
-							: parameters.authentication === 'oAuth2V2'
-								? 'ersAppOAuth2V2OAuth2Api'
-								: 'ersAppOAuth2Api';
+							: 'ersAppOAuth2V2OAuth2Api';
 
 					// Debug: Log the parameter value to help diagnose issues
 					console.log('getResourceUDFFields called with resource_type_id:', resourceTypeId, 'Type:', typeof resourceTypeId);
@@ -404,9 +391,7 @@ export class ErsApp implements INodeType {
 					const credentialType =
 						parameters.authentication === 'accessToken'
 							? 'ersAppAccessTokenApi'
-							: parameters.authentication === 'oAuth2V2'
-								? 'ersAppOAuth2V2OAuth2Api'
-								: 'ersAppOAuth2Api';
+							: 'ersAppOAuth2V2OAuth2Api';
 
 					if (resourceTypeId === '' || resourceTypeId === null || resourceTypeId === undefined) {
 						return [];
@@ -554,9 +539,7 @@ export class ErsApp implements INodeType {
 					const credentialType =
 						parameters.authentication === 'accessToken'
 							? 'ersAppAccessTokenApi'
-							: parameters.authentication === 'oAuth2V2'
-								? 'ersAppOAuth2V2OAuth2Api'
-								: 'ersAppOAuth2Api';
+							: 'ersAppOAuth2V2OAuth2Api';
 
 					if (resourceTypeId === '' || resourceTypeId === null || resourceTypeId === undefined) {
 						return [];
@@ -699,9 +682,7 @@ export class ErsApp implements INodeType {
 					const credentialType =
 						auth === 'accessToken'
 							? 'ersAppAccessTokenApi'
-							: auth === 'oAuth2V2'
-								? 'ersAppOAuth2V2OAuth2Api'
-								: 'ersAppOAuth2Api';
+							: 'ersAppOAuth2V2OAuth2Api';
 					const response = await this.helpers.httpRequestWithAuthentication.call(
 						this,
 						credentialType,
@@ -744,9 +725,7 @@ export class ErsApp implements INodeType {
 					const credentialType =
 						parameters.authentication === 'accessToken'
 							? 'ersAppAccessTokenApi'
-							: parameters.authentication === 'oAuth2V2'
-								? 'ersAppOAuth2V2OAuth2Api'
-								: 'ersAppOAuth2Api';
+							: 'ersAppOAuth2V2OAuth2Api';
 
 					// Debug: Log the parameter value to help diagnose issues
 					console.log('getProjectUDFFields called with project_type_id:', projectTypeId, 'Type:', typeof projectTypeId);
@@ -920,9 +899,7 @@ export class ErsApp implements INodeType {
 					const credentialType =
 						parameters.authentication === 'accessToken'
 							? 'ersAppAccessTokenApi'
-							: parameters.authentication === 'oAuth2V2'
-								? 'ersAppOAuth2V2OAuth2Api'
-								: 'ersAppOAuth2Api';
+							: 'ersAppOAuth2V2OAuth2Api';
 
 					if (projectTypeId === '' || projectTypeId === null || projectTypeId === undefined) {
 						return [];
@@ -1064,7 +1041,10 @@ export class ErsApp implements INodeType {
 					const currentNode = this.getNode();
 					const parameters = currentNode.parameters as { project_type_id?: number | string; authentication?: string };
 					let projectTypeId = parameters.project_type_id;
-					const credentialType = parameters.authentication === 'accessToken' ? 'ersAppAccessTokenApi' : 'ersAppOAuth2Api';
+					const credentialType =
+						parameters.authentication === 'accessToken'
+							? 'ersAppAccessTokenApi'
+							: 'ersAppOAuth2V2OAuth2Api';
 
 					if (projectTypeId === '' || projectTypeId === null || projectTypeId === undefined) {
 						return [];
