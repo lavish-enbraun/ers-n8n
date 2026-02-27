@@ -91,8 +91,8 @@ In n8n:
 
 1. Go to **Credentials → New**.
 2. Search for one of the following:
-   - **ERS App OAuth2 API**
-   - **ERS App Access Token API**
+   - **ERS OAuth2**
+   - **ERS Access Token**
 3. Select the credential type that matches how your ERS App tenant is configured.
 
 ### Common fields
@@ -316,7 +316,7 @@ npm run lint:fix
 ```text
 ers-n8n/
 ├── credentials/                     # OAuth2 and access token credential definitions
-│   ├── ErsAppOAuth2V2OAuth2Api.credentials.ts
+│   ├── ErsAppOAuth2Api.credentials.ts
 │   └── ErsAppAccessTokenApi.credentials.ts
 ├── nodes/                           # Node implementations
 │   └── ErsApp/

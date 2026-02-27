@@ -58,7 +58,7 @@ export class ErsApp implements INodeType {
 		outputs: [NodeConnectionTypes.Main],
 		credentials: [
 			{
-				name: 'ersAppOAuth2V2OAuth2Api',
+				name: 'ersAppOAuth2',
 				required: true,
 				displayOptions: {
 					show: {
@@ -140,7 +140,7 @@ export class ErsApp implements INodeType {
 					const credentialType =
 						auth === 'accessToken'
 							? 'ersAppAccessTokenApi'
-							: 'ersAppOAuth2V2OAuth2Api';
+							: 'ersAppOAuth2';
 					const response = await this.helpers.httpRequestWithAuthentication.call(
 						this,
 						credentialType,
@@ -218,7 +218,7 @@ export class ErsApp implements INodeType {
 					const credentialType =
 						parameters.authentication === 'accessToken'
 							? 'ersAppAccessTokenApi'
-							: 'ersAppOAuth2V2OAuth2Api';
+							: 'ersAppOAuth2';
 
 					// Debug: Log the parameter value to help diagnose issues
 					console.log('getResourceUDFFields called with resource_type_id:', resourceTypeId, 'Type:', typeof resourceTypeId);
@@ -387,7 +387,7 @@ export class ErsApp implements INodeType {
 					const credentialType =
 						parameters.authentication === 'accessToken'
 							? 'ersAppAccessTokenApi'
-							: 'ersAppOAuth2V2OAuth2Api';
+							: 'ersAppOAuth2';
 
 					if (resourceTypeId === '' || resourceTypeId === null || resourceTypeId === undefined) {
 						return [];
@@ -535,7 +535,7 @@ export class ErsApp implements INodeType {
 					const credentialType =
 						parameters.authentication === 'accessToken'
 							? 'ersAppAccessTokenApi'
-							: 'ersAppOAuth2V2OAuth2Api';
+							: 'ersAppOAuth2';
 
 					if (resourceTypeId === '' || resourceTypeId === null || resourceTypeId === undefined) {
 						return [];
@@ -678,7 +678,7 @@ export class ErsApp implements INodeType {
 					const credentialType =
 						auth === 'accessToken'
 							? 'ersAppAccessTokenApi'
-							: 'ersAppOAuth2V2OAuth2Api';
+							: 'ersAppOAuth2';
 					const response = await this.helpers.httpRequestWithAuthentication.call(
 						this,
 						credentialType,
@@ -721,7 +721,7 @@ export class ErsApp implements INodeType {
 					const credentialType =
 						parameters.authentication === 'accessToken'
 							? 'ersAppAccessTokenApi'
-							: 'ersAppOAuth2V2OAuth2Api';
+							: 'ersAppOAuth2';
 
 					// Debug: Log the parameter value to help diagnose issues
 					console.log('getProjectUDFFields called with project_type_id:', projectTypeId, 'Type:', typeof projectTypeId);
@@ -895,7 +895,7 @@ export class ErsApp implements INodeType {
 					const credentialType =
 						parameters.authentication === 'accessToken'
 							? 'ersAppAccessTokenApi'
-							: 'ersAppOAuth2V2OAuth2Api';
+							: 'ersAppOAuth2';
 
 					if (projectTypeId === '' || projectTypeId === null || projectTypeId === undefined) {
 						return [];
@@ -1040,7 +1040,7 @@ export class ErsApp implements INodeType {
 					const credentialType =
 						parameters.authentication === 'accessToken'
 							? 'ersAppAccessTokenApi'
-							: 'ersAppOAuth2V2OAuth2Api';
+							: 'ersAppOAuth2';
 
 					if (projectTypeId === '' || projectTypeId === null || projectTypeId === undefined) {
 						return [];
