@@ -5,13 +5,13 @@ import type {
 } from 'n8n-workflow';
 import { BASE_URL, OAUTH_REDIRECT_URL } from '../nodes/ErsApp/constants';
 
-export class ErsAppOAuth2V2OAuth2Api implements ICredentialType {
-	name = 'ersAppOAuth2V2OAuth2Api';
+export class ErsAppOAuth2Api implements ICredentialType {
+	name = 'ersAppOAuth2';
 
 	extends = ['oAuth2Api'];
 
 	// eslint-disable-next-line n8n-nodes-base/cred-class-field-display-name-missing-api, n8n-nodes-base/cred-class-field-display-name-missing-oauth2
-	displayName = 'Sign in with eResource Scheduler OAuth2';
+	displayName = 'ERS OAuth2';
 
 	icon: { light: IconFile; dark: IconFile } = {
 		light: 'file:../nodes/ErsApp/ersApp.svg',
