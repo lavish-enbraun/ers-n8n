@@ -129,6 +129,7 @@ export const resourceCreateDescription: INodeProperties[] = [
 						typeOptions: {
 							loadOptionsMethod: 'getResourceUDFFieldOptions',
 							loadOptionsDependsOn: ['fieldName'],
+							searchable: true,
 						},
 						default: [],
 						displayOptions: {
@@ -190,6 +191,7 @@ export const resourceCreateDescription: INodeProperties[] = [
 						typeOptions: {
 							loadOptionsMethod: 'getResourceUDFFieldOptions',
 							loadOptionsDependsOn: ['fieldName'],
+							searchable: true,
 						},
 						default: '',
 						displayOptions: {
@@ -358,6 +360,7 @@ export const resourceCreateDescription: INodeProperties[] = [
 						typeOptions: {
 							loadOptionsMethod: 'getResourceUDFFieldOptions',
 							loadOptionsDependsOn: ['fieldName'],
+							searchable: true,
 						},
 						default: [],
 						displayOptions: {
@@ -418,6 +421,7 @@ export const resourceCreateDescription: INodeProperties[] = [
 						noDataExpression: true,
 						typeOptions: {
 							loadOptionsMethod: 'getResourceUDFFieldOptions',
+							searchable: true,
 							loadOptionsDependsOn: ['fieldName'],
 						},
 						default: '',
