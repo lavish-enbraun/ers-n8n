@@ -62,7 +62,7 @@ For more details, see the official n8n community nodes installation guide:
 
 After installation and restart, search for **“eResource Scheduler”** or **“ERS App”** when adding a node in your workflows.
 
-## Usage
+For more information on setting up webhooks, refer to the [Webhook API Documentation](./WEBHOOK_API.md).
 
 Once installed and n8n has restarted:
 
@@ -91,8 +91,8 @@ In n8n:
 
 1. Go to **Credentials → New**.
 2. Search for one of the following:
-   - **ERS App OAuth2 API**
-   - **ERS App Access Token API**
+   - **ERS OAuth2**
+   - **ERS Access Token**
 3. Select the credential type that matches how your ERS App tenant is configured.
 
 ### Common fields
@@ -316,7 +316,7 @@ npm run lint:fix
 ```text
 ers-n8n/
 ├── credentials/                     # OAuth2 and access token credential definitions
-│   ├── ErsAppOAuth2V2OAuth2Api.credentials.ts
+│   ├── ErsAppOAuth2Api.credentials.ts
 │   └── ErsAppAccessTokenApi.credentials.ts
 ├── nodes/                           # Node implementations
 │   └── ErsApp/
