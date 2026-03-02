@@ -130,6 +130,7 @@ export const resourceUpdateDescription: INodeProperties[] = [
 						typeOptions: {
 							loadOptionsMethod: 'getResourceUDFFieldOptions',
 							loadOptionsDependsOn: ['fieldName'],
+							searchable: true,
 						},
 						default: [],
 						displayOptions: {
@@ -191,6 +192,7 @@ export const resourceUpdateDescription: INodeProperties[] = [
 						typeOptions: {
 							loadOptionsMethod: 'getResourceUDFFieldOptions',
 							loadOptionsDependsOn: ['fieldName'],
+							searchable: true,
 						},
 						default: '',
 						displayOptions: {
