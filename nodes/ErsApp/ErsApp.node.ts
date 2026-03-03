@@ -316,7 +316,7 @@ export class ErsApp implements INodeType {
 						})
 						.map((field) => ({
 							name: field.display_name || field.code,
-							value: JSON.stringify({ code: field.code, field_type: field.field_type ?? '' }),
+							value: JSON.stringify({ code: field.code, field_type: field.field_type === 'TAGS' ? 'TEXT' : (field.field_type ?? '') }),
 						}));
 				} catch (error) {
 					console.error('Error fetching UDF fields:', error);
@@ -382,7 +382,7 @@ export class ErsApp implements INodeType {
 						})
 						.map((field) => ({
 							name: field.display_name || field.code,
-							value: JSON.stringify({ code: field.code, field_type: field.field_type ?? '' }),
+							value: JSON.stringify({ code: field.code, field_type: field.field_type === 'TAGS' ? 'TEXT' : (field.field_type ?? '') }),
 						}));
 				} catch (error) {
 					console.error('Error fetching mandatory UDF fields:', error);
@@ -448,7 +448,7 @@ export class ErsApp implements INodeType {
 						})
 						.map((field) => ({
 							name: field.display_name || field.code,
-							value: JSON.stringify({ code: field.code, field_type: field.field_type ?? '' }),
+							value: JSON.stringify({ code: field.code, field_type: field.field_type === 'TAGS' ? 'TEXT' : (field.field_type ?? '') }),
 						}));
 				} catch (error) {
 					console.error('Error fetching other UDF fields:', error);
