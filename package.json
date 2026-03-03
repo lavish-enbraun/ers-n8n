@@ -37,6 +37,18 @@
   "files": [
     "dist"
   ],
+  "n8n": {
+    "n8nNodesApiVersion": 2,
+    "strict": true,
+    "credentials": [
+      "dist/credentials/ErsAppOAuth2Api.credentials.js",
+      "dist/credentials/ErsAppAccessTokenApi.credentials.js"
+    ],
+    "nodes": [
+      "dist/nodes/ErsApp/ErsApp.node.js",
+      "dist/nodes/ErsApp/ErsAppTrigger.node.js"
+    ]
+  },
   "devDependencies": {
     "@n8n/node-cli": "*",
     "@types/node": "^20.0.0",
