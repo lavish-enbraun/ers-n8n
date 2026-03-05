@@ -68,6 +68,34 @@ interface ResourceUDFField {
 
 const resourceTypeCache: Record<string, ResourceUDFField[]> = {};
 
+// Layer 2: Cache for project UDFs — global UDF list (fetched once) and per–project-type filtered list
+interface ProjectUDFOption {
+	id: number | string;
+	name: string;
+	color?: string;
+	description?: string;
+	udf_desc_id?: number;
+}
+
+interface ProjectUDFField {
+	code: string;
+	display_name?: string;
+	field_type?: string;
+	is_system_defined?: boolean;
+	is_required?: boolean;
+	availability?: number;
+	help_text?: string;
+	information_text?: string;
+	options?: ProjectUDFOption[];
+	mindate?: string;
+	maxdate?: string;
+	minlength?: number;
+	maxlength?: number;
+	regex?: string;
+}
+
+const projectTypeCache: Record<string, ProjectUDFField[]> = {};
+
 export class ErsApp implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'eResource Scheduler',
@@ -496,10 +524,9 @@ export class ErsApp implements INodeType {
 				}
 			},
 
-			// Fetch user-defined fields for projects from /rest/projects/udfs
+			// Layer 1: Load field definitions (lightweight only). Layer 2: cache raw API response once per project type.
 			async getProjectUDFFields(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 				try {
-					// Get the selected project_type_id from node parameters
 					const currentNode = this.getNode();
 					const parameters = currentNode.parameters as { project_type_id?: number | string; authentication?: string };
 					let projectTypeId = parameters.project_type_id;
@@ -508,450 +535,210 @@ export class ErsApp implements INodeType {
 							? 'ersAppAccessTokenApi'
 							: 'ersAppOAuth2';
 
-					// Debug: Log the parameter value to help diagnose issues
-					console.log('getProjectUDFFields called with project_type_id:', projectTypeId, 'Type:', typeof projectTypeId);
-
-					// Convert to string/number if needed and handle empty values
 					if (projectTypeId === '' || projectTypeId === null || projectTypeId === undefined) {
-						console.warn('project_type_id is empty, null, or undefined');
 						return [];
 					}
 
-					// Ensure projectTypeId is a string for URL construction
-					projectTypeId = String(projectTypeId);
+					if (typeof projectTypeId === 'string') {
+						try {
+							const parsed = JSON.parse(projectTypeId);
+							if (parsed && typeof parsed === 'object' && 'id' in parsed) {
+								projectTypeId = parsed.id;
+							}
+						} catch {
+							// not JSON
+						}
+					}
 
-					// Fetch available fields for this project type
-					const availableFieldCodes: string[] = [];
-					try {
-						const projectTypeResponse = await this.helpers.httpRequestWithAuthentication.call(
-							this,
-							credentialType,
-							{
-								method: 'GET',
-								url: `${BASE_URL}/rest/projects/projecttype/${projectTypeId}`,
-								headers: {
-									'Accept': 'application/json',
+					const projectTypeIdStr = String(projectTypeId);
+
+					// Fetch once and cache per project type — use project type response (has per-type is_required)
+					if (!projectTypeCache[projectTypeIdStr]) {
+						const excludedSystemFields = ['id', 'project_type_id', 'title'];
+						try {
+							const projectTypeResponse = await this.helpers.httpRequestWithAuthentication.call(
+								this,
+								credentialType,
+								{
+									method: 'GET',
+									url: `${BASE_URL}/rest/projects/projecttype/${projectTypeIdStr}`,
+									headers: { 'Accept': 'application/json' },
 								},
-							},
-						) as { sections?: Array<{ udfs?: Array<{ code?: string }> }> };
-						
-						// Extract field codes from sections[].udfs[].code
-						if (projectTypeResponse.sections && Array.isArray(projectTypeResponse.sections)) {
-							projectTypeResponse.sections.forEach((section) => {
-								if (section.udfs && Array.isArray(section.udfs)) {
-									section.udfs.forEach((udf) => {
-										if (udf.code) {
-											availableFieldCodes.push(udf.code);
+							) as { sections?: Array<{ udfs?: ProjectUDFField[] }> };
+							const udfFields: ProjectUDFField[] = [];
+							if (projectTypeResponse.sections && Array.isArray(projectTypeResponse.sections)) {
+								for (const section of projectTypeResponse.sections) {
+									if (section.udfs && Array.isArray(section.udfs)) {
+										for (const udf of section.udfs) {
+											if (udf.code) udfFields.push(udf as ProjectUDFField);
 										}
-									});
+									}
 								}
+							}
+							projectTypeCache[projectTypeIdStr] = udfFields.filter((field) => {
+								if (field.is_system_defined && excludedSystemFields.includes(field.code)) return false;
+								return true;
 							});
-						}
-
-						// Debug: Log if no field codes were found
-						if (availableFieldCodes.length === 0) {
-							console.warn(`No field codes found for project type ${projectTypeId}. Response structure:`, JSON.stringify(projectTypeResponse, null, 2));
-						}
-					} catch (error: unknown) {
-						if (isAccessTokenError(error)) {
+						} catch (error: unknown) {
+							if (isAccessTokenError(error)) return [];
+							console.error('Error fetching project type fields:', error);
 							return [];
 						}
-						console.error('Error fetching project type fields:', error);
-						// If this fails, return empty array to avoid showing wrong fields
-						return [];
 					}
 
-					interface UDFField {
-						code: string;
-						display_name: string;
-						field_type: string;
-						is_system_defined: boolean;
-						is_required: boolean;
-						availability: number;
-						help_text?: string;
-						information_text?: string;
-						options?: Array<{ id: number | string; name: string; color?: string }>;
-						mindate?: string;
-						maxdate?: string;
-						minlength?: number;
-						maxlength?: number;
-						regex?: string;
-					}
-					interface UDFResponse {
-						data: UDFField[];
-					}
+					const udfFields = projectTypeCache[projectTypeIdStr];
+					if (udfFields.length === 0) return [];
 
-					// Fetch all UDF fields
-					const udfResponse = await this.helpers.httpRequestWithAuthentication.call(
-						this,
-						credentialType,
-						{
-							method: 'GET',
-							url: `${BASE_URL}/rest/projects/udf`,
-							headers: {
-								'Accept': 'application/json',
-							},
-						},
-					) as UDFResponse;
-
-					if (!udfResponse.data || !Array.isArray(udfResponse.data)) {
-						return [];
-					}
-
-					// Filter UDF fields based on what's available for this project type
 					const excludedSystemFields = ['id', 'project_type_id', 'title'];
-					
-					// If no field codes were found, log a warning but don't filter everything out
-					// This might indicate the API structure is different or there are no UDFs for this type
-					if (availableFieldCodes.length === 0) {
-						console.warn(`No available field codes found for project type ${projectTypeId}. This might indicate no UDFs are configured for this project type.`);
-						// Return empty array since we can't determine which fields are valid
-						return [];
-					}
-					
-					const fields = udfResponse.data
-						.filter((field: UDFField) => {
-							// Exclude system fields that are already in the static form
-							if (field.is_system_defined && excludedSystemFields.includes(field.code)) {
-								return false;
-							}
-							
-							// Only include fields that are available for this project type
-							return availableFieldCodes.includes(field.code);
+					return udfFields
+						.filter((field) => {
+							if (field.is_system_defined && excludedSystemFields.includes(field.code)) return false;
+							return true;
 						})
-						.sort((a: UDFField, b: UDFField) => {
-							// Sort by is_required: true fields first, then false/undefined fields
+						.sort((a, b) => {
 							const aRequired = a.is_required === true ? 1 : 0;
 							const bRequired = b.is_required === true ? 1 : 0;
-							return bRequired - aRequired; // Descending: 1 (required) comes before 0 (not required)
+							return bRequired - aRequired;
 						})
-						.map((field: UDFField) => {
-							// Build description with helpful info
-							let description = field.help_text || field.information_text || '';
-							if (field.field_type) {
-								description = description ? `${description} (Type: ${field.field_type})` : `Type: ${field.field_type}`;
-							}
-							if (field.is_required) {
-								description = description ? `${description} - Required` : 'Required field';
-							}
-
-							// Normalize options to only include id, name, and color
-							const normalizedOptions = (field.options || []).map((option) => ({
-								id: option.id,
-								name: option.name,
-								color: option.color,
-							}));
-
-							// Store field metadata as JSON string in the value
-							const fieldData = {
-								code: field.code,
-								field_type: field.field_type,
-								options: normalizedOptions,
-								mindate: field.mindate,
-								maxdate: field.maxdate,
-								minlength: field.minlength,
-								maxlength: field.maxlength,
-								regex: field.regex,
-							};
-
-							return {
-								name: field.display_name || field.code,
-								value: JSON.stringify(fieldData),
-								description: description || undefined,
-							};
-						});
-
-					return fields;
+						.map((field) => ({
+							name: field.display_name || field.code,
+							value: JSON.stringify({ code: field.code, field_type: field.field_type ?? '' }),
+						}));
 				} catch (error: unknown) {
-					if (isAccessTokenError(error)) {
-						return [];
-					}
+					if (isAccessTokenError(error)) return [];
 					console.error('Error fetching UDF fields:', error);
 					return [];
 				}
 			},
 
-			// Fetch mandatory user-defined fields (is_required: true) for projects
+			// Layer 1 + 2: Lightweight field list; use cache (populated by getProjectUDFFields or here).
 			async getProjectUDFFieldsMandatory(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 				try {
-					const currentNode = this.getNode();
-					const parameters = currentNode.parameters as { project_type_id?: number | string; authentication?: string };
+					const parameters = this.getNode().parameters as { project_type_id?: number | string; authentication?: string };
 					let projectTypeId = parameters.project_type_id;
 					const credentialType =
-						parameters.authentication === 'accessToken'
-							? 'ersAppAccessTokenApi'
-							: 'ersAppOAuth2';
+						parameters.authentication === 'accessToken' ? 'ersAppAccessTokenApi' : 'ersAppOAuth2';
 
-					if (projectTypeId === '' || projectTypeId === null || projectTypeId === undefined) {
-						return [];
-					}
+					if (projectTypeId === '' || projectTypeId === null || projectTypeId === undefined) return [];
 
-					projectTypeId = String(projectTypeId);
-
-					// Fetch available fields for this project type
-					const availableFieldCodes: string[] = [];
-					try {
-						const projectTypeResponse = await this.helpers.httpRequestWithAuthentication.call(
-							this,
-							credentialType,
-							{
-								method: 'GET',
-								url: `${BASE_URL}/rest/projects/projecttype/${projectTypeId}`,
-								headers: {
-									'Accept': 'application/json',
-								},
-							},
-						) as { sections?: Array<{ udfs?: Array<{ code?: string }> }> };
-						
-						if (projectTypeResponse.sections && Array.isArray(projectTypeResponse.sections)) {
-							projectTypeResponse.sections.forEach((section) => {
-								if (section.udfs && Array.isArray(section.udfs)) {
-									section.udfs.forEach((udf) => {
-										if (udf.code) {
-											availableFieldCodes.push(udf.code);
-										}
-									});
-								}
-							});
+					if (typeof projectTypeId === 'string') {
+						try {
+							const parsed = JSON.parse(projectTypeId);
+							if (parsed && typeof parsed === 'object' && 'id' in parsed) projectTypeId = parsed.id;
+						} catch {
+							// not JSON
 						}
-					} catch (error: unknown) {
-						if (isAccessTokenError(error)) {
+					}
+					const projectTypeIdStr = String(projectTypeId);
+
+					if (!projectTypeCache[projectTypeIdStr]) {
+						const excludedSystemFields = ['id', 'project_type_id', 'title'];
+						try {
+							const projectTypeResponse = await this.helpers.httpRequestWithAuthentication.call(
+								this, credentialType,
+								{ method: 'GET', url: `${BASE_URL}/rest/projects/projecttype/${projectTypeIdStr}`, headers: { 'Accept': 'application/json' } },
+							) as { sections?: Array<{ udfs?: ProjectUDFField[] }> };
+							const udfFields: ProjectUDFField[] = [];
+							if (projectTypeResponse.sections?.length) {
+								for (const section of projectTypeResponse.sections) {
+									if (section.udfs?.length) {
+										for (const udf of section.udfs) {
+											if (udf.code) udfFields.push(udf as ProjectUDFField);
+										}
+									}
+								}
+							}
+							projectTypeCache[projectTypeIdStr] = udfFields.filter((field) => {
+								if (field.is_system_defined && excludedSystemFields.includes(field.code)) return false;
+								return true;
+							});
+						} catch (error: unknown) {
+							if (isAccessTokenError(error)) return [];
+							console.error('Error fetching project type fields:', error);
 							return [];
 						}
-						console.error('Error fetching project type fields:', error);
-						return [];
 					}
 
-					if (availableFieldCodes.length === 0) {
-						return [];
-					}
-
-					interface UDFField {
-						code: string;
-						display_name: string;
-						field_type: string;
-						is_system_defined: boolean;
-						is_required: boolean;
-						availability: number;
-						help_text?: string;
-						information_text?: string;
-						options?: Array<{ id: number | string; name: string; color?: string }>;
-						mindate?: string;
-						maxdate?: string;
-						minlength?: number;
-						maxlength?: number;
-						regex?: string;
-					}
-					interface UDFResponse {
-						data: UDFField[];
-					}
-
-					const udfResponse = await this.helpers.httpRequestWithAuthentication.call(
-						this,
-						credentialType,
-						{
-							method: 'GET',
-							url: `${BASE_URL}/rest/projects/udf`,
-							headers: {
-								'Accept': 'application/json',
-							},
-						},
-					) as UDFResponse;
-
-					if (!udfResponse.data || !Array.isArray(udfResponse.data)) {
-						return [];
-					}
+					const udfFields = projectTypeCache[projectTypeIdStr];
+					if (udfFields.length === 0) return [];
 
 					const excludedSystemFields = ['id', 'project_type_id', 'title'];
-					
-					const fields = udfResponse.data
-						.filter((field: UDFField) => {
-							if (field.is_system_defined && excludedSystemFields.includes(field.code)) {
-								return false;
-							}
-							if (!availableFieldCodes.includes(field.code)) {
-								return false;
-							}
-							// Only include fields where is_required is true
+					return udfFields
+						.filter((field) => {
+							if (field.is_system_defined && excludedSystemFields.includes(field.code)) return false;
 							return field.is_required === true;
 						})
-						.map((field: UDFField) => {
-							let description = field.help_text || field.information_text || '';
-							if (field.field_type) {
-								description = description ? `${description} (Type: ${field.field_type})` : `Type: ${field.field_type}`;
-							}
-							if (field.is_required) {
-								description = description ? `${description} - Required` : 'Required field';
-							}
-
-							// Normalize options to only include id, name, and color
-							const normalizedOptions = (field.options || []).map((option) => ({
-								id: option.id,
-								name: option.name,
-								color: option.color,
-							}));
-
-							const fieldData = {
-								code: field.code,
-								field_type: field.field_type,
-								options: normalizedOptions,
-								mindate: field.mindate,
-								maxdate: field.maxdate,
-								minlength: field.minlength,
-								maxlength: field.maxlength,
-								regex: field.regex,
-							};
-
-							return {
-								name: field.display_name || field.code,
-								value: JSON.stringify(fieldData),
-								description: description || undefined,
-							};
-						});
-
-					return fields;
+						.map((field) => ({
+							name: field.display_name || field.code,
+							value: JSON.stringify({ code: field.code, field_type: field.field_type ?? '' }),
+						}));
 				} catch (error) {
 					console.error('Error fetching mandatory project UDF fields:', error);
 					return [];
 				}
 			},
 
-			// Fetch other user-defined fields (is_required: false or undefined) for projects
+			// Layer 1 + 2: Lightweight field list; use cache (populated by getProjectUDFFields or here).
 			async getProjectUDFFieldsOther(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 				try {
-					const currentNode = this.getNode();
-					const parameters = currentNode.parameters as { project_type_id?: number | string; authentication?: string };
+					const parameters = this.getNode().parameters as { project_type_id?: number | string; authentication?: string };
 					let projectTypeId = parameters.project_type_id;
 					const credentialType =
-						parameters.authentication === 'accessToken'
-							? 'ersAppAccessTokenApi'
-							: 'ersAppOAuth2';
+						parameters.authentication === 'accessToken' ? 'ersAppAccessTokenApi' : 'ersAppOAuth2';
 
-					if (projectTypeId === '' || projectTypeId === null || projectTypeId === undefined) {
-						return [];
-					}
+					if (projectTypeId === '' || projectTypeId === null || projectTypeId === undefined) return [];
 
-					projectTypeId = String(projectTypeId);
-
-					// Fetch available fields for this project type
-					const availableFieldCodes: string[] = [];
-					try {
-						const projectTypeResponse = await this.helpers.httpRequestWithAuthentication.call(
-							this,
-							credentialType,
-							{
-								method: 'GET',
-								url: `${BASE_URL}/rest/projects/projecttype/${projectTypeId}`,
-								headers: {
-									'Accept': 'application/json',
-								},
-							},
-						) as { sections?: Array<{ udfs?: Array<{ code?: string }> }> };
-						
-						if (projectTypeResponse.sections && Array.isArray(projectTypeResponse.sections)) {
-							projectTypeResponse.sections.forEach((section) => {
-								if (section.udfs && Array.isArray(section.udfs)) {
-									section.udfs.forEach((udf) => {
-										if (udf.code) {
-											availableFieldCodes.push(udf.code);
-										}
-									});
-								}
-							});
+					if (typeof projectTypeId === 'string') {
+						try {
+							const parsed = JSON.parse(projectTypeId);
+							if (parsed && typeof parsed === 'object' && 'id' in parsed) projectTypeId = parsed.id;
+						} catch {
+							// not JSON
 						}
-					} catch (error: unknown) {
-						if (isAccessTokenError(error)) {
+					}
+					const projectTypeIdStr = String(projectTypeId);
+
+					if (!projectTypeCache[projectTypeIdStr]) {
+						const excludedSystemFields = ['id', 'project_type_id', 'title'];
+						try {
+							const projectTypeResponse = await this.helpers.httpRequestWithAuthentication.call(
+								this, credentialType,
+								{ method: 'GET', url: `${BASE_URL}/rest/projects/projecttype/${projectTypeIdStr}`, headers: { 'Accept': 'application/json' } },
+							) as { sections?: Array<{ udfs?: ProjectUDFField[] }> };
+							const udfFields: ProjectUDFField[] = [];
+							if (projectTypeResponse.sections?.length) {
+								for (const section of projectTypeResponse.sections) {
+									if (section.udfs?.length) {
+										for (const udf of section.udfs) {
+											if (udf.code) udfFields.push(udf as ProjectUDFField);
+										}
+									}
+								}
+							}
+							projectTypeCache[projectTypeIdStr] = udfFields.filter((field) => {
+								if (field.is_system_defined && excludedSystemFields.includes(field.code)) return false;
+								return true;
+							});
+						} catch (error: unknown) {
+							if (isAccessTokenError(error)) return [];
+							console.error('Error fetching project type fields:', error);
 							return [];
 						}
-						console.error('Error fetching project type fields:', error);
-						return [];
 					}
 
-					if (availableFieldCodes.length === 0) {
-						return [];
-					}
-
-					interface UDFField {
-						code: string;
-						display_name: string;
-						field_type: string;
-						is_system_defined: boolean;
-						is_required: boolean;
-						availability: number;
-						help_text?: string;
-						information_text?: string;
-						options?: Array<{ id: number | string; name: string; color?: string }>;
-						mindate?: string;
-						maxdate?: string;
-						minlength?: number;
-						maxlength?: number;
-						regex?: string;
-					}
-					interface UDFResponse {
-						data: UDFField[];
-					}
-
-					const udfResponse = await this.helpers.httpRequestWithAuthentication.call(
-						this,
-						credentialType,
-						{
-							method: 'GET',
-							url: `${BASE_URL}/rest/projects/udf`,
-							headers: {
-								'Accept': 'application/json',
-							},
-						},
-					) as UDFResponse;
-
-					if (!udfResponse.data || !Array.isArray(udfResponse.data)) {
-						return [];
-					}
+					const udfFields = projectTypeCache[projectTypeIdStr];
+					if (udfFields.length === 0) return [];
 
 					const excludedSystemFields = ['id', 'project_type_id', 'title'];
-					
-					const fields = udfResponse.data
-						.filter((field: UDFField) => {
-							if (field.is_system_defined && excludedSystemFields.includes(field.code)) {
-								return false;
-							}
-							if (!availableFieldCodes.includes(field.code)) {
-								return false;
-							}
-							// Only include fields where is_required is false or undefined
+					return udfFields
+						.filter((field) => {
+							if (field.is_system_defined && excludedSystemFields.includes(field.code)) return false;
 							return field.is_required !== true;
 						})
-						.map((field: UDFField) => {
-							let description = field.help_text || field.information_text || '';
-							if (field.field_type) {
-								description = description ? `${description} (Type: ${field.field_type})` : `Type: ${field.field_type}`;
-							}
-
-							// Normalize options to only include id, name, and color
-							const normalizedOptions = (field.options || []).map((option) => ({
-								id: option.id,
-								name: option.name,
-								color: option.color,
-							}));
-
-							const fieldData = {
-								code: field.code,
-								field_type: field.field_type,
-								options: normalizedOptions,
-								mindate: field.mindate,
-								maxdate: field.maxdate,
-								minlength: field.minlength,
-								maxlength: field.maxlength,
-								regex: field.regex,
-							};
-
-							return {
-								name: field.display_name || field.code,
-								value: JSON.stringify(fieldData),
-								description: description || undefined,
-							};
-						});
-
-					return fields;
+						.map((field) => ({
+							name: field.display_name || field.code,
+							value: JSON.stringify({ code: field.code, field_type: field.field_type ?? '' }),
+						}));
 				} catch (error) {
 					console.error('Error fetching other project UDF fields:', error);
 					return [];
@@ -1048,118 +835,86 @@ export class ErsApp implements INodeType {
 				}
 			},
 
-			// Get options for dropdown/select fields for projects
+			// Layer 3: Dynamic option loader for projects — read from cache, filter by search, limit 30.
 			async getProjectUDFFieldOptions(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 				try {
-					// Get the current node parameters to find the selected field
-					const currentNode = this.getNode();
-					const parameters = currentNode.parameters as { 
+					const parameters = this.getNode().parameters as {
+						project_type_id?: number | string;
 						mandatoryFields?: { field?: Array<{ fieldName?: string }> };
 						otherFields?: { field?: Array<{ fieldName?: string }> };
 						udfFields?: { field?: Array<{ fieldName?: string }> };
 					};
-					
-					// Check mandatoryFields, otherFields, and udfFields
-					const mandatoryFields = parameters.mandatoryFields;
-					const otherFields = parameters.otherFields;
-					const udfFields = parameters.udfFields;
-					
-					// Try to find fieldName from mandatoryFields first, then otherFields, then udfFields
+
 					let fieldName: string | undefined;
-					
-					// Check mandatoryFields
-					if (mandatoryFields?.field && Array.isArray(mandatoryFields.field) && mandatoryFields.field.length > 0) {
-						// First, try to get from the last item (most likely the one being edited)
-						for (let i = mandatoryFields.field.length - 1; i >= 0; i--) {
-							const item = mandatoryFields.field[i];
-							if (item?.fieldName && typeof item.fieldName === 'string' && item.fieldName.trim() !== '') {
-								fieldName = item.fieldName;
+					for (const arr of [
+						parameters.mandatoryFields?.field,
+						parameters.otherFields?.field,
+						parameters.udfFields?.field,
+					]) {
+						if (Array.isArray(arr) && arr.length > 0) {
+							for (let i = arr.length - 1; i >= 0; i--) {
+								const item = arr[i];
+								if (item?.fieldName && typeof item.fieldName === 'string' && item.fieldName.trim() !== '') {
+									fieldName = item.fieldName;
+									break;
+								}
+							}
+							if (fieldName) break;
+							const first = arr[0];
+							if (first?.fieldName) {
+								fieldName = first.fieldName as string;
 								break;
 							}
 						}
-						
-						// If still no fieldName found, try the first item
-						if (!fieldName && mandatoryFields.field[0]?.fieldName) {
-							fieldName = mandatoryFields.field[0].fieldName as string;
-						}
-					}
-					
-					// If not found in mandatoryFields, check otherFields
-					if (!fieldName && otherFields?.field && Array.isArray(otherFields.field) && otherFields.field.length > 0) {
-						// First, try to get from the last item (most likely the one being edited)
-						for (let i = otherFields.field.length - 1; i >= 0; i--) {
-							const item = otherFields.field[i];
-							if (item?.fieldName && typeof item.fieldName === 'string' && item.fieldName.trim() !== '') {
-								fieldName = item.fieldName;
-								break;
-							}
-						}
-						
-						// If still no fieldName found, try the first item
-						if (!fieldName && otherFields.field[0]?.fieldName) {
-							fieldName = otherFields.field[0].fieldName as string;
-						}
-					}
-					
-					// If not found in mandatoryFields or otherFields, check udfFields (for update operations)
-					if (!fieldName && udfFields?.field && Array.isArray(udfFields.field) && udfFields.field.length > 0) {
-						// First, try to get from the last item (most likely the one being edited)
-						for (let i = udfFields.field.length - 1; i >= 0; i--) {
-							const item = udfFields.field[i];
-							if (item?.fieldName && typeof item.fieldName === 'string' && item.fieldName.trim() !== '') {
-								fieldName = item.fieldName;
-								break;
-							}
-						}
-						
-						// If still no fieldName found, try the first item
-						if (!fieldName && udfFields.field[0]?.fieldName) {
-							fieldName = udfFields.field[0].fieldName as string;
-						}
-					}
-					
-					// If no fieldName found in any item, return empty
-					if (!fieldName || fieldName === '') {
-						// Return empty option to allow empty string default
-						return [{ name: '', value: '' }];
 					}
 
-					// Parse the field metadata
-					interface FieldData {
-						code: string;
-						field_type: string;
-						options: Array<{ id: number | string; name: string; color?: string }>;
-					}
-					let fieldData: FieldData;
+					if (!fieldName || fieldName === '') return [{ name: '', value: '' }];
+
+					let parsed: { code?: string; field_type?: string };
 					try {
-						fieldData = JSON.parse(fieldName);
-					} catch (parseError) {
-						console.error('Error parsing fieldName JSON:', parseError, 'fieldName:', fieldName);
-						// Return empty option to allow empty string default
+						parsed = JSON.parse(fieldName);
+					} catch {
 						return [{ name: '', value: '' }];
 					}
 
-					// Return options if available
-					if (fieldData.options && Array.isArray(fieldData.options) && fieldData.options.length > 0) {
-						const options = fieldData.options.map((option) => {
-							// Ensure we have both name and id
-							const optionName = option.name || String(option.id);
-							const optionId = option.id;
-							return {
-								name: optionName,
-								value: optionId,
-								description: option.color ? `Color: ${option.color}` : undefined,
-							};
-						});
-						// Add empty option at the beginning to allow empty string default
-						return [{ name: '', value: '' }, ...options];
+					let projectTypeId: number | string | undefined = parameters.project_type_id;
+					if (projectTypeId === undefined || projectTypeId === null || projectTypeId === '') {
+						return [{ name: '', value: '' }];
 					}
+					if (typeof projectTypeId === 'string') {
+						try {
+							const p = JSON.parse(projectTypeId);
+							if (p && typeof p === 'object' && 'id' in p) projectTypeId = p.id;
+						} catch {
+							// not JSON
+						}
+					}
+					const projectTypeIdStr = String(projectTypeId);
 
-					// Return empty option to allow empty string default
-					return [{ name: '', value: '' }];
+					const fields = projectTypeCache[projectTypeIdStr];
+					if (!fields?.length) return [{ name: '', value: '' }];
+
+					const field = fields.find((f) => f.code === parsed.code);
+					if (!field || !field.options?.length) return [{ name: '', value: '' }];
+
+					const search = (
+						this.getCurrentNodeParameter('fieldValue') ??
+						this.getCurrentNodeParameter('fieldValueSelect') ??
+						this.getCurrentNodeParameter('fieldValueMultiSelect')
+					) as string | undefined;
+					const searchLower = typeof search === 'string' && search.trim() ? search.trim().toLowerCase() : '';
+
+					const filtered = searchLower
+						? field.options.filter((opt) => (opt.name || '').toLowerCase().includes(searchLower))
+						: field.options;
+					const limited = filtered.slice(0, 30).map((opt) => ({
+						name: opt.name || String(opt.id),
+						value: opt.id,
+					}));
+
+					return [{ name: '', value: '' }, ...limited];
 				} catch (error) {
 					console.error('Error in getProjectUDFFieldOptions:', error);
-					// Return empty option to allow empty string default
 					return [{ name: '', value: '' }];
 				}
 			},

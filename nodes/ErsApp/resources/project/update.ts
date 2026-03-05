@@ -76,6 +76,7 @@ export const projectUpdateDescription: INodeProperties[] = [
 						type: 'options',
 						typeOptions: {
 							loadOptionsMethod: 'getProjectUDFFields',
+							loadOptionsDependsOn: ['project_type_id'],
 						},
 						default: '',
 						description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
@@ -130,6 +131,7 @@ export const projectUpdateDescription: INodeProperties[] = [
 						typeOptions: {
 							loadOptionsMethod: 'getProjectUDFFieldOptions',
 							loadOptionsDependsOn: ['fieldName'],
+							searchable: true,
 						},
 						default: [],
 						displayOptions: {
@@ -191,6 +193,7 @@ export const projectUpdateDescription: INodeProperties[] = [
 						typeOptions: {
 							loadOptionsMethod: 'getProjectUDFFieldOptions',
 							loadOptionsDependsOn: ['fieldName'],
+							searchable: true,
 						},
 						default: '',
 						displayOptions: {
