@@ -75,6 +75,7 @@ export const resourceCreateDescription: INodeProperties[] = [
 						type: 'options',
 						typeOptions: {
 							loadOptionsMethod: 'getResourceUDFFieldsMandatory',
+							loadOptionsDependsOn: ['resource_type_id'],
 						},
 						default: '',
 						description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
@@ -306,6 +307,7 @@ export const resourceCreateDescription: INodeProperties[] = [
 						type: 'options',
 						typeOptions: {
 							loadOptionsMethod: 'getResourceUDFFieldsOther',
+							loadOptionsDependsOn: ['resource_type_id'],
 						},
 						default: '',
 						description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',

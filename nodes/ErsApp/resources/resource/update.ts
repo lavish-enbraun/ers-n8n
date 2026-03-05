@@ -15,7 +15,7 @@ export const resourceUpdateDescription: INodeProperties[] = [
 			show: showOnlyForResourceUpdate,
 		},
 		typeOptions: {
-			minValue: 1,
+			minValue: 0,
 		},
 		default: '',
 		description: 'Unique ID of the resource to update',
@@ -64,7 +64,7 @@ export const resourceUpdateDescription: INodeProperties[] = [
 		typeOptions: {
 			multipleValues: true,
 		},
-		description: 'Custom user-defined fields from eResource Scheduler. Fields are fetched dynamically based on the selected Resource Type. After selecting a field, fill ONLY the appropriate value field that matches the field type (Text for TEXT/EMAIL/ENAME, Number for NUMBER/INTEGER, Date for DATE, Boolean for BOOLEAN/CHECKBOX, Select for dropdowns with options, Multi-Select for multi-select dropdowns).',
+		description: 'Custom user-defined fields from eResource Scheduler. Fields are loaded dynamically by Resource Type; dropdown options are loaded on demand. After selecting a field, fill ONLY the value that matches the field type (Text, Number, Date, Boolean, Select, or Multi-Select).',
 		options: [
 			{
 				displayName: 'Field',
@@ -76,6 +76,7 @@ export const resourceUpdateDescription: INodeProperties[] = [
 						type: 'options',
 						typeOptions: {
 							loadOptionsMethod: 'getResourceUDFFields',
+							loadOptionsDependsOn: ['resource_type_id'],
 						},
 						default: '',
 						description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
