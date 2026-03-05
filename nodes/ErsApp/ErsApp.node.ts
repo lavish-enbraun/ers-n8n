@@ -1034,7 +1034,9 @@ export class ErsApp implements INodeType {
 					const filtered = searchLower
 						? field.options.filter((opt) => (opt.name || '').toLowerCase().includes(searchLower))
 						: field.options;
-					const limited = filtered.slice(0, 30).map((opt) => ({
+						
+					const limit = 300;
+					const limited = filtered.slice(0, limit).map((opt) => ({
 						name: opt.name || String(opt.id),
 						value: opt.id,
 					}));
