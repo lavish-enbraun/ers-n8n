@@ -7,23 +7,10 @@ const showOnlyForResourceUpdate = {
 
 export const resourceUpdateDescription: INodeProperties[] = [
 	{
-		displayName: 'Resource ID',
-		name: 'resource_id',
-		type: 'number',
-		required: true,
-		displayOptions: {
-			show: showOnlyForResourceUpdate,
-		},
-		typeOptions: {
-			minValue: 0,
-		},
-		default: '',
-		description: 'Unique ID of the resource to update',
-	},
-	{
 		displayName: 'Resource Type Name or ID',
 		name: 'resource_type_id',
 		type: 'options',
+		required: true,
 		displayOptions: {
 			show: showOnlyForResourceUpdate,
 		},
@@ -32,6 +19,18 @@ export const resourceUpdateDescription: INodeProperties[] = [
 		},
 		default: '',
 		description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+	},
+	{
+		displayName: 'Resource ID',
+		name: 'resource_id',
+		type: 'string',
+		required: true,
+		displayOptions: {
+			show: showOnlyForResourceUpdate,
+		},
+		default: '',
+		placeholder: 'Enter Resource ID',
+		description: 'Unique ID of the resource to update',
 	},
 	{
 		displayName: 'Resource Name',
@@ -117,7 +116,7 @@ export const resourceUpdateDescription: INodeProperties[] = [
 										_cnd: {
 											regex: '.*"field_type":"DATE".*',
 										},
-									},
+										},
 								],
 							},
 						},
@@ -276,4 +275,3 @@ export const resourceUpdateDescription: INodeProperties[] = [
 		],
 	},
 ];
-
