@@ -331,7 +331,8 @@ export class ErsApp implements INodeType {
 					const udfFields = resourceTypeCache[resourceTypeIdStr];
 					if (udfFields.length === 0) return [];
 
-					const excludedSystemFields = ['id', 'resource_type_id', 'first_name', 'start_date'];
+					// Exclude system fields that are not editable as UDFs. start_date is included so it can be set via UDF in resource update.
+					const excludedSystemFields = ['id', 'resource_type_id', 'first_name'];
 					return udfFields
 						.filter((field) => {
 							if (field.is_system_defined && excludedSystemFields.includes(field.code)) return false;
