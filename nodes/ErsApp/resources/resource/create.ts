@@ -270,10 +270,15 @@ export const resourceCreateDescription: INodeProperties[] = [
 										regex: '.*"field_type":"ENAME".*',
 									},
 								},
+								{
+									_cnd: {
+										regex: '.*"field_type":"URL".*',
+									},
+								},
 							],
 						},
 					},
-					description: 'Fill this for TEXT, EMAIL, ENAME field types. For Tags, enter comma-separated values.',
+					description: 'Fill this for TEXT, EMAIL, ENAME, URL field types. For Tags, enter comma-separated values.',
 				},
 			],
 		},
@@ -507,10 +512,15 @@ export const resourceCreateDescription: INodeProperties[] = [
 										regex: '.*"field_type":"ENAME".*',
 									},
 								},
+								{
+									_cnd: {
+										regex: '.*"field_type":"URL".*',
+									},
+								},
 							],
 						},
 					},
-					description: 'Fill this for TEXT, EMAIL, ENAME field types. For Tags, enter comma-separated values.',
+					description: 'Fill this for TEXT, EMAIL, ENAME, URL field types. For Tags, enter comma-separated values.',
 				},
 			],
 		},

@@ -259,10 +259,15 @@ export const projectCreateDescription: INodeProperties[] = [
 											regex: '.*"field_type":"ENAME".*',
 										},
 									},
+									{
+										_cnd: {
+											regex: '.*"field_type":"URL".*',
+										},
+									},
 								],
 							},
 						},
-						description: 'Fill this for TEXT, EMAIL, ENAME field types',
+						description: 'Fill this for TEXT, EMAIL, ENAME, URL field types',
 					},
 				],
 			},
@@ -496,10 +501,15 @@ export const projectCreateDescription: INodeProperties[] = [
 											regex: '.*"field_type":"ENAME".*',
 										},
 									},
+									{
+										_cnd: {
+											regex: '.*"field_type":"URL".*',
+										},
+									},
 								],
 							},
 						},
-						description: 'Fill this for TEXT, EMAIL, ENAME field types',
+						description: 'Fill this for TEXT, EMAIL, ENAME, URL field types',
 					},
 				],
 			},
