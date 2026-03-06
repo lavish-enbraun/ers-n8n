@@ -151,6 +151,11 @@ export const resourceCreateDescription: INodeProperties[] = [
 											regex: '.*"field_type":"CHGRP".*',
 										},
 									},
+									{
+										_cnd: {
+											regex: '.*"field_type":"UMS".*',
+										},
+									},
 								],
 							},
 						},
@@ -223,6 +228,11 @@ export const resourceCreateDescription: INodeProperties[] = [
 											regex: '.*"field_type":"RDGRP".*',
 										},
 									},
+									{
+										_cnd: {
+											regex: '.*"field_type":"LABL".*',
+										},
+									},
 								],
 							},
 							hide: {
@@ -242,10 +252,15 @@ export const resourceCreateDescription: INodeProperties[] = [
 											regex: '.*"field_type":"CHGRP".*',
 										},
 									},
+									{
+										_cnd: {
+											regex: '.*"field_type":"UMS".*',
+										},
+									},
 								],
 							},
 						},
-						description: 'Fill this for single-select dropdown fields (e.g. RTYPE, DDSS, RDGRP Radio Group). Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
+						description: 'Fill this for single-select dropdown fields (e.g. RTYPE, DDSS, RDGRP, LABL Label). Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
 					},
 				{
 					displayName: 'Field Value (Text)',
@@ -359,6 +374,11 @@ export const resourceCreateDescription: INodeProperties[] = [
 											regex: '.*"field_type":"DATE".*',
 										},
 									},
+									{
+										_cnd: {
+											regex: '.*"field_type":"DATIM".*',
+										},
+									}
 								],
 							},
 						},
@@ -391,6 +411,11 @@ export const resourceCreateDescription: INodeProperties[] = [
 									{
 										_cnd: {
 											regex: '.*"field_type":"CHGRP".*',
+										},
+									},
+									{
+										_cnd: {
+											regex: '.*"field_type":"UMS".*',
 										},
 									},
 								],
@@ -465,6 +490,11 @@ export const resourceCreateDescription: INodeProperties[] = [
 											regex: '.*"field_type":"RDGRP".*',
 										},
 									},
+									{
+										_cnd: {
+											regex: '.*"field_type":"LABL".*',
+										},
+									},
 								],
 							},
 							hide: {
@@ -484,10 +514,15 @@ export const resourceCreateDescription: INodeProperties[] = [
 											regex: '.*"field_type":"CHGRP".*',
 										},
 									},
+									{
+										_cnd: {
+											regex: '.*"field_type":"UMS".*',
+										},
+									},
 								],
 							},
 						},
-						description: 'Fill this for single-select dropdown fields (e.g. RTYPE, DDSS, RDGRP Radio Group). Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
+						description: 'Fill this for single-select dropdown fields (e.g. RTYPE, DDSS, RDGRP, LABL Label). Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
 					},
 					{
 						displayName: 'Field Value (Text)',
