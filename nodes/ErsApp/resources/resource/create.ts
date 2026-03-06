@@ -218,6 +218,11 @@ export const resourceCreateDescription: INodeProperties[] = [
 											regex: '.*"field_type":"USS".*',
 										},
 									},
+									{
+										_cnd: {
+											regex: '.*"field_type":"RDGRP".*',
+										},
+									},
 								],
 							},
 							hide: {
@@ -240,7 +245,7 @@ export const resourceCreateDescription: INodeProperties[] = [
 								],
 							},
 						},
-						description: 'Fill this for single-select dropdown fields. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
+						description: 'Fill this for single-select dropdown fields (e.g. RTYPE, DDSS, RDGRP Radio Group). Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
 					},
 				{
 					displayName: 'Field Value (Text)',
@@ -450,6 +455,11 @@ export const resourceCreateDescription: INodeProperties[] = [
 											regex: '.*"field_type":"USS".*',
 										},
 									},
+									{
+										_cnd: {
+											regex: '.*"field_type":"RDGRP".*',
+										},
+									},
 								],
 							},
 							hide: {
@@ -472,7 +482,7 @@ export const resourceCreateDescription: INodeProperties[] = [
 								],
 							},
 						},
-						description: 'Fill this for single-select dropdown fields. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
+						description: 'Fill this for single-select dropdown fields (e.g. RTYPE, DDSS, RDGRP Radio Group). Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
 					},
 					{
 						displayName: 'Field Value (Text)',
