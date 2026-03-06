@@ -106,6 +106,11 @@ export const projectCreateDescription: INodeProperties[] = [
 											regex: '.*"field_type":"DATE".*',
 										},
 									},
+									{
+										_cnd: {
+											regex: '.*"field_type":"DATIM".*',
+										},
+									}
 								],
 							},
 						},
@@ -140,6 +145,11 @@ export const projectCreateDescription: INodeProperties[] = [
 											regex: '.*"field_type":"CHGRP".*',
 										},
 									},
+									{
+										_cnd: {
+											regex: '.*"field_type":"UMS".*',
+										},
+									},
 								],
 							},
 						},
@@ -150,6 +160,10 @@ export const projectCreateDescription: INodeProperties[] = [
 						name: 'fieldValueNumber',
 						type: 'number',
 						default: 0,
+						typeOptions: {
+							maxValue: 999999999,
+							minValue: -999999999,
+						},
 						displayOptions: {
 							show: {
 								fieldName: [
@@ -168,10 +182,15 @@ export const projectCreateDescription: INodeProperties[] = [
 											regex: '.*"field_type":"FLOAT".*',
 										},
 									},
+									{
+										_cnd: {
+											regex: '.*"field_type":"INT"[^E].*',
+										},
+									},
 								],
 							},
 						},
-						description: 'Fill this for NUMBER, INTEGER, FLOAT field types',
+						description: 'Fill this for NUMBER, INTEGER, FLOAT, INT field types. INT allows max 9 digits (999,999,999).',
 					},
 					{
 						displayName: 'Field Value (Select) Name or ID',
@@ -207,6 +226,16 @@ export const projectCreateDescription: INodeProperties[] = [
 											regex: '.*"field_type":"USS".*',
 										},
 									},
+									{
+										_cnd: {
+											regex: '.*"field_type":"RDGRP".*',
+										},
+									},
+									{
+										_cnd: {
+											regex: '.*"field_type":"LABL".*',
+										},
+									},
 								],
 							},
 							hide: {
@@ -226,10 +255,15 @@ export const projectCreateDescription: INodeProperties[] = [
 											regex: '.*"field_type":"CHGRP".*',
 										},
 									},
+									{
+										_cnd: {
+											regex: '.*"field_type":"UMS".*',
+										},
+									},
 								],
 							},
 						},
-						description: 'Fill this for single-select dropdown fields. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
+						description: 'Fill this for single-select dropdown fields (e.g. RTYPE, DDSS, RDGRP, LABL Label). Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
 					},
 					{
 						displayName: 'Field Value (Text)',
@@ -254,10 +288,20 @@ export const projectCreateDescription: INodeProperties[] = [
 											regex: '.*"field_type":"ENAME".*',
 										},
 									},
+									{
+										_cnd: {
+											regex: '.*"field_type":"URL".*',
+										},
+									},
+									{
+										_cnd: {
+											regex: '.*"field_type":"COLPICK".*',
+										},
+									},
 								],
 							},
 						},
-						description: 'Fill this for TEXT, EMAIL, ENAME field types',
+						description: 'Fill this for TEXT, EMAIL, ENAME, URL, COLPICK field types. For COLPICK use hex format #XXXXXX;1 or #XXXXXX;0 (1=white, 0=black foreground).',
 					},
 				],
 			},
@@ -372,6 +416,11 @@ export const projectCreateDescription: INodeProperties[] = [
 											regex: '.*"field_type":"CHGRP".*',
 										},
 									},
+									{
+										_cnd: {
+											regex: '.*"field_type":"UMS".*',
+										},
+									},
 								],
 							},
 						},
@@ -382,6 +431,10 @@ export const projectCreateDescription: INodeProperties[] = [
 						name: 'fieldValueNumber',
 						type: 'number',
 						default: 0,
+						typeOptions: {
+							maxValue: 999999999,
+							minValue: -999999999,
+						},
 						displayOptions: {
 							show: {
 								fieldName: [
@@ -400,10 +453,15 @@ export const projectCreateDescription: INodeProperties[] = [
 											regex: '.*"field_type":"FLOAT".*',
 										},
 									},
+									{
+										_cnd: {
+											regex: '.*"field_type":"INT"[^E].*',
+										},
+									},
 								],
 							},
 						},
-						description: 'Fill this for NUMBER, INTEGER, FLOAT field types',
+						description: 'Fill this for NUMBER, INTEGER, FLOAT, INT field types. INT allows max 9 digits (999,999,999).',
 					},
 					{
 						displayName: 'Field Value (Select) Name or ID',
@@ -439,6 +497,16 @@ export const projectCreateDescription: INodeProperties[] = [
 											regex: '.*"field_type":"USS".*',
 										},
 									},
+									{
+										_cnd: {
+											regex: '.*"field_type":"RDGRP".*',
+										},
+									},
+									{
+										_cnd: {
+											regex: '.*"field_type":"LABL".*',
+										},
+									},
 								],
 							},
 							hide: {
@@ -458,10 +526,15 @@ export const projectCreateDescription: INodeProperties[] = [
 											regex: '.*"field_type":"CHGRP".*',
 										},
 									},
+									{
+										_cnd: {
+											regex: '.*"field_type":"UMS".*',
+										},
+									},
 								],
 							},
 						},
-						description: 'Fill this for single-select dropdown fields. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
+						description: 'Fill this for single-select dropdown fields (e.g. RTYPE, DDSS, RDGRP, LABL Label). Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
 					},
 					{
 						displayName: 'Field Value (Text)',
@@ -486,10 +559,20 @@ export const projectCreateDescription: INodeProperties[] = [
 											regex: '.*"field_type":"ENAME".*',
 										},
 									},
+									{
+										_cnd: {
+											regex: '.*"field_type":"URL".*',
+										},
+									},
+									{
+										_cnd: {
+											regex: '.*"field_type":"COLPICK".*',
+										},
+									},
 								],
 							},
 						},
-						description: 'Fill this for TEXT, EMAIL, ENAME field types',
+						description: 'Fill this for TEXT, EMAIL, ENAME, URL, COLPICK field types. For COLPICK use hex format #XXXXXX;1 or #XXXXXX;0 (1=white, 0=black foreground).',
 					},
 				],
 			},
