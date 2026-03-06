@@ -7,23 +7,10 @@ const showOnlyForResourceUpdate = {
 
 export const resourceUpdateDescription: INodeProperties[] = [
 	{
-		displayName: 'Resource ID',
-		name: 'resource_id',
-		type: 'number',
-		required: true,
-		displayOptions: {
-			show: showOnlyForResourceUpdate,
-		},
-		typeOptions: {
-			minValue: 1,
-		},
-		default: '',
-		description: 'Unique ID of the resource to update',
-	},
-	{
 		displayName: 'Resource Type Name or ID',
 		name: 'resource_type_id',
 		type: 'options',
+		required: true,
 		displayOptions: {
 			show: showOnlyForResourceUpdate,
 		},
@@ -32,6 +19,18 @@ export const resourceUpdateDescription: INodeProperties[] = [
 		},
 		default: '',
 		description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+	},
+	{
+		displayName: 'Resource ID',
+		name: 'resource_id',
+		type: 'string',
+		required: true,
+		displayOptions: {
+			show: showOnlyForResourceUpdate,
+		},
+		default: '',
+		placeholder: 'Enter Resource ID',
+		description: 'Unique ID of the resource to update',
 	},
 	{
 		displayName: 'Resource Name',
@@ -64,7 +63,7 @@ export const resourceUpdateDescription: INodeProperties[] = [
 		typeOptions: {
 			multipleValues: true,
 		},
-		description: 'Custom user-defined fields from eResource Scheduler. Fields are fetched dynamically based on the selected Resource Type. After selecting a field, fill ONLY the appropriate value field that matches the field type (Text for TEXT/EMAIL/ENAME, Number for NUMBER/INTEGER, Date for DATE, Boolean for BOOLEAN/CHECKBOX, Select for dropdowns with options, Multi-Select for multi-select dropdowns).',
+		description: 'Custom user-defined fields from eResource Scheduler. Fields are loaded dynamically by Resource Type; dropdown options are loaded on demand. After selecting a field, fill ONLY the value that matches the field type (Text, Number, Date, Boolean, Select, or Multi-Select).',
 		options: [
 			{
 				displayName: 'Field',
@@ -76,6 +75,7 @@ export const resourceUpdateDescription: INodeProperties[] = [
 						type: 'options',
 						typeOptions: {
 							loadOptionsMethod: 'getResourceUDFFields',
+							loadOptionsDependsOn: ['resource_type_id'],
 						},
 						default: '',
 						description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
@@ -116,7 +116,7 @@ export const resourceUpdateDescription: INodeProperties[] = [
 										_cnd: {
 											regex: '.*"field_type":"DATE".*',
 										},
-									},
+										},
 								],
 							},
 						},
@@ -129,7 +129,8 @@ export const resourceUpdateDescription: INodeProperties[] = [
 						noDataExpression: true,
 						typeOptions: {
 							loadOptionsMethod: 'getResourceUDFFieldOptions',
-							loadOptionsDependsOn: ['fieldName'],
+							loadOptionsDependsOn: ['fieldName', 'resource_type_id'],
+							searchable: true,
 						},
 						default: [],
 						displayOptions: {
@@ -190,7 +191,8 @@ export const resourceUpdateDescription: INodeProperties[] = [
 						noDataExpression: true,
 						typeOptions: {
 							loadOptionsMethod: 'getResourceUDFFieldOptions',
-							loadOptionsDependsOn: ['fieldName'],
+							loadOptionsDependsOn: ['fieldName', 'resource_type_id'],
+							searchable: true,
 						},
 						default: '',
 						displayOptions: {
@@ -273,4 +275,3 @@ export const resourceUpdateDescription: INodeProperties[] = [
 		],
 	},
 ];
-

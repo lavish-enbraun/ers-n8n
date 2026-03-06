@@ -75,6 +75,7 @@ export const resourceCreateDescription: INodeProperties[] = [
 						type: 'options',
 						typeOptions: {
 							loadOptionsMethod: 'getResourceUDFFieldsMandatory',
+							loadOptionsDependsOn: ['resource_type_id'],
 						},
 						default: '',
 						description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
@@ -128,7 +129,8 @@ export const resourceCreateDescription: INodeProperties[] = [
 						noDataExpression: true,
 						typeOptions: {
 							loadOptionsMethod: 'getResourceUDFFieldOptions',
-							loadOptionsDependsOn: ['fieldName'],
+							loadOptionsDependsOn: ['fieldName', 'resource_type_id'],
+							searchable: true,
 						},
 						default: [],
 						displayOptions: {
@@ -189,7 +191,8 @@ export const resourceCreateDescription: INodeProperties[] = [
 						noDataExpression: true,
 						typeOptions: {
 							loadOptionsMethod: 'getResourceUDFFieldOptions',
-							loadOptionsDependsOn: ['fieldName'],
+							loadOptionsDependsOn: ['fieldName', 'resource_type_id'],
+							searchable: true,
 						},
 						default: '',
 						displayOptions: {
@@ -239,40 +242,40 @@ export const resourceCreateDescription: INodeProperties[] = [
 						},
 						description: 'Fill this for single-select dropdown fields. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
 					},
-					{
-						displayName: 'Field Value (Text)',
-						name: 'fieldValueText',
-						type: 'string',
-						default: '',
-						displayOptions: {
-							show: {
-								fieldName: [
-									{
-										_cnd: {
-											regex: '.*"field_type":"TEXT".*',
-										},
+				{
+					displayName: 'Field Value (Text)',
+					name: 'fieldValueText',
+					type: 'string',
+					default: '',
+					displayOptions: {
+						show: {
+							fieldName: [
+								{
+									_cnd: {
+										regex: '.*"field_type":"TEXT".*',
 									},
-									{
-										_cnd: {
-											regex: '.*"field_type":"EMAIL".*',
-										},
+								},
+								{
+									_cnd: {
+										regex: '.*"field_type":"EMAIL".*',
 									},
-									{
-										_cnd: {
-											regex: '.*"field_type":"ENAME".*',
-										},
+								},
+								{
+									_cnd: {
+										regex: '.*"field_type":"ENAME".*',
 									},
-								],
-							},
+								},
+							],
 						},
-						description: 'Fill this for TEXT, EMAIL, ENAME field types',
 					},
-				],
-			},
-		],
-	},
-	{
-		displayName: 'Other Fields',
+					description: 'Fill this for TEXT, EMAIL, ENAME field types. For Tags, enter comma-separated values.',
+				},
+			],
+		},
+	],
+},
+{
+	displayName: 'Other Fields',
 		name: 'otherFields',
 		type: 'fixedCollection',
 		placeholder: 'Add Other Field',
@@ -304,6 +307,7 @@ export const resourceCreateDescription: INodeProperties[] = [
 						type: 'options',
 						typeOptions: {
 							loadOptionsMethod: 'getResourceUDFFieldsOther',
+							loadOptionsDependsOn: ['resource_type_id'],
 						},
 						default: '',
 						description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
@@ -357,7 +361,8 @@ export const resourceCreateDescription: INodeProperties[] = [
 						noDataExpression: true,
 						typeOptions: {
 							loadOptionsMethod: 'getResourceUDFFieldOptions',
-							loadOptionsDependsOn: ['fieldName'],
+							loadOptionsDependsOn: ['fieldName', 'resource_type_id'],
+							searchable: true,
 						},
 						default: [],
 						displayOptions: {
@@ -418,7 +423,8 @@ export const resourceCreateDescription: INodeProperties[] = [
 						noDataExpression: true,
 						typeOptions: {
 							loadOptionsMethod: 'getResourceUDFFieldOptions',
-							loadOptionsDependsOn: ['fieldName'],
+							searchable: true,
+							loadOptionsDependsOn: ['fieldName', 'resource_type_id'],
 						},
 						default: '',
 						displayOptions: {
@@ -473,32 +479,32 @@ export const resourceCreateDescription: INodeProperties[] = [
 						name: 'fieldValueText',
 						type: 'string',
 						default: '',
-						displayOptions: {
-							show: {
-								fieldName: [
-									{
-										_cnd: {
-											regex: '.*"field_type":"TEXT".*',
-										},
+					displayOptions: {
+						show: {
+							fieldName: [
+								{
+									_cnd: {
+										regex: '.*"field_type":"TEXT".*',
 									},
-									{
-										_cnd: {
-											regex: '.*"field_type":"EMAIL".*',
-										},
+								},
+								{
+									_cnd: {
+										regex: '.*"field_type":"EMAIL".*',
 									},
-									{
-										_cnd: {
-											regex: '.*"field_type":"ENAME".*',
-										},
+								},
+								{
+									_cnd: {
+										regex: '.*"field_type":"ENAME".*',
 									},
-								],
-							},
+								},
+							],
 						},
-						description: 'Fill this for TEXT, EMAIL, ENAME field types',
 					},
-				],
-			},
-		],
-	},
+					description: 'Fill this for TEXT, EMAIL, ENAME field types. For Tags, enter comma-separated values.',
+				},
+			],
+		},
+	],
+},
 ];
 
