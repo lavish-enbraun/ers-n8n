@@ -299,10 +299,15 @@ export const resourceCreateDescription: INodeProperties[] = [
 										regex: '.*"field_type":"URL".*',
 									},
 								},
+								{
+									_cnd: {
+										regex: '.*"field_type":"COLPICK".*',
+									},
+								},
 							],
 						},
 					},
-					description: 'Fill this for TEXT, EMAIL, ENAME, URL field types. For Tags, enter comma-separated values.',
+					description: 'Fill this for TEXT, EMAIL, ENAME, URL, COLPICK field types. For Tags, enter comma-separated values. For COLPICK use hex format #XXXXXX;1 or #XXXXXX;0 (1=white, 0=black foreground).',
 				},
 			],
 		},
@@ -570,10 +575,15 @@ export const resourceCreateDescription: INodeProperties[] = [
 										regex: '.*"field_type":"URL".*',
 									},
 								},
+								{
+									_cnd: {
+										regex: '.*"field_type":"COLPICK".*',
+									},
+								},
 							],
 						},
 					},
-					description: 'Fill this for TEXT, EMAIL, ENAME, URL field types. For Tags, enter comma-separated values.',
+					description: 'Fill this for TEXT, EMAIL, ENAME, URL, COLPICK field types. For Tags, enter comma-separated values. For COLPICK use hex format #XXXXXX;1 or #XXXXXX;0 (1=white, 0=black foreground).',
 				},
 			],
 		},

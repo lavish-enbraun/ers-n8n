@@ -305,10 +305,15 @@ export const projectUpdateDescription: INodeProperties[] = [
 											regex: '.*"field_type":"URL".*',
 										},
 									},
+									{
+										_cnd: {
+											regex: '.*"field_type":"COLPICK".*',
+										},
+									},
 								],
 							},
 						},
-						description: 'Fill this for TEXT, EMAIL, ENAME, URL field types',
+						description: 'Fill this for TEXT, EMAIL, ENAME, URL, COLPICK field types. For COLPICK use hex format #XXXXXX;1 or #XXXXXX;0 (1=white, 0=black foreground).',
 					},
 				],
 			},
