@@ -166,6 +166,10 @@ export const resourceCreateDescription: INodeProperties[] = [
 						name: 'fieldValueNumber',
 						type: 'number',
 						default: 0,
+						typeOptions: {
+							maxValue: 999999999,
+							minValue: -999999999,
+						},
 						displayOptions: {
 							show: {
 								fieldName: [
@@ -184,10 +188,15 @@ export const resourceCreateDescription: INodeProperties[] = [
 											regex: '.*"field_type":"FLOAT".*',
 										},
 									},
+									{
+										_cnd: {
+											regex: '.*"field_type":"INT"[^E].*',
+										},
+									},
 								],
 							},
 						},
-						description: 'Fill this for NUMBER, INTEGER, FLOAT field types',
+						description: 'Fill this for NUMBER, INTEGER, FLOAT, INT field types. INT allows max 9 digits (999,999,999).',
 					},
 					{
 						displayName: 'Field Value (Select) Name or ID',
@@ -428,6 +437,10 @@ export const resourceCreateDescription: INodeProperties[] = [
 						name: 'fieldValueNumber',
 						type: 'number',
 						default: 0,
+						typeOptions: {
+							maxValue: 999999999,
+							minValue: -999999999,
+						},
 						displayOptions: {
 							show: {
 								fieldName: [
@@ -446,10 +459,15 @@ export const resourceCreateDescription: INodeProperties[] = [
 											regex: '.*"field_type":"FLOAT".*',
 										},
 									},
+									{
+										_cnd: {
+											regex: '.*"field_type":"INT"[^E].*',
+										},
+									},
 								],
 							},
 						},
-						description: 'Fill this for NUMBER, INTEGER, FLOAT field types',
+						description: 'Fill this for NUMBER, INTEGER, FLOAT, INT field types. INT allows max 9 digits (999,999,999).',
 					},
 					{
 						displayName: 'Field Value (Select) Name or ID',
