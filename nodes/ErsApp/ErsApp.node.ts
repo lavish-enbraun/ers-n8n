@@ -285,7 +285,7 @@ export class ErsApp implements INodeType {
 								resourceTypeId = parsed.id;
 							}
 						} catch {
-							// Not a JSON string, use as-is
+							// not JSON
 						}
 					}
 
@@ -783,18 +783,18 @@ export class ErsApp implements INodeType {
 						}
 					}
 
-					if (!fieldName || fieldName === '') return [{ name: '', value: '' }];
+					if (!fieldName || fieldName === '') return [];
 
 					let parsed: { code?: string; field_type?: string };
 					try {
 						parsed = JSON.parse(fieldName);
 					} catch {
-						return [{ name: '', value: '' }];
+						return [];
 					}
 
 					let resourceTypeId: number | string | undefined = parameters.resource_type_id;
 					if (resourceTypeId === undefined || resourceTypeId === null || resourceTypeId === '') {
-						return [{ name: '', value: '' }];
+						return [];
 					}
 					if (typeof resourceTypeId === 'string') {
 						try {
@@ -807,10 +807,10 @@ export class ErsApp implements INodeType {
 					const resourceTypeIdStr = String(resourceTypeId);
 
 					const fields = resourceTypeCache[resourceTypeIdStr];
-					if (!fields?.length) return [{ name: '', value: '' }];
+					if (!fields?.length) return [];
 
 					const field = fields.find((f) => f.code === parsed.code);
-					if (!field || !field.options?.length) return [{ name: '', value: '' }];
+					if (!field || !field.options?.length) return [];
 
 					const search = (
 						this.getCurrentNodeParameter('fieldValue') ??
@@ -829,10 +829,10 @@ export class ErsApp implements INodeType {
 						value: opt.id,
 					}));
 
-					return [{ name: '', value: '' }, ...limited];
+					return limited;
 				} catch (error) {
 					console.error('Error in getResourceUDFFieldOptions:', error);
-					return [{ name: '', value: '' }];
+					return [];
 				}
 			},
 
@@ -869,18 +869,18 @@ export class ErsApp implements INodeType {
 						}
 					}
 
-					if (!fieldName || fieldName === '') return [{ name: '', value: '' }];
+					if (!fieldName || fieldName === '') return [];
 
 					let parsed: { code?: string; field_type?: string };
 					try {
 						parsed = JSON.parse(fieldName);
 					} catch {
-						return [{ name: '', value: '' }];
+						return [];
 					}
 
 					let projectTypeId: number | string | undefined = parameters.project_type_id;
 					if (projectTypeId === undefined || projectTypeId === null || projectTypeId === '') {
-						return [{ name: '', value: '' }];
+						return [];
 					}
 					if (typeof projectTypeId === 'string') {
 						try {
@@ -913,10 +913,10 @@ export class ErsApp implements INodeType {
 						value: opt.id,
 					}));
 
-					return [{ name: '', value: '' }, ...limited];
+					return limited;
 				} catch (error) {
 					console.error('Error in getProjectUDFFieldOptions:', error);
-					return [{ name: '', value: '' }];
+					return [];
 				}
 			},
 		},
