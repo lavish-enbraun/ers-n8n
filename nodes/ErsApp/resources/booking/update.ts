@@ -9,43 +9,37 @@ export const bookingUpdateDescription: INodeProperties[] = [
 	{
 		displayName: 'Booking ID',
 		name: 'booking_id',
-		type: 'number',
+		type: 'string',
 		required: true,
 		displayOptions: {
 			show: showOnlyForBookingUpdate,
 		},
-		typeOptions: {
-			minValue: 1,
-		},
-		default: undefined,
+		default: '',
+		placeholder: 'Enter Booking ID',
 		description: 'Unique ID of the booking to update',
 	},
 	{
 		displayName: 'Resource ID',
 		name: 'resource_id',
-		type: 'number',
+		type: 'string',
 		required: true,
 		displayOptions: {
 			show: showOnlyForBookingUpdate,
 		},
-		typeOptions: {
-			minValue: 1,
-		},
-		default: undefined,
+		default: '',
+		placeholder: 'Enter Resource ID',
 		description: 'Unique ID of the resource',
 	},
 	{
 		displayName: 'Project ID',
 		name: 'project_id',
-		type: 'number',
+		type: 'string',
 		required: true,
 		displayOptions: {
 			show: showOnlyForBookingUpdate,
 		},
-		typeOptions: {
-			minValue: 1,
-		},
-		default: undefined,
+		default: '',
+		placeholder: 'Enter Project ID',
 		description: 'Unique ID of the project',
 	},
 	{
