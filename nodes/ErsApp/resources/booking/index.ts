@@ -47,13 +47,13 @@ export const bookingDescription: INodeProperties[] = [
 				routing: {
 					request: {
 						method: 'PUT',
-						url: `={{ "${BASE_URL}${API_BASE_PATH}/bookings/" + $parameter.booking_id }}`,
+						url: '={{ (() => { const base = "' + BASE_URL + API_BASE_PATH + '/bookings/" + $parameter.booking_id; const ub = $parameter.additionalFields?.update_connected_bookings; if (ub === 1 || ub === 2 || ub === 4) return base + "?update_connected_bookings=" + ub; return base; })() }}',
 						headers: {
 							'Content-Type': 'application/json',
 							Accept: 'application/json',
 							Authorization: '={{ $parameter.authentication === "accessToken" && $credentials.accessToken ? "Bearer " + $credentials.accessToken : undefined }}',
 						},
-						body: '={{ (() => { const formatTime = (dateStr) => { if (!dateStr) return ""; const d = new Date(dateStr); if (isNaN(d.getTime())) return ""; const year = d.getFullYear(); const month = String(d.getMonth() + 1).padStart(2, "0"); const day = String(d.getDate()).padStart(2, "0"); let hours = d.getHours(); let minutes = d.getMinutes(); const rounded = Math.round(minutes / 15) * 15; if (rounded === 60) { minutes = 0; hours += 1; } else { minutes = rounded; } const hrs = String(hours).padStart(2, "0"); const mins = String(minutes).padStart(2, "0"); return `${year}-${month}-${day}T${hrs}:${mins}:00`; }; return { resource_id: $parameter.resource_id, project_id: $parameter.project_id, start_time: formatTime($parameter.start_time), end_time: formatTime($parameter.end_time) }; })() }}',
+						body: '={{ (() => { const formatTime = (dateStr) => { if (!dateStr) return ""; const d = new Date(dateStr); if (isNaN(d.getTime())) return ""; const year = d.getFullYear(); const month = String(d.getMonth() + 1).padStart(2, "0"); const day = String(d.getDate()).padStart(2, "0"); let hours = d.getHours(); let minutes = d.getMinutes(); const rounded = Math.round(minutes / 15) * 15; if (rounded === 60) { minutes = 0; hours += 1; } else { minutes = rounded; } const hrs = String(hours).padStart(2, "0"); const mins = String(minutes).padStart(2, "0"); return `${year}-${month}-${day}T${hrs}:${mins}:00`; }; const toId = (v) => { if (v === undefined || v === null || v === "") return undefined; if (typeof v === "number" && !isNaN(v)) return v; const n = typeof v === "string" ? parseInt(v, 10) : Number(v); return isNaN(n) ? undefined : n; }; const rid = toId($parameter.resource_id); const pid = toId($parameter.project_id); const body = {}; if (rid !== undefined) body.resource_id = rid; if (pid !== undefined) body.project_id = pid; const st = formatTime($parameter.start_time); const et = formatTime($parameter.end_time); if (st) body.start_time = st; if (et) body.end_time = et; return body; })() }}',
 					},
 				},
 			},
