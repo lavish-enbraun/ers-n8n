@@ -9,16 +9,33 @@ export const requirementUpdateDescription: INodeProperties[] = [
 	{
 		displayName: 'Requirement ID',
 		name: 'requirement_id',
-		type: 'number',
+		type: 'string',
 		required: true,
 		displayOptions: {
 			show: showOnlyForRequirementUpdate,
 		},
-		typeOptions: {
-			minValue: 1,
-		},
-		default: undefined,
+		default: '',
 		description: 'Unique ID of the requirement to update',
+	},
+	{
+		displayName: 'Start Time',
+		name: 'start_time',
+		type: 'dateTime',
+		displayOptions: {
+			show: showOnlyForRequirementUpdate,
+		},
+		default: '',
+		description: 'Start date and time for requirement (format: yyyy-MM-ddThh:mm:00, minutes will be rounded to 0, 15, 30, or 45)',
+	},
+	{
+		displayName: 'End Time',
+		name: 'end_time',
+		type: 'dateTime',
+		displayOptions: {
+			show: showOnlyForRequirementUpdate,
+		},
+		default: '',
+		description: 'End date and time for requirement (format: yyyy-MM-ddThh:mm:00, minutes will be rounded to 0, 15, 30, or 45). Must be at least 15 minutes after start_time.',
 	},
 	{
 		displayName: 'Additional Fields',
@@ -38,16 +55,6 @@ export const requirementUpdateDescription: INodeProperties[] = [
 				description: 'Whether to allow multi-allocation for the requirement',
 			},
 			{
-				displayName: 'Conditions',
-				name: 'conditions',
-				type: 'fixedCollection',
-				default: {},
-				description: 'Array of conditions for the requirement',
-				typeOptions: {
-					multipleValues: true,
-				},
-			},
-			{
 				displayName: 'Delete Bookings',
 				name: 'delete_bookings',
 				type: 'boolean',
@@ -63,38 +70,21 @@ export const requirementUpdateDescription: INodeProperties[] = [
 			{
 				displayName: 'Effort',
 				name: 'effort',
-				type: 'number',
+				type: 'string',
 				typeOptions: {
 					minValue: 0,
 					maxValue: 99999999.99,
 					numberStepSize: 0.01,
 				},
-				default: undefined,
-				description: 'Effort value for the requirement. Defines how much effort is needed to complete the task (0-99999999.99).',
-			},
-			{
-				displayName: 'End Time',
-				name: 'end_time',
-				type: 'dateTime',
 				default: '',
-				description: 'End date and time for requirement (format: yyyy-MM-ddThh:mm:00, minutes will be rounded to 0, 15, 30, or 45). Must be at least 15 minutes after start_time.',
+				description: 'Effort value for the requirement. Defines how much effort is needed to complete the task (0-99999999.99).',
 			},
 			{
 				displayName: 'Role ID',
 				name: 'role_id',
-				type: 'number',
-				typeOptions: {
-					minValue: 1,
-				},
-				default: undefined,
-				description: 'ID of the role object that the resource needs to perform for the requirement',
-			},
-			{
-				displayName: 'Start Time',
-				name: 'start_time',
-				type: 'dateTime',
+				type: 'string',
 				default: '',
-				description: 'Start date and time for requirement (format: yyyy-MM-ddThh:mm:00, minutes will be rounded to 0, 15, 30, or 45)',
+				description: 'ID of the role object that the resource needs to perform for the requirement',
 			},
 			{
 				displayName: 'Sync to Booking',
@@ -116,11 +106,8 @@ export const requirementUpdateDescription: INodeProperties[] = [
 			{
 				displayName: 'Task ID',
 				name: 'task_id',
-				type: 'number',
-				typeOptions: {
-					minValue: 1,
-				},
-				default: undefined,
+				type: 'string',
+				default: '',
 				description: 'ID of the task object within the project that needs to be done in this requirement',
 			},
 			{
@@ -158,4 +145,3 @@ export const requirementUpdateDescription: INodeProperties[] = [
 		],
 	},
 ];
-
