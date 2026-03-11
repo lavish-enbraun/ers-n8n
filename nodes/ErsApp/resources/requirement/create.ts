@@ -9,7 +9,7 @@ export const requirementCreateDescription: INodeProperties[] = [
 	{
 		displayName: 'Project ID',
 		name: 'project_id',
-		type: 'number',
+		type: 'string',
 		required: true,
 		displayOptions: {
 			show: showOnlyForRequirementCreate,
@@ -45,7 +45,7 @@ export const requirementCreateDescription: INodeProperties[] = [
 	{
 		displayName: 'Effort',
 		name: 'effort',
-		type: 'number',
+		type: 'string',
 		required: true,
 		displayOptions: {
 			show: showOnlyForRequirementCreate,
@@ -99,24 +99,38 @@ export const requirementCreateDescription: INodeProperties[] = [
 				description: 'Whether to allow multi-allocation for the requirement',
 			},
 			{
-				displayName: 'Conditions',
-				name: 'conditions',
-				type: 'fixedCollection',
-				default: {},
-				description: 'Array of conditions for the requirement',
-				typeOptions: {
-					multipleValues: true,
-				},
-			},
-			{
 				displayName: 'Role ID',
 				name: 'role_id',
+				type: 'string',
+				default: '',
+				description: 'ID of the role object that the resource needs to perform for the requirement',
+			},
+			{
+				displayName: 'Task ID',
+				name: 'task_id',
+				type: 'string',
+				default: '',
+				description: 'ID of the task object within the project that needs to be done in this requirement',
+			},
+			{
+				displayName: 'Flexi Range Unit',
+				name: 'flexi_range_unit',
 				type: 'number',
 				typeOptions: {
-					minValue: 1,
+					minValue: 0,
 				},
-				default: undefined,
-				description: 'ID of the role object that the resource needs to perform for the requirement',
+				default: 2,
+				description: 'Flexi range unit (e.g. 2 for hours)',
+			},
+			{
+				displayName: 'Copies',
+				name: 'copies',
+				type: 'number',
+				typeOptions: {
+					minValue: 0,
+				},
+				default: 0,
+				description: 'Number of copies',
 			},
 			{
 				displayName: 'Sync to Booking',
@@ -134,16 +148,6 @@ export const requirementCreateDescription: INodeProperties[] = [
 				typeOptions: {
 					multipleValues: true,
 				},
-			},
-			{
-				displayName: 'Task ID',
-				name: 'task_id',
-				type: 'number',
-				typeOptions: {
-					minValue: 1,
-				},
-				default: undefined,
-				description: 'ID of the task object within the project that needs to be done in this requirement',
 			},
 		],
 	},
