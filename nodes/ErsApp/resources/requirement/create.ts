@@ -143,11 +143,8 @@ export const requirementCreateDescription: INodeProperties[] = [
 				displayName: 'Tags',
 				name: 'tags',
 				type: 'string',
-				default: [],
-				description: 'Array of tags for the requirement',
-				typeOptions: {
-					multipleValues: true,
-				},
+				default: '',
+				description: 'Comma-separated list of tags for the requirement (sent as array of strings in the request)',
 			},
 		],
 	},
