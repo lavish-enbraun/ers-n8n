@@ -68,6 +68,32 @@ interface PublicApiResourceTypeDetail {
 	fields?: PublicApiResourceTypeField[];
 }
 
+// Public API project type response shape (list item or single GET)
+interface PublicApiProjectTypeField {
+	id?: number;
+	code: string;
+	display_name?: string;
+	field_type?: string;
+	information_text?: string;
+	is_system_defined?: boolean;
+	is_required?: boolean;
+	options?: Array<{ id: number; name: string; description?: string | null }>;
+	placeholder_text?: string;
+	maxlength?: number;
+	regex?: string;
+	mindate?: string;
+	maxdate?: string;
+	minlength?: number;
+}
+
+interface PublicApiProjectTypeDetail {
+	id?: number;
+	name?: string;
+	description?: string;
+	color?: string;
+	fields?: PublicApiProjectTypeField[];
+}
+
 function mapPublicApiFieldsToUDF(fields: PublicApiResourceTypeField[] | undefined): ResourceUDFField[] {
 	if (!Array.isArray(fields)) return [];
 	const result: ResourceUDFField[] = [];
@@ -138,6 +164,7 @@ interface ProjectUDFOption {
 }
 
 interface ProjectUDFField {
+	id?: number;
 	code: string;
 	display_name?: string;
 	field_type?: string;
@@ -152,9 +179,41 @@ interface ProjectUDFField {
 	minlength?: number;
 	maxlength?: number;
 	regex?: string;
+	placeholder_text?: string;
 }
 
 const projectTypeCache: Record<string, ProjectUDFField[]> = {};
+
+function mapPublicApiProjectFieldsToUDF(fields: PublicApiProjectTypeField[] | undefined): ProjectUDFField[] {
+	if (!Array.isArray(fields)) return [];
+	const result: ProjectUDFField[] = [];
+	for (const f of fields) {
+		if (f?.code) {
+			const options: ProjectUDFOption[] | undefined = f.options?.map((opt) => ({
+				id: opt.id,
+				name: opt.name,
+				description: opt.description ?? undefined,
+			}));
+			result.push({
+				id: f.id,
+				code: f.code,
+				display_name: f.display_name,
+				field_type: f.field_type,
+				information_text: f.information_text,
+				is_system_defined: f.is_system_defined,
+				is_required: f.is_required,
+				options,
+				placeholder_text: f.placeholder_text,
+				maxlength: f.maxlength,
+				regex: f.regex,
+				mindate: f.mindate,
+				maxdate: f.maxdate,
+				minlength: f.minlength,
+			});
+		}
+	}
+	return result;
+}
 
 export class ErsApp implements INodeType {
 	description: INodeTypeDescription = {
@@ -327,6 +386,9 @@ export class ErsApp implements INodeType {
 
 					const resourceTypeIdStr = String(resourceTypeId);
 
+					// Invalidate cache so "Refresh List" and dropdown open always get fresh data from API
+					delete resourceTypeCache[resourceTypeIdStr];
+
 					// Fetch once and cache (public API: top-level fields array)
 					if (!resourceTypeCache[resourceTypeIdStr]) {
 						let resourceTypeResponse: PublicApiResourceTypeDetail;
@@ -393,6 +455,9 @@ export class ErsApp implements INodeType {
 					}
 					const resourceTypeIdStr = String(resourceTypeId);
 
+					// Invalidate cache so "Refresh List" and dropdown open always get fresh data from API
+					delete resourceTypeCache[resourceTypeIdStr];
+
 					if (!resourceTypeCache[resourceTypeIdStr]) {
 						let resourceTypeResponse: PublicApiResourceTypeDetail;
 						try {
@@ -446,6 +511,9 @@ export class ErsApp implements INodeType {
 					}
 					const resourceTypeIdStr = String(resourceTypeId);
 
+					// Invalidate cache so "Refresh List" and dropdown open always get fresh data from API
+					delete resourceTypeCache[resourceTypeIdStr];
+
 					if (!resourceTypeCache[resourceTypeIdStr]) {
 						let resourceTypeResponse: PublicApiResourceTypeDetail;
 						try {
@@ -480,7 +548,7 @@ export class ErsApp implements INodeType {
 				}
 			},
 
-			// Fetch project types from /rest/projecttype
+			// Fetch project types from public API (list returns full objects with id, name, description, color, fields)
 			async getProjectTypes(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 				try {
 					const auth = (this.getNode().parameters as { authentication?: string }).authentication;
@@ -493,24 +561,41 @@ export class ErsApp implements INodeType {
 						credentialType,
 						{
 							method: 'GET',
-							url: `${BASE_URL}/rest/projecttype`,
+							url: `${BASE_URL}${API_BASE_PATH}/projecttypes`,
 							headers: {
 								'Accept': 'application/json',
 							},
 						},
-					) as { data?: Array<{ id: number; name: string; description?: string; is_active?: boolean }> };
+					) as PublicApiProjectTypeDetail[] | { data?: PublicApiProjectTypeDetail[]; items?: PublicApiProjectTypeDetail[] };
 
-					if (!response.data || !Array.isArray(response.data)) {
-						return [];
+					let list: PublicApiProjectTypeDetail[] = [];
+					if (Array.isArray(response)) {
+						list = response;
+					} else if (Array.isArray((response as { data?: PublicApiProjectTypeDetail[] }).data)) {
+						list = (response as { data: PublicApiProjectTypeDetail[] }).data;
+					} else if (Array.isArray((response as { items?: PublicApiProjectTypeDetail[] }).items)) {
+						list = (response as { items: PublicApiProjectTypeDetail[] }).items;
 					}
+					if (list.length === 0) return [];
 
-					return response.data
-						.filter((type) => type.is_active !== false) // Only show active project types
-						.map((type) => ({
-							name: type.name || `Project Type ${type.id}`,
-							value: type.id,
-							description: type.description || undefined,
-						}));
+					const excludedSystemFields = ['id', 'project_type_id', 'title'];
+					return list
+						.filter((type) => type.id != null)
+						.map((type) => {
+							const id = type.id as number;
+							if (type.fields?.length) {
+								const mapped = mapPublicApiProjectFieldsToUDF(type.fields);
+								projectTypeCache[String(id)] = mapped.filter((field) => {
+									if (field.is_system_defined && excludedSystemFields.includes(field.code)) return false;
+									return true;
+								});
+							}
+							return {
+								name: type.name || `Project Type ${id}`,
+								value: id,
+								description: type.description || undefined,
+							};
+						});
 				} catch (error: unknown) {
 					if (isAccessTokenError(error)) {
 						return [];
@@ -548,7 +633,10 @@ export class ErsApp implements INodeType {
 
 					const projectTypeIdStr = String(projectTypeId);
 
-					// Fetch once and cache per project type — use project type response (has per-type is_required)
+					// Invalidate cache so "Refresh List" and dropdown open always get fresh data from API
+					delete projectTypeCache[projectTypeIdStr];
+
+					// Fetch once and cache (public API: top-level fields array)
 					if (!projectTypeCache[projectTypeIdStr]) {
 						const excludedSystemFields = ['id', 'project_type_id', 'title'];
 						try {
@@ -557,21 +645,12 @@ export class ErsApp implements INodeType {
 								credentialType,
 								{
 									method: 'GET',
-									url: `${BASE_URL}/rest/projects/projecttype/${projectTypeIdStr}`,
+									url: `${BASE_URL}${API_BASE_PATH}/projecttypes/${projectTypeIdStr}`,
 									headers: { 'Accept': 'application/json' },
 								},
-							) as { sections?: Array<{ udfs?: ProjectUDFField[] }> };
-							const udfFields: ProjectUDFField[] = [];
-							if (projectTypeResponse.sections && Array.isArray(projectTypeResponse.sections)) {
-								for (const section of projectTypeResponse.sections) {
-									if (section.udfs && Array.isArray(section.udfs)) {
-										for (const udf of section.udfs) {
-											if (udf.code) udfFields.push(udf as ProjectUDFField);
-										}
-									}
-								}
-							}
-							projectTypeCache[projectTypeIdStr] = udfFields.filter((field) => {
+							) as PublicApiProjectTypeDetail;
+							const mapped = mapPublicApiProjectFieldsToUDF(projectTypeResponse.fields);
+							projectTypeCache[projectTypeIdStr] = mapped.filter((field) => {
 								if (field.is_system_defined && excludedSystemFields.includes(field.code)) return false;
 								return true;
 							});
@@ -627,24 +706,18 @@ export class ErsApp implements INodeType {
 					}
 					const projectTypeIdStr = String(projectTypeId);
 
+					// Invalidate cache so "Refresh List" and dropdown open always get fresh data from API
+					delete projectTypeCache[projectTypeIdStr];
+
 					if (!projectTypeCache[projectTypeIdStr]) {
 						const excludedSystemFields = ['id', 'project_type_id', 'title'];
 						try {
 							const projectTypeResponse = await this.helpers.httpRequestWithAuthentication.call(
 								this, credentialType,
-								{ method: 'GET', url: `${BASE_URL}/rest/projects/projecttype/${projectTypeIdStr}`, headers: { 'Accept': 'application/json' } },
-							) as { sections?: Array<{ udfs?: ProjectUDFField[] }> };
-							const udfFields: ProjectUDFField[] = [];
-							if (projectTypeResponse.sections?.length) {
-								for (const section of projectTypeResponse.sections) {
-									if (section.udfs?.length) {
-										for (const udf of section.udfs) {
-											if (udf.code) udfFields.push(udf as ProjectUDFField);
-										}
-									}
-								}
-							}
-							projectTypeCache[projectTypeIdStr] = udfFields.filter((field) => {
+								{ method: 'GET', url: `${BASE_URL}${API_BASE_PATH}/projecttypes/${projectTypeIdStr}`, headers: { 'Accept': 'application/json' } },
+							) as PublicApiProjectTypeDetail;
+							const mapped = mapPublicApiProjectFieldsToUDF(projectTypeResponse.fields);
+							projectTypeCache[projectTypeIdStr] = mapped.filter((field) => {
 								if (field.is_system_defined && excludedSystemFields.includes(field.code)) return false;
 								return true;
 							});
@@ -694,24 +767,18 @@ export class ErsApp implements INodeType {
 					}
 					const projectTypeIdStr = String(projectTypeId);
 
+					// Invalidate cache so "Refresh List" and dropdown open always get fresh data from API
+					delete projectTypeCache[projectTypeIdStr];
+
 					if (!projectTypeCache[projectTypeIdStr]) {
 						const excludedSystemFields = ['id', 'project_type_id', 'title'];
 						try {
 							const projectTypeResponse = await this.helpers.httpRequestWithAuthentication.call(
 								this, credentialType,
-								{ method: 'GET', url: `${BASE_URL}/rest/projects/projecttype/${projectTypeIdStr}`, headers: { 'Accept': 'application/json' } },
-							) as { sections?: Array<{ udfs?: ProjectUDFField[] }> };
-							const udfFields: ProjectUDFField[] = [];
-							if (projectTypeResponse.sections?.length) {
-								for (const section of projectTypeResponse.sections) {
-									if (section.udfs?.length) {
-										for (const udf of section.udfs) {
-											if (udf.code) udfFields.push(udf as ProjectUDFField);
-										}
-									}
-								}
-							}
-							projectTypeCache[projectTypeIdStr] = udfFields.filter((field) => {
+								{ method: 'GET', url: `${BASE_URL}${API_BASE_PATH}/projecttypes/${projectTypeIdStr}`, headers: { 'Accept': 'application/json' } },
+							) as PublicApiProjectTypeDetail;
+							const mapped = mapPublicApiProjectFieldsToUDF(projectTypeResponse.fields);
+							projectTypeCache[projectTypeIdStr] = mapped.filter((field) => {
 								if (field.is_system_defined && excludedSystemFields.includes(field.code)) return false;
 								return true;
 							});
