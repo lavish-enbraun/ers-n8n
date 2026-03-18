@@ -315,6 +315,28 @@ export const projectUpdateDescription: INodeProperties[] = [
 						},
 						description: 'Fill this for TEXT, EMAIL, ENAME, URL, COLPICK field types. For COLPICK use hex format #XXXXXX;1 or #XXXXXX;0 (1=white, 0=black foreground).',
 					},
+					{
+						displayName: 'Field Value (Rich Text)',
+						name: 'fieldValueRichText',
+						type: 'string',
+						default: '',
+						typeOptions: {
+							editor: 'htmlEditor',
+						},
+						displayOptions: {
+							show: {
+								fieldName: [
+									{
+										_cnd: {
+											regex: '.*"field_type":"MLTEXT".*',
+										},
+									},
+								],
+							},
+						},
+						description:
+							'Fill this for MLTEXT (Multi Line Rich Text) field types. Value is stored/sent as HTML (for example: <p>text</p>).',
+					},
 				],
 			},
 		],
