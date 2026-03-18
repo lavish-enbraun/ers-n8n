@@ -94,6 +94,81 @@ interface PublicApiProjectTypeDetail {
 	fields?: PublicApiProjectTypeField[];
 }
 
+// Booking fields response shape (GET /rest/v1/booking/fields)
+interface BookingFieldDefinition {
+	id?: number;
+	code: string;
+	display_name?: string;
+	field_type?: string;
+	is_system_defined?: boolean;
+	is_required?: boolean;
+	options?: Array<{ id: number; name: string; description?: string | null }>;
+	mindate?: string;
+	maxdate?: string;
+	minlength?: number;
+	maxlength?: number;
+	regex?: string;
+	placeholder_text?: string;
+	minnum?: number;
+	maxnum?: number;
+}
+
+interface BookingFieldOption {
+	id: number | string;
+	name: string;
+	description?: string;
+}
+
+interface BookingField {
+	id?: number;
+	code: string;
+	display_name?: string;
+	field_type?: string;
+	is_system_defined?: boolean;
+	is_required?: boolean;
+	options?: BookingFieldOption[];
+	mindate?: string;
+	maxdate?: string;
+	minlength?: number;
+	maxlength?: number;
+	regex?: string;
+	placeholder_text?: string;
+	minnum?: number;
+	maxnum?: number;
+}
+
+function mapBookingFieldDefinitions(fields: BookingFieldDefinition[] | undefined): BookingField[] {
+	if (!Array.isArray(fields)) return [];
+	const result: BookingField[] = [];
+	for (const f of fields) {
+		if (f?.code) {
+			const options: BookingFieldOption[] | undefined = f.options?.map((opt) => ({
+				id: opt.id,
+				name: opt.name,
+				description: opt.description ?? undefined,
+			}));
+			result.push({
+				id: f.id,
+				code: f.code,
+				display_name: f.display_name,
+				field_type: f.field_type,
+				is_system_defined: f.is_system_defined,
+				is_required: f.is_required,
+				options,
+				mindate: f.mindate,
+				maxdate: f.maxdate,
+				minlength: f.minlength,
+				maxlength: f.maxlength,
+				regex: f.regex,
+				placeholder_text: f.placeholder_text,
+				minnum: f.minnum,
+				maxnum: f.maxnum,
+			});
+		}
+	}
+	return result;
+}
+
 function mapPublicApiFieldsToUDF(fields: PublicApiResourceTypeField[] | undefined): ResourceUDFField[] {
 	if (!Array.isArray(fields)) return [];
 	const result: ResourceUDFField[] = [];
@@ -183,6 +258,9 @@ interface ProjectUDFField {
 }
 
 const projectTypeCache: Record<string, ProjectUDFField[]> = {};
+
+// Booking fields cache (fetched from /booking/fields)
+let bookingFieldsCache: BookingField[] | undefined;
 
 function mapPublicApiProjectFieldsToUDF(fields: PublicApiProjectTypeField[] | undefined): ProjectUDFField[] {
 	if (!Array.isArray(fields)) return [];
@@ -808,6 +886,130 @@ export class ErsApp implements INodeType {
 				}
 			},
 
+			async getBookingFieldsMandatory(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				try {
+					const auth = (this.getNode().parameters as { authentication?: string }).authentication;
+					const credentialType = auth === 'accessToken' ? 'ersAppAccessTokenApi' : 'ersAppOAuth2';
+
+					// Invalidate cache so "Refresh List" / dropdown open gets fresh data
+					bookingFieldsCache = undefined;
+
+					if (!bookingFieldsCache) {
+						const response = await this.helpers.httpRequestWithAuthentication.call(this, credentialType, {
+							method: 'GET',
+							url: `${BASE_URL}${API_BASE_PATH}/booking/fields`,
+							headers: { Accept: 'application/json' },
+						}) as { data?: BookingFieldDefinition[] } | BookingFieldDefinition[];
+
+						const list = Array.isArray(response) ? response : (response.data ?? []);
+						bookingFieldsCache = mapBookingFieldDefinitions(list);
+					}
+
+					const excludedCodes = new Set(['resource_id', 'project_id', 'start_time', 'end_time']);
+					return (bookingFieldsCache ?? [])
+						.filter((f) => !excludedCodes.has(f.code) && f.is_required === true)
+						.map((f) => {
+							const normalizedFieldType = f.field_type === 'TAGS' ? 'TEXT' : (f.field_type ?? '');
+							return {
+								name: f.display_name || f.code,
+								value: JSON.stringify({
+									code: f.code,
+									field_type: normalizedFieldType,
+									has_options: Array.isArray(f.options) && f.options.length > 0,
+								}),
+							};
+						});
+				} catch (error: unknown) {
+					if (isAccessTokenError(error)) return [];
+					console.error('Error fetching mandatory booking fields:', error);
+					return [];
+				}
+			},
+
+			async getBookingFieldsOther(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				try {
+					const auth = (this.getNode().parameters as { authentication?: string }).authentication;
+					const credentialType = auth === 'accessToken' ? 'ersAppAccessTokenApi' : 'ersAppOAuth2';
+
+					// Invalidate cache so "Refresh List" / dropdown open gets fresh data
+					bookingFieldsCache = undefined;
+
+					if (!bookingFieldsCache) {
+						const response = await this.helpers.httpRequestWithAuthentication.call(this, credentialType, {
+							method: 'GET',
+							url: `${BASE_URL}${API_BASE_PATH}/booking/fields`,
+							headers: { Accept: 'application/json' },
+						}) as { data?: BookingFieldDefinition[] } | BookingFieldDefinition[];
+
+						const list = Array.isArray(response) ? response : (response.data ?? []);
+						bookingFieldsCache = mapBookingFieldDefinitions(list);
+					}
+
+					const excludedCodes = new Set(['resource_id', 'project_id', 'start_time', 'end_time']);
+					return (bookingFieldsCache ?? [])
+						.filter((f) => !excludedCodes.has(f.code) && f.is_required !== true)
+						.map((f) => {
+							const normalizedFieldType = f.field_type === 'TAGS' ? 'TEXT' : (f.field_type ?? '');
+							return {
+								name: f.display_name || f.code,
+								value: JSON.stringify({
+									code: f.code,
+									field_type: normalizedFieldType,
+									has_options: Array.isArray(f.options) && f.options.length > 0,
+								}),
+							};
+						});
+				} catch (error: unknown) {
+					if (isAccessTokenError(error)) return [];
+					console.error('Error fetching other booking fields:', error);
+					return [];
+				}
+			},
+
+			async getBookingFieldsAll(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				try {
+					const auth = (this.getNode().parameters as { authentication?: string }).authentication;
+					const credentialType = auth === 'accessToken' ? 'ersAppAccessTokenApi' : 'ersAppOAuth2';
+
+					bookingFieldsCache = undefined;
+
+					if (!bookingFieldsCache) {
+						const response = await this.helpers.httpRequestWithAuthentication.call(this, credentialType, {
+							method: 'GET',
+							url: `${BASE_URL}${API_BASE_PATH}/booking/fields`,
+							headers: { Accept: 'application/json' },
+						}) as { data?: BookingFieldDefinition[] } | BookingFieldDefinition[];
+
+						const list = Array.isArray(response) ? response : (response.data ?? []);
+						bookingFieldsCache = mapBookingFieldDefinitions(list);
+					}
+
+					const excludedCodes = new Set(['resource_id', 'project_id', 'start_time', 'end_time']);
+					return (bookingFieldsCache ?? [])
+						.filter((f) => !excludedCodes.has(f.code))
+						.sort((a, b) => {
+							const aRequired = a.is_required === true ? 1 : 0;
+							const bRequired = b.is_required === true ? 1 : 0;
+							return bRequired - aRequired;
+						})
+						.map((f) => {
+							const normalizedFieldType = f.field_type === 'TAGS' ? 'TEXT' : (f.field_type ?? '');
+							return {
+								name: f.display_name || f.code,
+								value: JSON.stringify({
+									code: f.code,
+									field_type: normalizedFieldType,
+									has_options: Array.isArray(f.options) && f.options.length > 0,
+								}),
+							};
+						});
+				} catch (error: unknown) {
+					if (isAccessTokenError(error)) return [];
+					console.error('Error fetching booking fields:', error);
+					return [];
+				}
+			},
+
 			// Layer 3: Dynamic option loader — read from cache, filter by search, limit 30.
 			async getResourceUDFFieldOptions(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 				try {
@@ -894,6 +1096,69 @@ export class ErsApp implements INodeType {
 					return limited;
 				} catch (error) {
 					console.error('Error in getResourceUDFFieldOptions:', error);
+					return [];
+				}
+			},
+
+			// Layer 3: Dynamic option loader for booking fields — read from cache, filter by search, limit.
+			async getBookingFieldOptions(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				try {
+					const parameters = this.getNode().parameters as {
+						mandatoryFields?: { field?: Array<{ fieldName?: string }> };
+						otherFields?: { field?: Array<{ fieldName?: string }> };
+					};
+
+					let fieldName: string | undefined;
+					for (const arr of [parameters.mandatoryFields?.field, parameters.otherFields?.field]) {
+						if (Array.isArray(arr) && arr.length > 0) {
+							for (let i = arr.length - 1; i >= 0; i--) {
+								const item = arr[i];
+								if (item?.fieldName && typeof item.fieldName === 'string' && item.fieldName.trim() !== '') {
+									fieldName = item.fieldName;
+									break;
+								}
+							}
+							if (fieldName) break;
+							const first = arr[0];
+							if (first?.fieldName) {
+								fieldName = first.fieldName as string;
+								break;
+							}
+						}
+					}
+
+					if (!fieldName || fieldName === '') return [];
+
+					let parsed: { code?: string; field_type?: string; has_options?: boolean };
+					try {
+						parsed = JSON.parse(fieldName);
+					} catch {
+						return [];
+					}
+
+					if (!parsed.code) return [];
+					if (!bookingFieldsCache?.length) return [];
+
+					const field = bookingFieldsCache.find((f) => f.code === parsed.code);
+					if (!field?.options?.length) return [];
+
+					const search = (
+						this.getCurrentNodeParameter('fieldValue') ??
+						this.getCurrentNodeParameter('fieldValueSelect') ??
+						this.getCurrentNodeParameter('fieldValueMultiSelect')
+					) as string | undefined;
+					const searchLower = typeof search === 'string' && search.trim() ? search.trim().toLowerCase() : '';
+					const filtered = searchLower
+						? field.options.filter((opt) => (opt.name || '').toLowerCase().includes(searchLower))
+						: field.options;
+
+					const limit = 300;
+					return filtered.slice(0, limit).map((opt) => ({
+						name: opt.name || String(opt.id),
+						value: opt.id,
+					}));
+				} catch (error: unknown) {
+					console.error('Error in getBookingFieldOptions:', error);
 					return [];
 				}
 			},
