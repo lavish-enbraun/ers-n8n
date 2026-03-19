@@ -269,6 +269,9 @@ const projectTypeCache: Record<string, ProjectUDFField[]> = {};
 // Booking fields cache (fetched from /booking/fields)
 let bookingFieldsCache: BookingField[] | undefined;
 
+// Requirement fields cache (GET /requirements/fields) — same response shape as booking field definitions
+let requirementFieldsCache: BookingField[] | undefined;
+
 function mapPublicApiProjectFieldsToUDF(fields: PublicApiProjectTypeField[] | undefined): ProjectUDFField[] {
 	if (!Array.isArray(fields)) return [];
 	const result: ProjectUDFField[] = [];
@@ -1166,6 +1169,158 @@ export class ErsApp implements INodeType {
 					}));
 				} catch (error: unknown) {
 					console.error('Error in getBookingFieldOptions:', error);
+					return [];
+				}
+			},
+
+			async getRequirementFieldsMandatory(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				try {
+					const auth = (this.getNode().parameters as { authentication?: string }).authentication;
+					const credentialType = auth === 'accessToken' ? 'ersAppAccessTokenApi' : 'ersAppOAuth2';
+
+					requirementFieldsCache = undefined;
+
+					if (!requirementFieldsCache) {
+						const response = await this.helpers.httpRequestWithAuthentication.call(this, credentialType, {
+							method: 'GET',
+							url: `${BASE_URL}${API_BASE_PATH}/requirement/fields`,
+							headers: { Accept: 'application/json' },
+						}) as { data?: BookingFieldDefinition[] } | BookingFieldDefinition[];
+
+						const list = Array.isArray(response) ? response : (response.data ?? []);
+						requirementFieldsCache = mapBookingFieldDefinitions(list);
+					}
+
+					const excludedRequirementFieldCodes = new Set([
+						'project_id',
+						'start_time',
+						'end_time',
+						'effort',
+						'unit',
+					]);
+					return (requirementFieldsCache ?? [])
+						.filter((f) => !excludedRequirementFieldCodes.has(f.code) && f.is_required === true)
+						.map((f) => {
+							const normalizedFieldType = normalizeUdfFieldTypeForOption(f.field_type);
+							return {
+								name: f.display_name || f.code,
+								value: JSON.stringify({
+									code: f.code,
+									field_type: normalizedFieldType,
+									has_options: Array.isArray(f.options) && f.options.length > 0,
+								}),
+							};
+						});
+				} catch (error: unknown) {
+					if (isAccessTokenError(error)) return [];
+					console.error('Error fetching mandatory requirement fields:', error);
+					return [];
+				}
+			},
+
+			async getRequirementFieldsOther(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				try {
+					const auth = (this.getNode().parameters as { authentication?: string }).authentication;
+					const credentialType = auth === 'accessToken' ? 'ersAppAccessTokenApi' : 'ersAppOAuth2';
+
+					requirementFieldsCache = undefined;
+
+					if (!requirementFieldsCache) {
+						const response = await this.helpers.httpRequestWithAuthentication.call(this, credentialType, {
+							method: 'GET',
+							url: `${BASE_URL}${API_BASE_PATH}/requirement/fields`,
+							headers: { Accept: 'application/json' },
+						}) as { data?: BookingFieldDefinition[] } | BookingFieldDefinition[];
+
+						const list = Array.isArray(response) ? response : (response.data ?? []);
+						requirementFieldsCache = mapBookingFieldDefinitions(list);
+					}
+
+					const excludedRequirementFieldCodes = new Set([
+						'project_id',
+						'start_time',
+						'end_time',
+						'effort',
+						'unit',
+					]);
+					return (requirementFieldsCache ?? [])
+						.filter((f) => !excludedRequirementFieldCodes.has(f.code) && f.is_required !== true)
+						.map((f) => {
+							const normalizedFieldType = normalizeUdfFieldTypeForOption(f.field_type);
+							return {
+								name: f.display_name || f.code,
+								value: JSON.stringify({
+									code: f.code,
+									field_type: normalizedFieldType,
+									has_options: Array.isArray(f.options) && f.options.length > 0,
+								}),
+							};
+						});
+				} catch (error: unknown) {
+					if (isAccessTokenError(error)) return [];
+					console.error('Error fetching other requirement fields:', error);
+					return [];
+				}
+			},
+
+			async getRequirementFieldOptions(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				try {
+					const parameters = this.getNode().parameters as {
+						mandatoryFields?: { field?: Array<{ fieldName?: string }> };
+						otherFields?: { field?: Array<{ fieldName?: string }> };
+					};
+
+					let fieldName: string | undefined;
+					for (const arr of [parameters.mandatoryFields?.field, parameters.otherFields?.field]) {
+						if (Array.isArray(arr) && arr.length > 0) {
+							for (let i = arr.length - 1; i >= 0; i--) {
+								const item = arr[i];
+								if (item?.fieldName && typeof item.fieldName === 'string' && item.fieldName.trim() !== '') {
+									fieldName = item.fieldName;
+									break;
+								}
+							}
+							if (fieldName) break;
+							const first = arr[0];
+							if (first?.fieldName) {
+								fieldName = first.fieldName as string;
+								break;
+							}
+						}
+					}
+
+					if (!fieldName || fieldName === '') return [];
+
+					let parsed: { code?: string; field_type?: string; has_options?: boolean };
+					try {
+						parsed = JSON.parse(fieldName);
+					} catch {
+						return [];
+					}
+
+					if (!parsed.code) return [];
+					if (!requirementFieldsCache?.length) return [];
+
+					const field = requirementFieldsCache.find((f) => f.code === parsed.code);
+					if (!field?.options?.length) return [];
+
+					const search = (
+						this.getCurrentNodeParameter('fieldValue') ??
+						this.getCurrentNodeParameter('fieldValueSelect') ??
+						this.getCurrentNodeParameter('fieldValueMultiSelect')
+					) as string | undefined;
+					const searchLower = typeof search === 'string' && search.trim() ? search.trim().toLowerCase() : '';
+					const filtered = searchLower
+						? field.options.filter((opt) => (opt.name || '').toLowerCase().includes(searchLower))
+						: field.options;
+
+					const limit = 300;
+					return filtered.slice(0, limit).map((opt) => ({
+						name: opt.name || String(opt.id),
+						value: opt.id,
+					}));
+				} catch (error: unknown) {
+					console.error('Error in getRequirementFieldOptions:', error);
 					return [];
 				}
 			},
