@@ -64,7 +64,8 @@ export const projectUpdateDescription: INodeProperties[] = [
 		typeOptions: {
 			multipleValues: true,
 		},
-		description: 'Custom user-defined fields from eResource Scheduler. Fields are fetched dynamically based on the selected Project Type. After selecting a field, fill ONLY the appropriate value field that matches the field type (Text for TEXT/EMAIL/ENAME, Number for NUMBER/INTEGER, Date for DATE, Boolean for BOOLEAN/CHECKBOX, Select for dropdowns with options, Multi-Select for multi-select dropdowns).',
+		description:
+			'Custom user-defined fields from eResource Scheduler. Fields are fetched dynamically based on the selected Project Type. After selecting a field, fill ONLY the appropriate value field that matches the field type (Text for TEXT/EMAIL/ENAME, Number for NUMBER/INTEGER, Date for DATE, Boolean for BOOLEAN/CHECKBOX, Select for dropdowns with options including CALSS project calendar when Scheduling Plus is on, Multi-Select for multi-select dropdowns).',
 		options: [
 			{
 				displayName: 'Field',
@@ -248,6 +249,11 @@ export const projectUpdateDescription: INodeProperties[] = [
 											regex: '.*"field_type":"LABL".*',
 										},
 									},
+									{
+										_cnd: {
+											regex: '.*"field_type":"CALSS".*',
+										},
+									},
 								],
 							},
 							hide: {
@@ -275,7 +281,8 @@ export const projectUpdateDescription: INodeProperties[] = [
 								],
 							},
 						},
-						description: 'Fill this for single-select dropdown fields (e.g. RTYPE, DDSS, RDGRP, LABL Label). Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
+						description:
+							'Fill this for single-select dropdown fields (e.g. RTYPE, DDSS, RDGRP, LABL Label, CALSS Project Calendar). Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>. Omit project calendar to keep or use the tenant default (Scheduling Plus).',
 					},
 					{
 						displayName: 'Field Value (Text)',
