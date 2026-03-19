@@ -200,6 +200,13 @@ function mapPublicApiFieldsToUDF(fields: PublicApiResourceTypeField[] | undefine
 	return result;
 }
 
+/** Normalize API field_type stored in option JSON (TAGS→TEXT, trim + uppercase) so routing matches ERS variants. */
+function normalizeUdfFieldTypeForOption(fieldType: string | undefined): string {
+	if (!fieldType) return '';
+	if (fieldType === 'TAGS') return 'TEXT';
+	return String(fieldType).trim().toUpperCase();
+}
+
 // Layer 2: Cache raw API response per resource type (no re-fetch, no re-serialization)
 interface ResourceUDFOption {
 	id: number | string;
@@ -505,7 +512,7 @@ export class ErsApp implements INodeType {
 						})
 						.map((field) => ({
 							name: field.display_name || field.code,
-							value: JSON.stringify({ code: field.code, field_type: field.field_type === 'TAGS' ? 'TEXT' : (field.field_type ?? '') }),
+							value: JSON.stringify({ code: field.code, field_type: normalizeUdfFieldTypeForOption(field.field_type) }),
 						}));
 				} catch (error) {
 					console.error('Error fetching UDF fields:', error);
@@ -561,7 +568,7 @@ export class ErsApp implements INodeType {
 						})
 						.map((field) => ({
 							name: field.display_name || field.code,
-							value: JSON.stringify({ code: field.code, field_type: field.field_type === 'TAGS' ? 'TEXT' : (field.field_type ?? '') }),
+							value: JSON.stringify({ code: field.code, field_type: normalizeUdfFieldTypeForOption(field.field_type) }),
 						}));
 				} catch (error) {
 					console.error('Error fetching mandatory UDF fields:', error);
@@ -618,7 +625,7 @@ export class ErsApp implements INodeType {
 						})
 						.map((field) => ({
 							name: field.display_name || field.code,
-							value: JSON.stringify({ code: field.code, field_type: field.field_type === 'TAGS' ? 'TEXT' : (field.field_type ?? '') }),
+							value: JSON.stringify({ code: field.code, field_type: normalizeUdfFieldTypeForOption(field.field_type) }),
 						}));
 				} catch (error) {
 					console.error('Error fetching other UDF fields:', error);
@@ -755,7 +762,7 @@ export class ErsApp implements INodeType {
 						})
 						.map((field) => ({
 							name: field.display_name || field.code,
-							value: JSON.stringify({ code: field.code, field_type: field.field_type === 'TAGS' ? 'TEXT' : (field.field_type ?? '') }),
+							value: JSON.stringify({ code: field.code, field_type: normalizeUdfFieldTypeForOption(field.field_type) }),
 						}));
 				} catch (error: unknown) {
 					if (isAccessTokenError(error)) return [];
@@ -817,7 +824,7 @@ export class ErsApp implements INodeType {
 						})
 						.map((field) => ({
 							name: field.display_name || field.code,
-							value: JSON.stringify({ code: field.code, field_type: field.field_type === 'TAGS' ? 'TEXT' : (field.field_type ?? '') }),
+							value: JSON.stringify({ code: field.code, field_type: normalizeUdfFieldTypeForOption(field.field_type) }),
 						}));
 				} catch (error) {
 					console.error('Error fetching mandatory project UDF fields:', error);
@@ -878,7 +885,7 @@ export class ErsApp implements INodeType {
 						})
 						.map((field) => ({
 							name: field.display_name || field.code,
-							value: JSON.stringify({ code: field.code, field_type: field.field_type === 'TAGS' ? 'TEXT' : (field.field_type ?? '') }),
+							value: JSON.stringify({ code: field.code, field_type: normalizeUdfFieldTypeForOption(field.field_type) }),
 						}));
 				} catch (error) {
 					console.error('Error fetching other project UDF fields:', error);
@@ -909,7 +916,7 @@ export class ErsApp implements INodeType {
 					return (bookingFieldsCache ?? [])
 						.filter((f) => !excludedCodes.has(f.code) && f.is_required === true)
 						.map((f) => {
-							const normalizedFieldType = f.field_type === 'TAGS' ? 'TEXT' : (f.field_type ?? '');
+							const normalizedFieldType = normalizeUdfFieldTypeForOption(f.field_type);
 							return {
 								name: f.display_name || f.code,
 								value: JSON.stringify({
@@ -949,7 +956,7 @@ export class ErsApp implements INodeType {
 					return (bookingFieldsCache ?? [])
 						.filter((f) => !excludedCodes.has(f.code) && f.is_required !== true)
 						.map((f) => {
-							const normalizedFieldType = f.field_type === 'TAGS' ? 'TEXT' : (f.field_type ?? '');
+							const normalizedFieldType = normalizeUdfFieldTypeForOption(f.field_type);
 							return {
 								name: f.display_name || f.code,
 								value: JSON.stringify({
@@ -993,7 +1000,7 @@ export class ErsApp implements INodeType {
 							return bRequired - aRequired;
 						})
 						.map((f) => {
-							const normalizedFieldType = f.field_type === 'TAGS' ? 'TEXT' : (f.field_type ?? '');
+							const normalizedFieldType = normalizeUdfFieldTypeForOption(f.field_type);
 							return {
 								name: f.display_name || f.code,
 								value: JSON.stringify({
