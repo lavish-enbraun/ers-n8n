@@ -94,8 +94,8 @@ interface PublicApiProjectTypeDetail {
 	fields?: PublicApiProjectTypeField[];
 }
 
-// Booking fields response shape (GET /rest/v1/booking/fields)
-interface BookingFieldDefinition {
+// Profile field metadata (shared shape for GET .../booking/fields, .../requirement/fields, etc.)
+interface ProfileFieldDefinition {
 	id?: number;
 	code: string;
 	display_name?: string;
@@ -113,20 +113,20 @@ interface BookingFieldDefinition {
 	maxnum?: number;
 }
 
-interface BookingFieldOption {
+interface ProfileFieldOption {
 	id: number | string;
 	name: string;
 	description?: string;
 }
 
-interface BookingField {
+interface ProfileField {
 	id?: number;
 	code: string;
 	display_name?: string;
 	field_type?: string;
 	is_system_defined?: boolean;
 	is_required?: boolean;
-	options?: BookingFieldOption[];
+	options?: ProfileFieldOption[];
 	mindate?: string;
 	maxdate?: string;
 	minlength?: number;
@@ -137,12 +137,12 @@ interface BookingField {
 	maxnum?: number;
 }
 
-function mapBookingFieldDefinitions(fields: BookingFieldDefinition[] | undefined): BookingField[] {
+function mapProfileFieldDefinitions(fields: ProfileFieldDefinition[] | undefined): ProfileField[] {
 	if (!Array.isArray(fields)) return [];
-	const result: BookingField[] = [];
+	const result: ProfileField[] = [];
 	for (const f of fields) {
 		if (f?.code) {
-			const options: BookingFieldOption[] | undefined = f.options?.map((opt) => ({
+			const options: ProfileFieldOption[] | undefined = f.options?.map((opt) => ({
 				id: opt.id,
 				name: opt.name,
 				description: opt.description ?? undefined,
@@ -267,10 +267,10 @@ interface ProjectUDFField {
 const projectTypeCache: Record<string, ProjectUDFField[]> = {};
 
 // Booking fields cache (fetched from /booking/fields)
-let bookingFieldsCache: BookingField[] | undefined;
+let bookingFieldsCache: ProfileField[] | undefined;
 
-// Requirement fields cache (GET /requirements/fields) — same response shape as booking field definitions
-let requirementFieldsCache: BookingField[] | undefined;
+// Requirement fields cache (GET /requirement/fields; same ProfileFieldDefinition response shape)
+let requirementFieldsCache: ProfileField[] | undefined;
 
 function mapPublicApiProjectFieldsToUDF(fields: PublicApiProjectTypeField[] | undefined): ProjectUDFField[] {
 	if (!Array.isArray(fields)) return [];
@@ -909,10 +909,10 @@ export class ErsApp implements INodeType {
 							method: 'GET',
 							url: `${BASE_URL}${API_BASE_PATH}/booking/fields`,
 							headers: { Accept: 'application/json' },
-						}) as { data?: BookingFieldDefinition[] } | BookingFieldDefinition[];
+						}) as { data?: ProfileFieldDefinition[] } | ProfileFieldDefinition[];
 
 						const list = Array.isArray(response) ? response : (response.data ?? []);
-						bookingFieldsCache = mapBookingFieldDefinitions(list);
+						bookingFieldsCache = mapProfileFieldDefinitions(list);
 					}
 
 					const excludedCodes = new Set(['resource_id', 'project_id', 'start_time', 'end_time']);
@@ -949,10 +949,10 @@ export class ErsApp implements INodeType {
 							method: 'GET',
 							url: `${BASE_URL}${API_BASE_PATH}/booking/fields`,
 							headers: { Accept: 'application/json' },
-						}) as { data?: BookingFieldDefinition[] } | BookingFieldDefinition[];
+						}) as { data?: ProfileFieldDefinition[] } | ProfileFieldDefinition[];
 
 						const list = Array.isArray(response) ? response : (response.data ?? []);
-						bookingFieldsCache = mapBookingFieldDefinitions(list);
+						bookingFieldsCache = mapProfileFieldDefinitions(list);
 					}
 
 					const excludedCodes = new Set(['resource_id', 'project_id', 'start_time', 'end_time']);
@@ -988,10 +988,10 @@ export class ErsApp implements INodeType {
 							method: 'GET',
 							url: `${BASE_URL}${API_BASE_PATH}/booking/fields`,
 							headers: { Accept: 'application/json' },
-						}) as { data?: BookingFieldDefinition[] } | BookingFieldDefinition[];
+						}) as { data?: ProfileFieldDefinition[] } | ProfileFieldDefinition[];
 
 						const list = Array.isArray(response) ? response : (response.data ?? []);
-						bookingFieldsCache = mapBookingFieldDefinitions(list);
+						bookingFieldsCache = mapProfileFieldDefinitions(list);
 					}
 
 					const excludedCodes = new Set(['resource_id', 'project_id', 'start_time', 'end_time']);
@@ -1185,10 +1185,10 @@ export class ErsApp implements INodeType {
 							method: 'GET',
 							url: `${BASE_URL}${API_BASE_PATH}/requirement/fields`,
 							headers: { Accept: 'application/json' },
-						}) as { data?: BookingFieldDefinition[] } | BookingFieldDefinition[];
+						}) as { data?: ProfileFieldDefinition[] } | ProfileFieldDefinition[];
 
 						const list = Array.isArray(response) ? response : (response.data ?? []);
-						requirementFieldsCache = mapBookingFieldDefinitions(list);
+						requirementFieldsCache = mapProfileFieldDefinitions(list);
 					}
 
 					const excludedRequirementFieldCodes = new Set([
@@ -1230,10 +1230,10 @@ export class ErsApp implements INodeType {
 							method: 'GET',
 							url: `${BASE_URL}${API_BASE_PATH}/requirement/fields`,
 							headers: { Accept: 'application/json' },
-						}) as { data?: BookingFieldDefinition[] } | BookingFieldDefinition[];
+						}) as { data?: ProfileFieldDefinition[] } | ProfileFieldDefinition[];
 
 						const list = Array.isArray(response) ? response : (response.data ?? []);
-						requirementFieldsCache = mapBookingFieldDefinitions(list);
+						requirementFieldsCache = mapProfileFieldDefinitions(list);
 					}
 
 					const excludedRequirementFieldCodes = new Set([
@@ -1263,15 +1263,74 @@ export class ErsApp implements INodeType {
 				}
 			},
 
+			async getRequirementFieldsAll(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				try {
+					const auth = (this.getNode().parameters as { authentication?: string }).authentication;
+					const credentialType = auth === 'accessToken' ? 'ersAppAccessTokenApi' : 'ersAppOAuth2';
+
+					requirementFieldsCache = undefined;
+
+					if (!requirementFieldsCache) {
+						const response = await this.helpers.httpRequestWithAuthentication.call(this, credentialType, {
+							method: 'GET',
+							url: `${BASE_URL}${API_BASE_PATH}/requirement/fields`,
+							headers: { Accept: 'application/json' },
+						}) as { data?: ProfileFieldDefinition[] } | ProfileFieldDefinition[];
+
+						const list = Array.isArray(response) ? response : (response.data ?? []);
+						requirementFieldsCache = mapProfileFieldDefinitions(list);
+					}
+
+					const excludedRequirementFieldCodes = new Set([
+						'project_id',
+						'start_time',
+						'end_time',
+						'effort',
+						'unit',
+					]);
+					return (requirementFieldsCache ?? [])
+						.filter((f) => !excludedRequirementFieldCodes.has(f.code))
+						.sort((a, b) => {
+							const aRequired = a.is_required === true ? 1 : 0;
+							const bRequired = b.is_required === true ? 1 : 0;
+							return bRequired - aRequired;
+						})
+						.map((f) => {
+							const normalizedFieldType = normalizeUdfFieldTypeForOption(f.field_type);
+							return {
+								name: f.display_name || f.code,
+								value: JSON.stringify({
+									code: f.code,
+									field_type: normalizedFieldType,
+									has_options: Array.isArray(f.options) && f.options.length > 0,
+								}),
+							};
+						});
+				} catch (error: unknown) {
+					if (isAccessTokenError(error)) return [];
+					console.error('Error fetching requirement fields:', error);
+					return [];
+				}
+			},
+
 			async getRequirementFieldOptions(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 				try {
 					const parameters = this.getNode().parameters as {
 						mandatoryFields?: { field?: Array<{ fieldName?: string }> };
 						otherFields?: { field?: Array<{ fieldName?: string }> };
+						updateMandatoryFields?: { field?: Array<{ fieldName?: string }> };
+						updateOtherFields?: { field?: Array<{ fieldName?: string }> };
+						additionalFields?: { field?: Array<{ fieldName?: string }> };
 					};
 
 					let fieldName: string | undefined;
-					for (const arr of [parameters.mandatoryFields?.field, parameters.otherFields?.field]) {
+					for (const arr of [
+						parameters.mandatoryFields?.field,
+						parameters.otherFields?.field,
+						parameters.updateMandatoryFields?.field,
+						parameters.updateOtherFields?.field,
+						parameters.additionalFields?.field,
+					]) {
 						if (Array.isArray(arr) && arr.length > 0) {
 							for (let i = arr.length - 1; i >= 0; i--) {
 								const item = arr[i];

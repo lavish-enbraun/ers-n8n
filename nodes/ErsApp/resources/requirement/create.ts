@@ -5,8 +5,7 @@ const showOnlyForRequirementCreate = {
 	resource: ['requirement'],
 };
 
-/** Value rows shared by Mandatory Fields and Other Fields (Requirement create — /requirements/fields). */
-const requirementCreateFieldValues: INodeProperties[] = [
+export const requirementCreateFieldValues: INodeProperties[] = [
 	{
 		displayName: 'Field Name or ID',
 		name: 'fieldName',
@@ -201,7 +200,7 @@ const requirementCreateFieldValues: INodeProperties[] = [
 	},
 ];
 
-function withOtherFieldLoader(values: INodeProperties[]): INodeProperties[] {
+export function withRequirementOtherFieldLoader(values: INodeProperties[]): INodeProperties[] {
 	return values.map((prop) => {
 		if (prop.name === 'fieldName' && prop.typeOptions && 'loadOptionsMethod' in prop.typeOptions) {
 			return {
@@ -305,7 +304,7 @@ export const requirementCreateDescription: INodeProperties[] = [
 			multipleValues: true,
 		},
 		description:
-			'Required fields from GET /requirements/fields (project, start/end time, effort, and unit are set above and are not listed here). Add one row per field; fill only the matching value control.',
+			'Required fields from GET /requirement/fields (project, start/end time, effort, and unit are set above and are not listed here). Add one row per field; fill only the matching value control.',
 		options: [
 			{
 				displayName: 'Field',
@@ -327,12 +326,12 @@ export const requirementCreateDescription: INodeProperties[] = [
 			multipleValues: true,
 		},
 		description:
-			'Optional fields from GET /requirements/fields (same value rules as mandatory fields; core fields above are excluded)',
+			'Optional fields from GET /requirement/fields (same value rules as mandatory fields; core fields above are excluded)',
 		options: [
 			{
 				displayName: 'Field',
 				name: 'field',
-				values: withOtherFieldLoader(requirementCreateFieldValues),
+				values: withRequirementOtherFieldLoader(requirementCreateFieldValues),
 			},
 		],
 	},
