@@ -404,6 +404,11 @@ export const projectCreateDescription: INodeProperties[] = [
 											regex: '.*"field_type":"DATE".*',
 										},
 									},
+									{
+										_cnd: {
+											regex: '.*"field_type":"DATIM".*',
+										},
+									},
 								],
 							},
 						},
