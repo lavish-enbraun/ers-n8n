@@ -5,6 +5,217 @@ const showOnlyForRequirementCreate = {
 	resource: ['requirement'],
 };
 
+/** Value rows shared by Mandatory Fields and Other Fields (Requirement create — /requirements/fields). */
+const requirementCreateFieldValues: INodeProperties[] = [
+	{
+		displayName: 'Field Name or ID',
+		name: 'fieldName',
+		type: 'options',
+		typeOptions: {
+			loadOptionsMethod: 'getRequirementFieldsMandatory',
+		},
+		default: '',
+		description:
+			'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+		required: true,
+	},
+	{
+		displayName: 'Field Value (Boolean)',
+		name: 'fieldValueBoolean',
+		type: 'boolean',
+		default: false,
+		displayOptions: {
+			show: {
+				fieldName: [
+					{ _cnd: { regex: '.*"field_type":"CHK".*' } },
+					{ _cnd: { regex: '.*"field_type":"BOOLEAN".*' } },
+				],
+			},
+		},
+	},
+	{
+		displayName: 'Field Value (Date/Time)',
+		name: 'fieldValueDate',
+		type: 'dateTime',
+		default: '',
+		displayOptions: {
+			show: {
+				fieldName: [
+					{ _cnd: { regex: '.*"field_type":"DATE".*' } },
+					{ _cnd: { regex: '.*"field_type":"DATIM".*' } },
+				],
+			},
+		},
+	},
+	{
+		displayName: 'Field Value (Multi-Select) Names or IDs',
+		name: 'fieldValueMultiSelect',
+		type: 'multiOptions',
+		noDataExpression: true,
+		typeOptions: {
+			loadOptionsMethod: 'getRequirementFieldOptions',
+			loadOptionsDependsOn: ['fieldName'],
+			searchable: true,
+		},
+		default: [],
+		displayOptions: {
+			show: {
+				fieldName: [
+					{ _cnd: { regex: '.*"field_type":"DDMS".*' } },
+					{ _cnd: { regex: '.*"field_type":"ROLES".*' } },
+					{ _cnd: { regex: '.*"field_type":"CHGRP".*' } },
+					{ _cnd: { regex: '.*"field_type":"UMS".*' } },
+				],
+			},
+		},
+		description:
+			'Select multiple options from the dropdown. Selected values will be sent as an array of IDs. Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
+	},
+	{
+		displayName: 'Field Value (Number)',
+		name: 'fieldValueNumber',
+		type: 'number',
+		default: 0,
+		typeOptions: {
+			maxValue: 99999999.99,
+			minValue: -999999999,
+		},
+		displayOptions: {
+			show: {
+				fieldName: [
+					{ _cnd: { regex: '.*"field_type":"NUMBER".*' } },
+					{ _cnd: { regex: '.*"field_type":"INTEGER".*' } },
+					{ _cnd: { regex: '.*"field_type":"FLOAT".*' } },
+					{ _cnd: { regex: '.*"field_type":"INT"[^E].*' } },
+					{ _cnd: { regex: '.*"field_type":"EFFORT".*' } },
+				],
+			},
+		},
+	},
+	{
+		displayName: 'Field Value (ID)',
+		name: 'fieldValueId',
+		type: 'number',
+		default: undefined,
+		typeOptions: {
+			minValue: 1,
+		},
+		displayOptions: {
+			show: {
+				fieldName: [
+					{ _cnd: { regex: '.*"field_type":"TSKSS".*' } },
+					{ _cnd: { regex: '.*"field_type":"REQSS".*' } },
+					{ _cnd: { regex: '.*"field_type":"ROLEPS".*' } },
+					{ _cnd: { regex: '.*"field_type":"PRJSS".*' } },
+				],
+			},
+			hide: {
+				fieldName: [{ _cnd: { regex: '.*"has_options":true.*' } }],
+			},
+		},
+		description: 'Fill this for project/task (or role without options) when the API does not return a dropdown list',
+	},
+	{
+		displayName: 'Field Value (Unit)',
+		name: 'fieldValueUnit',
+		type: 'options',
+		default: 2,
+		options: [
+			{
+				name: 'Hours',
+				value: 2,
+				description: "Effort in fixed hours (doesn't change when requirement changes)",
+			},
+			{
+				name: 'Full Time Equivalent (FTE)',
+				value: 4,
+				description: 'FTE using the calendar from Administrator settings',
+			},
+		],
+		displayOptions: {
+			show: {
+				fieldName: [{ _cnd: { regex: '.*"field_type":"UNIT".*' } }],
+			},
+		},
+		description: 'Unit for effort (requirement API: typically 2 = Hours, 4 = FTE)',
+	},
+	{
+		displayName: 'Field Value (Select) Name or ID',
+		name: 'fieldValueSelect',
+		type: 'options',
+		noDataExpression: true,
+		typeOptions: {
+			loadOptionsMethod: 'getRequirementFieldOptions',
+			loadOptionsDependsOn: ['fieldName'],
+			searchable: true,
+		},
+		default: '',
+		displayOptions: {
+			show: {
+				fieldName: [{ _cnd: { regex: '.*"has_options":true.*' } }],
+			},
+			hide: {
+				fieldName: [
+					{ _cnd: { regex: '.*"field_type":"DDMS".*' } },
+					{ _cnd: { regex: '.*"field_type":"ROLES".*' } },
+					{ _cnd: { regex: '.*"field_type":"CHGRP".*' } },
+					{ _cnd: { regex: '.*"field_type":"UMS".*' } },
+				],
+			},
+		},
+		description:
+			'Fill this for single-select dropdown fields (e.g. Performing Role when options are returned by the API). Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
+	},
+	{
+		displayName: 'Field Value (Text)',
+		name: 'fieldValueText',
+		type: 'string',
+		default: '',
+		displayOptions: {
+			show: {
+				fieldName: [
+					{ _cnd: { regex: '.*"field_type":"TEXT".*' } },
+					{ _cnd: { regex: '.*"field_type":"EMAIL".*' } },
+					{ _cnd: { regex: '.*"field_type":"ENAME".*' } },
+					{ _cnd: { regex: '.*"field_type":"URL".*' } },
+					{ _cnd: { regex: '.*"field_type":"COLPICK".*' } },
+					{ _cnd: { regex: '.*"field_type":"TAGS".*' } },
+				],
+			},
+		},
+		description: 'For Tags, enter comma-separated values (sent as an array of strings)',
+	},
+	{
+		displayName: 'Field Value (Rich Text)',
+		name: 'fieldValueRichText',
+		type: 'string',
+		default: '',
+		typeOptions: {
+			editor: 'htmlEditor',
+		},
+		displayOptions: {
+			show: {
+				fieldName: [{ _cnd: { regex: '.*"field_type":"MLTEXT".*' } }],
+			},
+		},
+	},
+];
+
+function withOtherFieldLoader(values: INodeProperties[]): INodeProperties[] {
+	return values.map((prop) => {
+		if (prop.name === 'fieldName' && prop.typeOptions && 'loadOptionsMethod' in prop.typeOptions) {
+			return {
+				...prop,
+				typeOptions: {
+					...prop.typeOptions,
+					loadOptionsMethod: 'getRequirementFieldsOther',
+				},
+			};
+		}
+		return prop;
+	});
+}
+
 export const requirementCreateDescription: INodeProperties[] = [
 	{
 		displayName: 'Project ID',
@@ -14,11 +225,9 @@ export const requirementCreateDescription: INodeProperties[] = [
 		displayOptions: {
 			show: showOnlyForRequirementCreate,
 		},
-		typeOptions: {
-			minValue: 1,
-		},
-		default: undefined,
-		description: 'ID of the project object for which this requirement object is being created',
+		default: '',
+		description:
+			'ID of the project for which this requirement is created',
 	},
 	{
 		displayName: 'Start Time',
@@ -29,7 +238,8 @@ export const requirementCreateDescription: INodeProperties[] = [
 			show: showOnlyForRequirementCreate,
 		},
 		default: '',
-		description: 'Start date and time for requirement (format: yyyy-MM-ddThh:mm:00, minutes will be rounded to 0, 15, 30, or 45)',
+		description:
+			'Start date and time (snapped to 15-minute intervals with seconds 00 in the request, format yyyy-MM-ddThh:mm:00)',
 	},
 	{
 		displayName: 'End Time',
@@ -40,12 +250,13 @@ export const requirementCreateDescription: INodeProperties[] = [
 			show: showOnlyForRequirementCreate,
 		},
 		default: '',
-		description: 'End date and time for requirement (format: yyyy-MM-ddThh:mm:00, minutes will be rounded to 0, 15, 30, or 45). Must be at least 15 minutes after start_time.',
+		description:
+			'End date and time (must be at least 15 minutes after start; snapped like start_time)',
 	},
 	{
 		displayName: 'Effort',
 		name: 'effort',
-		type: 'string',
+		type: 'number',
 		required: true,
 		displayOptions: {
 			show: showOnlyForRequirementCreate,
@@ -56,7 +267,7 @@ export const requirementCreateDescription: INodeProperties[] = [
 			numberStepSize: 0.01,
 		},
 		default: 0,
-		description: 'Effort value for the requirement. Defines how much effort is needed to complete the task (0-99999999.99).',
+		description: 'Effort for the requirement (0–99999999.99)',
 	},
 	{
 		displayName: 'Unit',
@@ -68,85 +279,61 @@ export const requirementCreateDescription: INodeProperties[] = [
 		},
 		options: [
 			{
-				name: 'Hours',
+				name: 'Hours (2)',
 				value: 2,
-				description: 'Effort value in fixed hours which doesn\'t change upon changes in requirement',
+				description: 'Fixed hours; does not change when the requirement changes',
 			},
 			{
-				name: 'Full Time Equivalent (FTE)',
+				name: 'Full Time Equivalent (4)',
 				value: 4,
-				description: 'Full time equivalent calculated using FTE calendar defined in Administrator calendar settings',
+				description: 'FTE using the Administrator FTE calendar',
 			},
 		],
 		default: 2,
-		description: 'Unit in which effort is defined (2 for Hours, 4 for Full Time Equivalent)',
+		description: 'Unit for effort: 2 = Hours, 4 = FTE',
 	},
 	{
-		displayName: 'Additional Fields',
-		name: 'additionalFields',
-		type: 'collection',
-		placeholder: 'Add Field',
+		displayName: 'Mandatory Fields',
+		name: 'mandatoryFields',
+		type: 'fixedCollection',
+		placeholder: 'Add Mandatory Field',
 		displayOptions: {
 			show: showOnlyForRequirementCreate,
 		},
 		default: {},
+		typeOptions: {
+			multipleValues: true,
+		},
+		description:
+			'Required fields from GET /requirements/fields (project, start/end time, effort, and unit are set above and are not listed here). Add one row per field; fill only the matching value control.',
 		options: [
 			{
-				displayName: 'Allow Multi Allocation',
-				name: 'allow_multi_allocation',
-				type: 'boolean',
-				default: false,
-				description: 'Whether to allow multi-allocation for the requirement',
+				displayName: 'Field',
+				name: 'field',
+				values: requirementCreateFieldValues,
 			},
+		],
+	},
+	{
+		displayName: 'Other Fields',
+		name: 'otherFields',
+		type: 'fixedCollection',
+		placeholder: 'Add Other Field',
+		displayOptions: {
+			show: showOnlyForRequirementCreate,
+		},
+		default: {},
+		typeOptions: {
+			multipleValues: true,
+		},
+		description:
+			'Optional fields from GET /requirements/fields (same value rules as mandatory fields; core fields above are excluded)',
+		options: [
 			{
-				displayName: 'Role ID',
-				name: 'role_id',
-				type: 'string',
-				default: '',
-				description: 'ID of the role object that the resource needs to perform for the requirement',
-			},
-			{
-				displayName: 'Task ID',
-				name: 'task_id',
-				type: 'string',
-				default: '',
-				description: 'ID of the task object within the project that needs to be done in this requirement',
-			},
-			{
-				displayName: 'Flexi Range Unit',
-				name: 'flexi_range_unit',
-				type: 'number',
-				typeOptions: {
-					minValue: 0,
-				},
-				default: 2,
-				description: 'Flexi range unit (e.g. 2 for hours)',
-			},
-			{
-				displayName: 'Copies',
-				name: 'copies',
-				type: 'number',
-				typeOptions: {
-					minValue: 0,
-				},
-				default: 0,
-				description: 'Number of copies',
-			},
-			{
-				displayName: 'Sync to Booking',
-				name: 'sync_to_booking',
-				type: 'boolean',
-				default: false,
-				description: 'Whether to sync the requirement to booking',
-			},
-			{
-				displayName: 'Tags',
-				name: 'tags',
-				type: 'string',
-				default: '',
-				description: 'Comma-separated list of tags for the requirement (sent as array of strings in the request)',
+				displayName: 'Field',
+				name: 'field',
+				values: withOtherFieldLoader(requirementCreateFieldValues),
 			},
 		],
 	},
 ];
-
