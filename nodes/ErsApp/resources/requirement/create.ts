@@ -292,6 +292,16 @@ export const requirementCreateDescription: INodeProperties[] = [
 		description: 'Unit for effort: 2 = Hours, 4 = FTE',
 	},
 	{
+		displayName: 'Copies',
+		name: 'copies',
+		type: 'number',
+		default: 0,
+		displayOptions: {
+			show: showOnlyForRequirementCreate,
+		},
+		description: 'Number of copies to create',
+	},
+	{
 		displayName: 'Mandatory Fields',
 		name: 'mandatoryFields',
 		type: 'fixedCollection',
