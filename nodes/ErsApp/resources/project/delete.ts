@@ -51,8 +51,15 @@ export const projectDeleteDescription: INodeProperties[] = [
 				default: false,
 				description: 'Whether to delete the project along with all associated timesheet entries',
 			},
+			{
+				displayName: 'Force Delete Rates',
+				name: 'force_delete_rates',
+				type: 'boolean',
+				default: false,
+				description: 'Whether to delete the project along with all associated rates',
+			},
 		],
-		description: 'Optional flags to force delete related requirements, bookings, and timesheet entries',
+		description: 'Optional flags to force delete related requirements, bookings, timesheet entries, and rates',
 	},
 ];
 
