@@ -272,6 +272,9 @@ let bookingFieldsCache: ProfileField[] | undefined;
 // Requirement fields cache (GET /requirement/fields; same ProfileFieldDefinition response shape)
 let requirementFieldsCache: ProfileField[] | undefined;
 
+// Timesheet fields cache (fetched from /timesheet/fields)
+let timesheetFieldsCache: ProfileField[] | undefined;
+
 function mapPublicApiProjectFieldsToUDF(fields: PublicApiProjectTypeField[] | undefined): ProjectUDFField[] {
 	if (!Array.isArray(fields)) return [];
 	const result: ProjectUDFField[] = [];
@@ -1169,6 +1172,179 @@ export class ErsApp implements INodeType {
 					}));
 				} catch (error: unknown) {
 					console.error('Error in getBookingFieldOptions:', error);
+					return [];
+				}
+			},
+
+			// Layer 3: Dynamic fields list for timesheet (from GET /timesheet/fields)
+			async getTimesheetFieldsMandatory(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				try {
+					const auth = (this.getNode().parameters as { authentication?: string }).authentication;
+					const credentialType = auth === 'accessToken' ? 'ersAppAccessTokenApi' : 'ersAppOAuth2';
+
+					// Invalidate cache so "Refresh List" / dropdown open gets fresh data from API
+					timesheetFieldsCache = undefined;
+
+					if (!timesheetFieldsCache) {
+						const response = await this.helpers.httpRequestWithAuthentication.call(this, credentialType, {
+							method: 'GET',
+							url: `${BASE_URL}${API_BASE_PATH}/timesheet/fields`,
+							headers: { Accept: 'application/json' },
+						}) as { data?: ProfileFieldDefinition[] } | ProfileFieldDefinition[];
+
+						const list = Array.isArray(response) ? response : response.data ?? [];
+						timesheetFieldsCache = mapProfileFieldDefinitions(list);
+					}
+
+					const excludedCodes = new Set([
+						'resource_id',
+						'project_id',
+						'date',
+						'hours',
+						'time_start',
+						'time_end',
+						'entry_status',
+						'comment',
+					]);
+
+					return (timesheetFieldsCache ?? [])
+						.filter((f) => !excludedCodes.has(f.code) && f.is_required === true)
+						.map((f) => {
+							const normalizedFieldType = normalizeUdfFieldTypeForOption(f.field_type);
+							return {
+								name: f.display_name || f.code,
+								value: JSON.stringify({
+									code: f.code,
+									field_type: normalizedFieldType,
+									has_options: Array.isArray(f.options) && f.options.length > 0,
+								}),
+							};
+						});
+				} catch (error: unknown) {
+					if (isAccessTokenError(error)) return [];
+					console.error('Error fetching mandatory timesheet fields:', error);
+					return [];
+				}
+			},
+
+			async getTimesheetFieldsOther(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				try {
+					const auth = (this.getNode().parameters as { authentication?: string }).authentication;
+					const credentialType = auth === 'accessToken' ? 'ersAppAccessTokenApi' : 'ersAppOAuth2';
+
+					// Invalidate cache so "Refresh List" / dropdown open gets fresh data from API
+					timesheetFieldsCache = undefined;
+
+					if (!timesheetFieldsCache) {
+						const response = await this.helpers.httpRequestWithAuthentication.call(this, credentialType, {
+							method: 'GET',
+							url: `${BASE_URL}${API_BASE_PATH}/timesheet/fields`,
+							headers: { Accept: 'application/json' },
+						}) as { data?: ProfileFieldDefinition[] } | ProfileFieldDefinition[];
+
+						const list = Array.isArray(response) ? response : response.data ?? [];
+						timesheetFieldsCache = mapProfileFieldDefinitions(list);
+					}
+
+					const excludedCodes = new Set([
+						'resource_id',
+						'project_id',
+						'date',
+						'hours',
+						'time_start',
+						'time_end',
+						'entry_status',
+						'comment',
+					]);
+
+					return (timesheetFieldsCache ?? [])
+						.filter((f) => !excludedCodes.has(f.code) && f.is_required !== true)
+						.map((f) => {
+							const normalizedFieldType = normalizeUdfFieldTypeForOption(f.field_type);
+							return {
+								name: f.display_name || f.code,
+								value: JSON.stringify({
+									code: f.code,
+									field_type: normalizedFieldType,
+									has_options: Array.isArray(f.options) && f.options.length > 0,
+								}),
+							};
+						});
+				} catch (error: unknown) {
+					if (isAccessTokenError(error)) return [];
+					console.error('Error fetching other timesheet fields:', error);
+					return [];
+				}
+			},
+
+			// Layer 3: Dynamic option loader for timesheet fields — read from cache, filter by search, limit.
+			async getTimesheetFieldOptions(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				try {
+					const parameters = this.getNode().parameters as {
+						mandatoryFields?: { field?: Array<{ fieldName?: string }> };
+						otherFields?: { field?: Array<{ fieldName?: string }> };
+						updateMandatoryFields?: { field?: Array<{ fieldName?: string }> };
+						updateOtherFields?: { field?: Array<{ fieldName?: string }> };
+					};
+
+					let fieldName: string | undefined;
+					for (const arr of [
+						parameters.mandatoryFields?.field,
+						parameters.otherFields?.field,
+						parameters.updateMandatoryFields?.field,
+						parameters.updateOtherFields?.field,
+					]) {
+						if (Array.isArray(arr) && arr.length > 0) {
+							for (let i = arr.length - 1; i >= 0; i--) {
+								const item = arr[i];
+								if (item?.fieldName && typeof item.fieldName === 'string' && item.fieldName.trim() !== '') {
+									fieldName = item.fieldName;
+									break;
+								}
+							}
+							if (fieldName) break;
+							const first = arr[0];
+							if (first?.fieldName) {
+								fieldName = first.fieldName as string;
+								break;
+							}
+						}
+					}
+
+					if (!fieldName || fieldName === '') return [];
+
+					let parsed: { code?: string; field_type?: string; has_options?: boolean };
+					try {
+						parsed = JSON.parse(fieldName);
+					} catch {
+						return [];
+					}
+
+					if (!parsed.code) return [];
+					if (!timesheetFieldsCache?.length) return [];
+
+					const field = timesheetFieldsCache.find((f) => f.code === parsed.code);
+					if (!field?.options?.length) return [];
+
+					const search = (
+						this.getCurrentNodeParameter('fieldValue') ??
+						this.getCurrentNodeParameter('fieldValueSelect') ??
+						this.getCurrentNodeParameter('fieldValueMultiSelect')
+					) as string | undefined;
+
+					const searchLower = typeof search === 'string' && search.trim() ? search.trim().toLowerCase() : '';
+
+					const filtered = searchLower
+						? field.options.filter((opt) => (opt.name || '').toLowerCase().includes(searchLower))
+						: field.options;
+
+					const limit = 300;
+					return filtered.slice(0, limit).map((opt) => ({
+						name: opt.name || String(opt.id),
+						value: opt.id,
+					}));
+				} catch (error: unknown) {
+					console.error('Error in getTimesheetFieldOptions:', error);
 					return [];
 				}
 			},
