@@ -65,7 +65,7 @@ export const projectDescription: INodeProperties[] = [
 				routing: {
 					request: {
 						method: 'DELETE',
-						url: '={{ (() => { const base = "' + BASE_URL + API_BASE_PATH + '/projects/" + $parameter.project_id + "/"; const opts = $parameter.forceDeleteOptions || {}; const params = []; if (opts.force_delete_requirements === true) params.push("force_delete_requirements=true"); if (opts.force_delete_bookings === true) params.push("force_delete_bookings=true"); if (opts.force_delete_timesheet_entry === true) params.push("force_delete_timesheet_entry=true"); return params.length ? base + "?" + params.join("&") : base; })() }}',
+						url: '={{ (() => { const base = "' + BASE_URL + API_BASE_PATH + '/projects/" + $parameter.project_id + "/"; const opts = $parameter.forceDeleteOptions || {}; const params = []; if (opts.force_delete_requirements === true) params.push("force_delete_requirements=true"); if (opts.force_delete_bookings === true) params.push("force_delete_bookings=true"); if (opts.force_delete_timesheet_entry === true) params.push("force_delete_timesheet_entry=true"); if (opts.force_delete_rates === true) params.push("force_delete_rates=true"); return params.length ? base + "?" + params.join("&") : base; })() }}',
 						headers: {
 							Authorization: '={{ $parameter.authentication === "accessToken" && $credentials.accessToken ? "Bearer " + $credentials.accessToken : undefined }}',
 						},
