@@ -74,12 +74,12 @@ export const requirementUpdateDescription: INodeProperties[] = [
 		},
 		options: [
 			{
-				name: 'Hours (2)',
+				name: 'Hours',
 				value: 2,
 				description: 'Fixed hours; does not change when the requirement changes',
 			},
 			{
-				name: 'Full Time Equivalent (4)',
+				name: 'Full Time Equivalent',
 				value: 4,
 				description: 'FTE using the Administrator FTE calendar',
 			},
