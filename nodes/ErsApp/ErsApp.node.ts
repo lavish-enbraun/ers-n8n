@@ -1150,6 +1150,21 @@ export class ErsApp implements INodeType {
 					}
 
 					if (!parsed.code) return [];
+					
+					if (!bookingFieldsCache?.length) {
+						const auth = (this.getNode().parameters as { authentication?: string }).authentication;
+						const credentialType = auth === 'accessToken' ? 'ersAppAccessTokenApi' : 'ersAppOAuth2';
+
+						const response = await this.helpers.httpRequestWithAuthentication.call(this, credentialType, {
+							method: 'GET',
+							url: `${BASE_URL}${API_BASE_PATH}/booking/fields`,
+							headers: { Accept: 'application/json' },
+						}) as { data?: ProfileFieldDefinition[] } | ProfileFieldDefinition[];
+
+						const list = Array.isArray(response) ? response : response.data ?? [];
+						bookingFieldsCache = mapProfileFieldDefinitions(list);
+					}
+
 					if (!bookingFieldsCache?.length) return [];
 
 					const field = bookingFieldsCache.find((f) => f.code === parsed.code);

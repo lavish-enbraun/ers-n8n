@@ -264,7 +264,9 @@ export const bookingCreateDescription: INodeProperties[] = [
 						],
 						displayOptions: {
 							show: {
-								fieldName: [{ _cnd: { regex: '.*"field_type":"DDSS".*' } }],
+								// Only show this for DDSS fields that do NOT provide an options list.
+								// Otherwise we'd incorrectly show Disable Parallel under other DDSS dropdowns (e.g. Time Zone).
+								fieldName: [{ _cnd: { regex: '.*"field_type":"DDSS".*"has_options":false.*' } }],
 							},
 						},
 					},
@@ -537,7 +539,9 @@ export const bookingCreateDescription: INodeProperties[] = [
 						],
 						displayOptions: {
 							show: {
-								fieldName: [{ _cnd: { regex: '.*"field_type":"DDSS".*' } }],
+								// Only show this for DDSS fields that do NOT provide an options list.
+								// Otherwise we'd incorrectly show Disable Parallel under other DDSS dropdowns (e.g. Time Zone).
+								fieldName: [{ _cnd: { regex: '.*"field_type":"DDSS".*"has_options":false.*' } }],
 							},
 						},
 					},
