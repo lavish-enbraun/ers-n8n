@@ -287,9 +287,7 @@ export const bookingUpdateDescription: INodeProperties[] = [
 						options: [
 							{ name: 'Capacity % (default)', value: 1 },
 							{ name: 'Total Booking Hours', value: 2 },
-							{ name: 'Hours Per Day (no longer supported)', value: 3 },
 							{ name: 'Full Time Equivalent', value: 4 },
-							{ name: 'Time Per Day (no longer supported)', value: 5 },
 						],
 						displayOptions: {
 							show: {
