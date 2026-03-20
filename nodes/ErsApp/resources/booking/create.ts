@@ -15,7 +15,7 @@ export const bookingCreateDescription: INodeProperties[] = [
 			show: showOnlyForBookingCreate,
 		},
 		typeOptions: {
-			minValue: 1,
+			minValue: 0,
 		},
 		default: undefined,
 		description: 'Unique ID of the resource',
@@ -29,7 +29,7 @@ export const bookingCreateDescription: INodeProperties[] = [
 			show: showOnlyForBookingCreate,
 		},
 		typeOptions: {
-			minValue: 1,
+			minValue: 0,
 		},
 		default: undefined,
 		description: 'Unique ID of the project',

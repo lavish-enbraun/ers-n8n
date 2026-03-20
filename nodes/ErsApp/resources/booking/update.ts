@@ -22,7 +22,6 @@ export const bookingUpdateDescription: INodeProperties[] = [
 		displayName: 'Resource ID',
 		name: 'resource_id',
 		type: 'string',
-		required: true,
 		displayOptions: {
 			show: showOnlyForBookingUpdate,
 		},
@@ -34,7 +33,6 @@ export const bookingUpdateDescription: INodeProperties[] = [
 		displayName: 'Project ID',
 		name: 'project_id',
 		type: 'string',
-		required: true,
 		displayOptions: {
 			show: showOnlyForBookingUpdate,
 		},
@@ -46,7 +44,6 @@ export const bookingUpdateDescription: INodeProperties[] = [
 		displayName: 'Start Time',
 		name: 'start_time',
 		type: 'dateTime',
-		required: true,
 		displayOptions: {
 			show: showOnlyForBookingUpdate,
 		},
@@ -57,7 +54,6 @@ export const bookingUpdateDescription: INodeProperties[] = [
 		displayName: 'End Time',
 		name: 'end_time',
 		type: 'dateTime',
-		required: true,
 		displayOptions: {
 			show: showOnlyForBookingUpdate,
 		},
@@ -373,4 +369,3 @@ export const bookingUpdateDescription: INodeProperties[] = [
 		],
 	},
 ];
-
