@@ -88,6 +88,28 @@ export const requirementUpdateDescription: INodeProperties[] = [
 		description: 'If set with effort, unit for effort: 2 = Hours, 4 = FTE',
 	},
 	{
+		displayName: 'Allow Multi Allocation',
+		name: 'allow_multi_allocation',
+		type: 'boolean',
+		default: false,
+		displayOptions: {
+			show: showOnlyForRequirementUpdate,
+		},
+		description:
+			'When enabled, this refers to allocation of this specific requirement to multiple resources simultaneously.',
+	},
+	{
+		displayName: 'Sync To Booking',
+		name: 'sync_to_booking',
+		type: 'boolean',
+		default: false,
+		displayOptions: {
+			show: showOnlyForRequirementUpdate,
+		},
+		description:
+			'When enabled, common custom field values in bookings linked to this requirement are always synced from the requirement (users cannot modify those common custom fields in the booking form).',
+	},
+	{
 		displayName: 'Flexi Range Duration',
 		name: 'flexi_range_duration',
 		type: 'number',
