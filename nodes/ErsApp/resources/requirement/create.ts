@@ -302,6 +302,58 @@ export const requirementCreateDescription: INodeProperties[] = [
 		description: 'Number of copies to create',
 	},
 	{
+		displayName: 'Allow Multi Allocation',
+		name: 'allow_multi_allocation',
+		type: 'boolean',
+		default: false,
+		displayOptions: {
+			show: showOnlyForRequirementCreate,
+		},
+		description:
+			'When enabled, this refers to allocation of this specific requirement to multiple resources simultaneously.',
+	},
+	{
+		displayName: 'Sync To Booking',
+		name: 'sync_to_booking',
+		type: 'boolean',
+		default: false,
+		displayOptions: {
+			show: showOnlyForRequirementCreate,
+		},
+		description:
+			'When enabled, common custom field values in bookings linked to this requirement are always synced from the requirement (users cannot modify those common custom fields in the booking form).',
+	},
+	{
+		displayName: 'Flexi Range Duration',
+		name: 'flexi_range_duration',
+		type: 'number',
+		default: undefined,
+		displayOptions: {
+			show: showOnlyForRequirementCreate,
+		},
+		typeOptions: {
+			minValue: 0,
+			numberPrecision: 0,
+		},
+		description:
+			'Optional. Defined duration range for flexibility in fulfilling the requirement compared to the original requirement date. When set, flexi_range_unit is sent (default 2 = Days).',
+	},
+	{
+		displayName: 'Flexi Range Unit',
+		name: 'flexi_range_unit',
+		type: 'options',
+		default: 2,
+		displayOptions: {
+			show: showOnlyForRequirementCreate,
+		},
+		options: [
+			{ name: 'Hours', value: 1, description: 'Hours as the flexi range unit' },
+			{ name: 'Days', value: 2, description: 'Days as the flexi range unit' },
+		],
+		description:
+			'Optional unit for flexi range (1 = Hours, 2 = Days). Default is 2. Used when flexi_range_duration is set.',
+	},
+	{
 		displayName: 'Mandatory Fields',
 		name: 'mandatoryFields',
 		type: 'fixedCollection',
