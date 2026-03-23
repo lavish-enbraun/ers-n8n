@@ -88,6 +88,36 @@ export const requirementUpdateDescription: INodeProperties[] = [
 		description: 'If set with effort, unit for effort: 2 = Hours, 4 = FTE',
 	},
 	{
+		displayName: 'Flexi Range Duration',
+		name: 'flexi_range_duration',
+		type: 'number',
+		default: undefined,
+		displayOptions: {
+			show: showOnlyForRequirementUpdate,
+		},
+		typeOptions: {
+			minValue: 0,
+			numberPrecision: 0,
+		},
+		description:
+			'Optional. Defined duration range for flexibility in fulfilling the requirement compared to the original requirement date. When set, flexi_range_unit is sent (default 2 = Days).',
+	},
+	{
+		displayName: 'Flexi Range Unit',
+		name: 'flexi_range_unit',
+		type: 'options',
+		default: 2,
+		displayOptions: {
+			show: showOnlyForRequirementUpdate,
+		},
+		options: [
+			{ name: 'Hours', value: 1, description: 'Hours as the flexi range unit' },
+			{ name: 'Days', value: 2, description: 'Days as the flexi range unit' },
+		],
+		description:
+			'Optional unit for flexi range (1 = Hours, 2 = Days). Default is 2. Used when flexi_range_duration is set.',
+	},
+	{
 		displayName: 'Update Fields',
 		name: 'updateOptions',
 		type: 'collection',
