@@ -52,7 +52,7 @@ export const requirementCreateFieldValues: INodeProperties[] = [
 		type: 'multiOptions',
 		noDataExpression: true,
 		typeOptions: {
-			loadOptionsMethod: 'getRequirementFieldOptions',
+			loadOptionsMethod: 'getRequirementFieldOptionsMandatory',
 			loadOptionsDependsOn: ['fieldName'],
 			searchable: true,
 		},
@@ -144,7 +144,7 @@ export const requirementCreateFieldValues: INodeProperties[] = [
 		type: 'options',
 		noDataExpression: true,
 		typeOptions: {
-			loadOptionsMethod: 'getRequirementFieldOptions',
+			loadOptionsMethod: 'getRequirementFieldOptionsMandatory',
 			loadOptionsDependsOn: ['fieldName'],
 			searchable: true,
 		},
@@ -208,6 +208,19 @@ export function withRequirementOtherFieldLoader(values: INodeProperties[]): INod
 				typeOptions: {
 					...prop.typeOptions,
 					loadOptionsMethod: 'getRequirementFieldsOther',
+				},
+			};
+		}
+		if (
+			(prop.name === 'fieldValueMultiSelect' || prop.name === 'fieldValueSelect') &&
+			prop.typeOptions &&
+			'loadOptionsMethod' in prop.typeOptions
+		) {
+			return {
+				...prop,
+				typeOptions: {
+					...prop.typeOptions,
+					loadOptionsMethod: 'getRequirementFieldOptionsOther',
 				},
 			};
 		}

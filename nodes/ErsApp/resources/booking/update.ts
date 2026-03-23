@@ -168,7 +168,7 @@ export const bookingUpdateDescription: INodeProperties[] = [
 						type: 'multiOptions',
 						noDataExpression: true,
 						typeOptions: {
-							loadOptionsMethod: 'getBookingFieldOptions',
+							loadOptionsMethod: 'getBookingFieldOptionsAdditional',
 							loadOptionsDependsOn: ['fieldName'],
 							searchable: true,
 						},
@@ -315,7 +315,7 @@ export const bookingUpdateDescription: INodeProperties[] = [
 						type: 'options',
 						noDataExpression: true,
 						typeOptions: {
-							loadOptionsMethod: 'getBookingFieldOptions',
+							loadOptionsMethod: 'getBookingFieldOptionsAdditional',
 							loadOptionsDependsOn: ['fieldName'],
 							searchable: true,
 						},

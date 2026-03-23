@@ -126,7 +126,7 @@ export const timesheetCreateDescription: INodeProperties[] = [
 						type: 'multiOptions',
 						noDataExpression: true,
 						typeOptions: {
-							loadOptionsMethod: 'getTimesheetFieldOptions',
+							loadOptionsMethod: 'getTimesheetFieldOptionsMandatory',
 							loadOptionsDependsOn: ['fieldName'],
 							searchable: true,
 						},
@@ -276,7 +276,7 @@ export const timesheetCreateDescription: INodeProperties[] = [
 						type: 'options',
 						noDataExpression: true,
 						typeOptions: {
-							loadOptionsMethod: 'getTimesheetFieldOptions',
+							loadOptionsMethod: 'getTimesheetFieldOptionsMandatory',
 							loadOptionsDependsOn: ['fieldName'],
 							searchable: true,
 						},
@@ -396,7 +396,7 @@ export const timesheetCreateDescription: INodeProperties[] = [
 						type: 'multiOptions',
 						noDataExpression: true,
 						typeOptions: {
-							loadOptionsMethod: 'getTimesheetFieldOptions',
+							loadOptionsMethod: 'getTimesheetFieldOptionsOther',
 							loadOptionsDependsOn: ['fieldName'],
 							searchable: true,
 						},
@@ -546,7 +546,7 @@ export const timesheetCreateDescription: INodeProperties[] = [
 						type: 'options',
 						noDataExpression: true,
 						typeOptions: {
-							loadOptionsMethod: 'getTimesheetFieldOptions',
+							loadOptionsMethod: 'getTimesheetFieldOptionsOther',
 							loadOptionsDependsOn: ['fieldName'],
 							searchable: true,
 						},

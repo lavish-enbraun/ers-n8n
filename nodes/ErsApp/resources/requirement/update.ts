@@ -183,6 +183,19 @@ export const requirementUpdateDescription: INodeProperties[] = [
 							},
 						};
 					}
+					if (
+						(p.name === 'fieldValueMultiSelect' || p.name === 'fieldValueSelect') &&
+						p.typeOptions &&
+						'loadOptionsMethod' in p.typeOptions
+					) {
+						return {
+							...p,
+							typeOptions: {
+								...p.typeOptions,
+								loadOptionsMethod: 'getRequirementFieldOptionsAdditional',
+							},
+						};
+					}
 					return p;
 				}),
 			},
