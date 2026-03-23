@@ -9,13 +9,10 @@ export const timesheetCreateDescription: INodeProperties[] = [
 	{
 		displayName: 'Resource ID',
 		name: 'resource_id',
-		type: 'number',
+		type: 'string',
 		required: true,
 		displayOptions: {
 			show: showOnlyForTimesheetCreate,
-		},
-		typeOptions: {
-			minValue: 0,
 		},
 		default: '',
 		description: 'ID of the resource',
@@ -23,13 +20,10 @@ export const timesheetCreateDescription: INodeProperties[] = [
 	{
 		displayName: 'Project ID',
 		name: 'project_id',
-		type: 'number',
+		type: 'string',
 		required: true,
 		displayOptions: {
 			show: showOnlyForTimesheetCreate,
-		},
-		typeOptions: {
-			minValue: 0,
 		},
 		default: '',
 		description: 'ID of the project',
