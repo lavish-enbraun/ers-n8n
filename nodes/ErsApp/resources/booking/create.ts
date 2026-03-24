@@ -149,8 +149,8 @@ export const bookingCreateDescription: INodeProperties[] = [
 						type: 'number',
 						default: 0,
 						typeOptions: {
-							maxValue: 999999999,
-							minValue: -999999999,
+							maxValue: 999999999.99,
+							minValue: -999999999.99,
 						},
 						displayOptions: {
 							show: {
@@ -424,8 +424,8 @@ export const bookingCreateDescription: INodeProperties[] = [
 						type: 'number',
 						default: 0,
 						typeOptions: {
-							maxValue: 999999999,
-							minValue: -999999999,
+							maxValue: 999999999.99,
+							minValue: -999999999.99,
 						},
 						displayOptions: {
 							show: {

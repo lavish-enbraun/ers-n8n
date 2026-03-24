@@ -77,7 +77,7 @@ export const requirementCreateFieldValues: INodeProperties[] = [
 		default: 0,
 		typeOptions: {
 			maxValue: 99999999.99,
-			minValue: -999999999,
+			minValue: -999999999.99,
 		},
 		displayOptions: {
 			show: {
