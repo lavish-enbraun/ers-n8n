@@ -269,22 +269,6 @@ export const timesheetUpdateDescription: INodeProperties[] = [
 						},
 					},
 					{
-						displayName: 'Field Value (Disable Parallel)',
-						name: 'fieldValueDisableParallel',
-						type: 'options',
-						default: 1,
-						options: [
-							{ name: 'On selected resource', value: 1 },
-							{ name: 'On selected project', value: 2 },
-							{ name: 'On selected resource or project', value: 3 },
-						],
-						displayOptions: {
-							show: {
-								fieldName: [{ _cnd: { regex: '.*"field_type":"DDSS".*' } }],
-							},
-						},
-					},
-					{
 						displayName: 'Field Value (Select) Name or ID',
 						name: 'fieldValueSelect',
 						type: 'options',
@@ -535,22 +519,6 @@ export const timesheetUpdateDescription: INodeProperties[] = [
 						displayOptions: {
 							show: {
 								fieldName: [{ _cnd: { regex: '.*"field_type":"UNIT".*' } }],
-							},
-						},
-					},
-					{
-						displayName: 'Field Value (Disable Parallel)',
-						name: 'fieldValueDisableParallel',
-						type: 'options',
-						default: 1,
-						options: [
-							{ name: 'On selected resource', value: 1 },
-							{ name: 'On selected project', value: 2 },
-							{ name: 'On selected resource or project', value: 3 },
-						],
-						displayOptions: {
-							show: {
-								fieldName: [{ _cnd: { regex: '.*"field_type":"DDSS".*' } }],
 							},
 						},
 					},
