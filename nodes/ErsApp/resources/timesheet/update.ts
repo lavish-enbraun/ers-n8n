@@ -9,50 +9,41 @@ export const timesheetUpdateDescription: INodeProperties[] = [
 	{
 		displayName: 'Timesheet Entry ID',
 		name: 'timesheet_id',
-		type: 'number',
+		type: 'string',
 		required: true,
 		displayOptions: {
 			show: showOnlyForTimesheetUpdate,
 		},
-		typeOptions: {
-			minValue: 1,
-		},
 		default: '',
+		placeholder: 'Enter Timesheet Entry ID',
 		description: 'Unique ID of the timesheet entry to update',
 	},
 	{
 		displayName: 'Resource ID',
 		name: 'resource_id',
-		type: 'number',
-		required: true,
+		type: 'string',
 		displayOptions: {
 			show: showOnlyForTimesheetUpdate,
 		},
-		typeOptions: {
-			minValue: 1,
-		},
 		default: '',
+		placeholder: 'Enter Resource ID',
 		description: 'ID of the resource',
 	},
 	{
 		displayName: 'Project ID',
 		name: 'project_id',
-		type: 'number',
-		required: true,
+		type: 'string',
 		displayOptions: {
 			show: showOnlyForTimesheetUpdate,
 		},
-		typeOptions: {
-			minValue: 1,
-		},
 		default: '',
+		placeholder: 'Enter Project ID',
 		description: 'ID of the project',
 	},
 	{
 		displayName: 'Date',
 		name: 'date',
 		type: 'dateTime',
-		required: true,
 		displayOptions: {
 			show: showOnlyForTimesheetUpdate,
 		},
@@ -66,14 +57,13 @@ export const timesheetUpdateDescription: INodeProperties[] = [
 		displayName: 'Hours',
 		name: 'hours',
 		type: 'number',
-		required: true,
 		displayOptions: {
 			show: showOnlyForTimesheetUpdate,
 		},
 		typeOptions: {
 			minValue: 0,
 		},
-		default: 0,
+		default: '',
 		description: 'Number of hours for the timesheet entry',
 	},
 	{
