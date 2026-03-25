@@ -101,6 +101,11 @@ export const projectUpdateDescription: INodeProperties[] = [
 											regex: '.*"field_type":"BOOLEAN".*',
 										},
 									},
+									{
+										_cnd: {
+											regex: '.*"field_type":"ARCH".*',
+										},
+									},
 								],
 							},
 						},

@@ -89,6 +89,11 @@ export const projectCreateDescription: INodeProperties[] = [
 											regex: '.*"field_type":"BOOLEAN".*',
 										},
 									},
+									{
+										_cnd: {
+											regex: '.*"field_type":"ARCH".*',
+										},
+									},
 								],
 							},
 						},
@@ -392,6 +397,11 @@ export const projectCreateDescription: INodeProperties[] = [
 									{
 										_cnd: {
 											regex: '.*"field_type":"BOOLEAN".*',
+										},
+									},
+									{
+										_cnd: {
+											regex: '.*"field_type":"ARCH".*',
 										},
 									},
 								],
