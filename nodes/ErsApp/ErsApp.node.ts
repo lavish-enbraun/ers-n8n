@@ -137,6 +137,20 @@ interface ProfileField {
 	maxnum?: number;
 }
 
+function getOptionDisplayName(
+	fieldCode: string,
+	opt: { name: string; description?: string | null },
+): string {
+	if (
+		fieldCode === 'timezone' &&
+		typeof opt.description === 'string' &&
+		opt.description.trim() !== ''
+	) {
+		return opt.description;
+	}
+	return opt.name;
+}
+
 function mapProfileFieldDefinitions(fields: ProfileFieldDefinition[] | undefined): ProfileField[] {
 	if (!Array.isArray(fields)) return [];
 	const result: ProfileField[] = [];
@@ -144,7 +158,7 @@ function mapProfileFieldDefinitions(fields: ProfileFieldDefinition[] | undefined
 		if (f?.code) {
 			const options: ProfileFieldOption[] | undefined = f.options?.map((opt) => ({
 				id: opt.id,
-				name: opt.name,
+				name: getOptionDisplayName(f.code, opt),
 				description: opt.description ?? undefined,
 			}));
 			result.push({
@@ -176,9 +190,7 @@ function mapPublicApiFieldsToUDF(fields: PublicApiResourceTypeField[] | undefine
 		if (f?.code) {
 			const options: ResourceUDFOption[] | undefined = f.options?.map((opt) => ({
 				id: opt.id,
-				name: f.code === 'timezone' && typeof opt.description === 'string' && opt.description.trim() !== ''
-					? opt.description
-					: opt.name,
+				name: getOptionDisplayName(f.code, opt),
 				description: opt.description ?? undefined,
 			}));
 			result.push({
@@ -466,9 +478,7 @@ function mapPublicApiProjectFieldsToUDF(fields: PublicApiProjectTypeField[] | un
 		if (f?.code) {
 			const options: ProjectUDFOption[] | undefined = f.options?.map((opt) => ({
 				id: opt.id,
-				name: f.code === 'timezone' && typeof opt.description === 'string' && opt.description.trim() !== ''
-					? opt.description
-					: opt.name,
+				name: getOptionDisplayName(f.code, opt),
 				description: opt.description ?? undefined,
 			}));
 			result.push({
@@ -1511,7 +1521,7 @@ export class ErsApp implements INodeType {
 				}
 			},
 
-			// Layer 3: Dynamic option loader for projects — read from cache, filter by search, limit 30.
+			// Layer 3: Dynamic option loader for projects — read from cache, filter by search, limit 300.
 			async getProjectUDFFieldOptions(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 				try {
 					const parameters = this.getNode().parameters as {
@@ -1609,7 +1619,7 @@ export class ErsApp implements INodeType {
 					const filtered = searchLower
 						? field.options.filter((opt) => (opt.name || '').toLowerCase().includes(searchLower))
 						: field.options;
-					const limited = filtered.slice(0, 30).map((opt) => ({
+					const limited = filtered.slice(0, 300).map((opt) => ({
 						name: opt.name || String(opt.id),
 						value: opt.id,
 					}));
