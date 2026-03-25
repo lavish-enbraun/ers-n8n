@@ -68,7 +68,9 @@ export const bookingUpdateDescription: INodeProperties[] = [
 		displayOptions: {
 			show: showOnlyForBookingUpdate,
 		},
-		default: {},
+		default: {
+			update_connected_bookings: 4,
+		},
 		description: 'Optional settings for update behavior (query params).',
 		options: [
 			{
