@@ -41,7 +41,7 @@ function isAccessTokenError(error: unknown): error is AccessTokenErrorShape {
 	return false;
 }
 
-// Public API resource type response shape (list item or single GET)
+//resource response shape
 interface PublicApiResourceTypeField {
 	id?: number;
 	code: string;
@@ -68,7 +68,6 @@ interface PublicApiResourceTypeDetail {
 	fields?: PublicApiResourceTypeField[];
 }
 
-// Public API project type response shape (list item or single GET)
 interface PublicApiProjectTypeField {
 	id?: number;
 	code: string;
@@ -94,7 +93,7 @@ interface PublicApiProjectTypeDetail {
 	fields?: PublicApiProjectTypeField[];
 }
 
-// Profile field metadata (shared shape for GET .../booking/fields, .../requirement/fields, etc.)
+// profile field metadata
 interface ProfileFieldDefinition {
 	id?: number;
 	code: string;
@@ -370,7 +369,7 @@ function buildProfileFieldValueOptions(
 		? field.options.filter((opt) => (opt.name || '').toLowerCase().includes(searchLower))
 		: field.options;
 
-	return filtered.slice(0, 300).map((opt) => ({
+	return filtered.slice(0, 500).map((opt) => ({
 		name: opt.name || String(opt.id),
 		value: opt.id,
 	}));
@@ -469,6 +468,88 @@ async function getProfileFieldValueOptionsByFieldName(
 	) as string | undefined;
 
 	return buildProfileFieldValueOptions(fields, fieldCode, search);
+}
+
+function parseResourceFieldCode(fieldName: string): string | undefined {
+	let parsed: { code?: string };
+	try {
+		parsed = JSON.parse(fieldName);
+	} catch {
+		return undefined;
+	}
+	return parsed.code;
+}
+
+async function getResourceFieldValueOptionsByFieldName(
+	ctx: ILoadOptionsFunctions,
+	fieldName: string,
+): Promise<INodePropertyOptions[]> {
+	const fieldCode = parseResourceFieldCode(fieldName);
+	if (!fieldCode) return [];
+
+	const parameters = ctx.getNode().parameters as {
+		resource_type_id?: number | string;
+		authentication?: string;
+	};
+
+	let resourceTypeId: number | string | undefined = parameters.resource_type_id;
+	if (resourceTypeId === undefined || resourceTypeId === null || resourceTypeId === '') {
+		return [];
+	}
+
+	if (typeof resourceTypeId === 'string') {
+		try {
+			const parsed = JSON.parse(resourceTypeId);
+			if (parsed && typeof parsed === 'object' && 'id' in parsed) {
+				resourceTypeId = (parsed as { id: number | string }).id;
+			}
+		} catch {
+			// not JSON
+		}
+	}
+
+	const resourceTypeIdStr = String(resourceTypeId);
+	let fields = resourceTypeCache[resourceTypeIdStr];
+	if (!fields?.length) {
+		const credentialType =
+			parameters.authentication === 'accessToken' ? 'ersAppAccessTokenApi' : 'ersAppOAuth2';
+		try {
+			const resourceTypeResponse = await ctx.helpers.httpRequestWithAuthentication.call(
+				ctx,
+				credentialType,
+				{
+					method: 'GET',
+					url: `${BASE_URL}${API_BASE_PATH}/resourcetypes/${resourceTypeIdStr}`,
+					headers: { Accept: 'application/json' },
+				},
+			) as PublicApiResourceTypeDetail;
+			fields = mapPublicApiFieldsToUDF(resourceTypeResponse.fields);
+			resourceTypeCache[resourceTypeIdStr] = fields;
+		} catch (error: unknown) {
+			if (isAccessTokenError(error)) return [];
+			console.error('Error fetching resource type field options:', error);
+			return [];
+		}
+	}
+
+	if (!fields?.length) return [];
+	const field = fields.find((f) => f.code === fieldCode);
+	if (!field?.options?.length) return [];
+
+	const search = (
+		ctx.getCurrentNodeParameter('fieldValue') ??
+		ctx.getCurrentNodeParameter('fieldValueSelect') ??
+		ctx.getCurrentNodeParameter('fieldValueMultiSelect')
+	) as string | undefined;
+	const searchLower = typeof search === 'string' && search.trim() ? search.trim().toLowerCase() : '';
+	const filtered = searchLower
+		? field.options.filter((opt) => (opt.name || '').toLowerCase().includes(searchLower))
+		: field.options;
+
+	return filtered.slice(0, 500).map((opt) => ({
+		name: opt.name || String(opt.id),
+		value: opt.id,
+	}));
 }
 
 function mapPublicApiProjectFieldsToUDF(fields: PublicApiProjectTypeField[] | undefined): ProjectUDFField[] {
@@ -909,10 +990,9 @@ export class ErsApp implements INodeType {
 
 					const projectTypeIdStr = String(projectTypeId);
 
-					// Invalidate cache so "Refresh List" and dropdown open always get fresh data from API
 					delete projectTypeCache[projectTypeIdStr];
 
-					// Fetch once and cache (public API: top-level fields array)
+					// Fetch once and cache
 					if (!projectTypeCache[projectTypeIdStr]) {
 						const excludedSystemFields = ['id', 'project_type_id', 'title'];
 						try {
@@ -1043,7 +1123,7 @@ export class ErsApp implements INodeType {
 					}
 					const projectTypeIdStr = String(projectTypeId);
 
-					// Invalidate cache so "Refresh List" and dropdown open always get fresh data from API
+
 					delete projectTypeCache[projectTypeIdStr];
 
 					if (!projectTypeCache[projectTypeIdStr]) {
@@ -1114,7 +1194,7 @@ export class ErsApp implements INodeType {
 				}
 			},
 
-			// Layer 3: Dynamic option loader — read from cache, filter by search, limit 30.
+			// Backward-compatible fallback loader for resource UDF options.
 			async getResourceUDFFieldOptions(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 				try {
 					const parameters = this.getNode().parameters as {
@@ -1123,104 +1203,87 @@ export class ErsApp implements INodeType {
 						otherFields?: { field?: Array<{ fieldName?: string }> };
 						udfFields?: { field?: Array<{ fieldName?: string }> };
 					};
-
-					let fieldName: string | undefined;
-					const mandatoryFields = parameters.mandatoryFields;
-					const otherFields = parameters.otherFields;
-					const udfFields = parameters.udfFields;
-
-					for (const arr of [
-						mandatoryFields?.field,
-						otherFields?.field,
-						udfFields?.field,
-					]) {
-						if (Array.isArray(arr) && arr.length > 0) {
-							for (let i = arr.length - 1; i >= 0; i--) {
-								const item = arr[i];
-								if (item?.fieldName && typeof item.fieldName === 'string' && item.fieldName.trim() !== '') {
-									fieldName = item.fieldName;
-									break;
-								}
-							}
-							if (fieldName) break;
-							const first = arr[0];
-							if (first?.fieldName) {
-								fieldName = first.fieldName as string;
-								break;
-							}
-						}
+					const currentFieldName = this.getCurrentNodeParameter('fieldName') as string | undefined;
+					if (currentFieldName && currentFieldName.trim() !== '') {
+						return await getResourceFieldValueOptionsByFieldName(this, currentFieldName);
 					}
+
+					const fieldName = resolveLatestProfileFieldNameFromCollections([
+						parameters.mandatoryFields?.field,
+						parameters.otherFields?.field,
+						parameters.udfFields?.field,
+					]);
 
 					if (!fieldName || fieldName === '') return [];
-
-					let parsed: { code?: string; field_type?: string };
-					try {
-						parsed = JSON.parse(fieldName);
-					} catch {
-						return [];
-					}
-
-					let resourceTypeId: number | string | undefined = parameters.resource_type_id;
-					if (resourceTypeId === undefined || resourceTypeId === null || resourceTypeId === '') {
-						return [];
-					}
-					if (typeof resourceTypeId === 'string') {
-						try {
-							const p = JSON.parse(resourceTypeId);
-							if (p && typeof p === 'object' && 'id' in p) resourceTypeId = p.id;
-						} catch {
-							// not JSON
-						}
-					}
-					const resourceTypeIdStr = String(resourceTypeId);
-
-					let fields = resourceTypeCache[resourceTypeIdStr];
-					if (!fields?.length) {
-						const auth = (this.getNode().parameters as { authentication?: string }).authentication;
-						const credentialType = auth === 'accessToken' ? 'ersAppAccessTokenApi' : 'ersAppOAuth2';
-						try {
-							const resourceTypeResponse = await this.helpers.httpRequestWithAuthentication.call(
-								this,
-								credentialType,
-								{
-									method: 'GET',
-									url: `${BASE_URL}${API_BASE_PATH}/resourcetypes/${resourceTypeIdStr}`,
-									headers: { Accept: 'application/json' },
-								},
-							) as PublicApiResourceTypeDetail;
-							fields = mapPublicApiFieldsToUDF(resourceTypeResponse.fields);
-							resourceTypeCache[resourceTypeIdStr] = fields;
-						} catch (error: unknown) {
-							if (isAccessTokenError(error)) return [];
-							console.error('Error fetching resource type field options:', error);
-							return [];
-						}
-					}
-					if (!fields?.length) return [];
-
-					const field = fields.find((f) => f.code === parsed.code);
-					if (!field || !field.options?.length) return [];
-
-					const search = (
-						this.getCurrentNodeParameter('fieldValue') ??
-						this.getCurrentNodeParameter('fieldValueSelect') ??
-						this.getCurrentNodeParameter('fieldValueMultiSelect')
-					) as string | undefined;
-					const searchLower = typeof search === 'string' && search.trim() ? search.trim().toLowerCase() : '';
-
-					const filtered = searchLower
-						? field.options.filter((opt) => (opt.name || '').toLowerCase().includes(searchLower))
-						: field.options;
-						
-					const limit = 300;
-					const limited = filtered.slice(0, limit).map((opt) => ({
-						name: opt.name || String(opt.id),
-						value: opt.id,
-					}));
-
-					return limited;
+					return await getResourceFieldValueOptionsByFieldName(this, fieldName);
 				} catch (error) {
 					console.error('Error in getResourceUDFFieldOptions:', error);
+					return [];
+				}
+			},
+
+			// Scoped loader for resource create mandatory fields.
+			async getResourceUDFFieldOptionsMandatory(
+				this: ILoadOptionsFunctions,
+			): Promise<INodePropertyOptions[]> {
+				try {
+					const currentFieldName = this.getCurrentNodeParameter('fieldName') as string | undefined;
+					if (currentFieldName && currentFieldName.trim() !== '') {
+						return await getResourceFieldValueOptionsByFieldName(this, currentFieldName);
+					}
+
+					const parameters = this.getNode().parameters as {
+						mandatoryFields?: { field?: Array<{ fieldName?: string }> };
+					};
+					const fieldName = resolveLatestProfileFieldName(parameters.mandatoryFields?.field);
+					if (!fieldName || fieldName === '') return [];
+					return await getResourceFieldValueOptionsByFieldName(this, fieldName);
+				} catch (error) {
+					console.error('Error in getResourceUDFFieldOptionsMandatory:', error);
+					return [];
+				}
+			},
+
+			// Scoped loader for resource create other fields.
+			async getResourceUDFFieldOptionsOther(
+				this: ILoadOptionsFunctions,
+			): Promise<INodePropertyOptions[]> {
+				try {
+					const currentFieldName = this.getCurrentNodeParameter('fieldName') as string | undefined;
+					if (currentFieldName && currentFieldName.trim() !== '') {
+						return await getResourceFieldValueOptionsByFieldName(this, currentFieldName);
+					}
+
+					const parameters = this.getNode().parameters as {
+						otherFields?: { field?: Array<{ fieldName?: string }> };
+					};
+					const fieldName = resolveLatestProfileFieldName(parameters.otherFields?.field);
+					if (!fieldName || fieldName === '') return [];
+					return await getResourceFieldValueOptionsByFieldName(this, fieldName);
+				} catch (error) {
+					console.error('Error in getResourceUDFFieldOptionsOther:', error);
+					return [];
+				}
+			},
+
+			// Scoped loader for resource update udf fields.
+			async getResourceUDFFieldOptionsUpdate(
+				this: ILoadOptionsFunctions,
+			): Promise<INodePropertyOptions[]> {
+				try {
+					const currentFieldName = this.getCurrentNodeParameter('fieldName') as string | undefined;
+					if (currentFieldName && currentFieldName.trim() !== '') {
+						return await getResourceFieldValueOptionsByFieldName(this, currentFieldName);
+					}
+
+					const parameters = this.getNode().parameters as {
+						udfFields?: { field?: Array<{ fieldName?: string }> };
+					};
+					const fieldName = resolveLatestProfileFieldName(parameters.udfFields?.field);
+					if (!fieldName || fieldName === '') return [];
+					return await getResourceFieldValueOptionsByFieldName(this, fieldName);
+				} catch (error) {
+					console.error('Error in getResourceUDFFieldOptionsUpdate:', error);
 					return [];
 				}
 			},
@@ -1521,7 +1584,7 @@ export class ErsApp implements INodeType {
 				}
 			},
 
-			// Layer 3: Dynamic option loader for projects — read from cache, filter by search, limit 300.
+			// Layer 3: Dynamic option loader for projects — read from cache, filter by search, limit 500.
 			async getProjectUDFFieldOptions(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 				try {
 					const parameters = this.getNode().parameters as {
@@ -1619,7 +1682,7 @@ export class ErsApp implements INodeType {
 					const filtered = searchLower
 						? field.options.filter((opt) => (opt.name || '').toLowerCase().includes(searchLower))
 						: field.options;
-					const limited = filtered.slice(0, 300).map((opt) => ({
+					const limited = filtered.slice(0, 500).map((opt) => ({
 						name: opt.name || String(opt.id),
 						value: opt.id,
 					}));
