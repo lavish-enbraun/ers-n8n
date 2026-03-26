@@ -133,7 +133,7 @@ export const resourceCreateDescription: INodeProperties[] = [
 						type: 'multiOptions',
 						noDataExpression: true,
 						typeOptions: {
-							loadOptionsMethod: 'getResourceUDFFieldOptions',
+							loadOptionsMethod: 'getResourceUDFFieldOptionsMandatory',
 							loadOptionsDependsOn: ['fieldName', 'resource_type_id'],
 							searchable: true,
 						},
@@ -209,7 +209,7 @@ export const resourceCreateDescription: INodeProperties[] = [
 						type: 'options',
 						noDataExpression: true,
 						typeOptions: {
-							loadOptionsMethod: 'getResourceUDFFieldOptions',
+							loadOptionsMethod: 'getResourceUDFFieldOptionsMandatory',
 							loadOptionsDependsOn: ['fieldName', 'resource_type_id'],
 							searchable: true,
 						},
@@ -431,7 +431,7 @@ export const resourceCreateDescription: INodeProperties[] = [
 						type: 'multiOptions',
 						noDataExpression: true,
 						typeOptions: {
-							loadOptionsMethod: 'getResourceUDFFieldOptions',
+							loadOptionsMethod: 'getResourceUDFFieldOptionsOther',
 							loadOptionsDependsOn: ['fieldName', 'resource_type_id'],
 							searchable: true,
 						},
@@ -507,7 +507,7 @@ export const resourceCreateDescription: INodeProperties[] = [
 						type: 'options',
 						noDataExpression: true,
 						typeOptions: {
-							loadOptionsMethod: 'getResourceUDFFieldOptions',
+							loadOptionsMethod: 'getResourceUDFFieldOptionsOther',
 							searchable: true,
 							loadOptionsDependsOn: ['fieldName', 'resource_type_id'],
 						},
