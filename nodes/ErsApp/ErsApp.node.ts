@@ -302,7 +302,7 @@ const PROFILE_ENTITY_META: Record<ProfileEntityKey,{ endpoint: string; excludedC
 	},
 	requirement: {
 		endpoint: '/requirement/fields',
-		excludedCodes: ['project_id', 'start_time', 'end_time', 'effort', 'unit'],
+		excludedCodes: ['project_id', 'start_time', 'end_time', 'effort', 'unit', 'comment'],
 	},
 };
 

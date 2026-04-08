@@ -305,16 +305,6 @@ export const requirementCreateDescription: INodeProperties[] = [
 		description: 'Unit for effort: 2 = Hours, 4 = FTE',
 	},
 	{
-		displayName: 'Copies',
-		name: 'copies',
-		type: 'number',
-		default: 0,
-		displayOptions: {
-			show: showOnlyForRequirementCreate,
-		},
-		description: 'Number of copies to create',
-	},
-	{
 		displayName: 'Allow Multi Allocation',
 		name: 'allow_multi_allocation',
 		type: 'boolean',
@@ -409,5 +399,18 @@ export const requirementCreateDescription: INodeProperties[] = [
 				values: withRequirementOtherFieldLoader(requirementCreateFieldValues),
 			},
 		],
+	},
+	{
+		displayName: 'Comment',
+		name: 'comment',
+		type: 'string',
+		displayOptions: {
+			show: showOnlyForRequirementCreate,
+		},
+		typeOptions: {
+			rows: 4,
+		},
+		default: '',
+		description: 'Comment for the requirement',
 	},
 ];
