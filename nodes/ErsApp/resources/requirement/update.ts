@@ -223,4 +223,17 @@ export const requirementUpdateDescription: INodeProperties[] = [
 			},
 		],
 	},
+	{
+		displayName: 'Comment',
+		name: 'comment',
+		type: 'string',
+		displayOptions: {
+			show: showOnlyForRequirementUpdate,
+		},
+		typeOptions: {
+			rows: 4,
+		},
+		default: '',
+		description: 'Comment for the requirement',
+	},
 ];
