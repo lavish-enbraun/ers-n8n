@@ -1,0 +1,66 @@
+{
+	"name": "n8n-nodes-ers-app",
+	"version": "0.1.0",
+	"description": "n8n community node for the eResource Scheduler (ERS App) API to manage resources, projects, bookings, requirements, and timesheets in n8n workflows.",
+	"license": "MIT",
+	"homepage": "https://github.com/sarthak-enbraun/n8n-nodes-ers-app.git#readme",
+	"keywords": [
+		"n8n-community-node-package",
+		"n8n",
+		"ers",
+		"eResource Scheduler",
+		"resource-planning",
+		"scheduling",
+		"api",
+		"integration"
+	],
+	"author": {
+		"name": "Sarthak ahuja",
+		"email": "sarthak.ahuja@enbraun.com"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/sarthak-enbraun/n8n-nodes-ers-app.git"
+	},
+	"bugs": {
+		"url": "https://github.com/sarthak-enbraun/n8n-nodes-ers-app.git/issues"
+	},
+	"scripts": {
+		"postinstall": "patch-package",
+		"build": "n8n-node build",
+		"build:watch": "tsc --watch",
+		"dev": "n8n-node dev",
+		"lint": "n8n-node lint",
+		"lint:fix": "n8n-node lint --fix",
+		"release": "n8n-node release",
+		"prepublishOnly": "n8n-node prerelease"
+	},
+	"files": [
+		"dist"
+	],
+	"n8n": {
+		"n8nNodesApiVersion": 2,
+		"strict": true,
+		"credentials": [
+			"dist/credentials/ErsAppOAuth2Api.credentials.js",
+			"dist/credentials/ErsAppAccessTokenApi.credentials.js"
+		],
+		"nodes": [
+			"dist/nodes/ErsApp/ErsApp.node.js",
+			"dist/nodes/ErsApp/ErsAppTrigger.node.js"
+		]
+	},
+	"devDependencies": {
+		"@n8n/node-cli": "0.27.0",
+		"@types/node": "^20.0.0",
+		"eslint": "9.32.0",
+		"globals": "^16.4.0",
+		"patch-package": "^8.0.1",
+		"prettier": "3.6.2",
+		"release-it": "^19.0.4",
+		"typescript": "5.9.2"
+	},
+	"peerDependencies": {
+		"n8n-workflow": "^2.10.4"
+	}
+}
