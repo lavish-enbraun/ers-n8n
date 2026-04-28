@@ -1,0 +1,53 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+lib/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE/editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# TypeScript
+*.tsbuildinfo
+
+# n8n specific
+.n8n/
+.n8n-local/
+.n8n-config/
+.n8n-crash-log*
+
+# Local development files
+tmp/
+temp/
+
+# Coverage
+coverage/
+
+# Docker
+docker-compose.override.yml
+
+# Misc
+*.tgz
+*.zip
