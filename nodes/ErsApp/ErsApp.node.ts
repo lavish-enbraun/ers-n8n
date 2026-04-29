@@ -405,6 +405,7 @@ async function ensureProfileFieldsCache(
 		return cache;
 	} catch (error: unknown) {
 		if (isAccessTokenError(error)) return [];
+		ctx.logger.error(`Error fetching ${entity} fields:`, { error });
 		return [];
 	}
 }
@@ -526,6 +527,7 @@ async function getResourceFieldValueOptionsByFieldName(
 			resourceTypeCache[resourceTypeIdStr] = fields;
 		} catch (error: unknown) {
 			if (isAccessTokenError(error)) return [];
+			ctx.logger.error('Error fetching resource type field options:', { error });
 			return [];
 		}
 	}
@@ -598,20 +600,20 @@ export class ErsApp implements INodeType {
 		outputs: [NodeConnectionTypes.Main],
 		credentials: [
 			{
-				name: 'ersAppAccessTokenApi',
-				required: true,
-				displayOptions: {
-					show: {
-						authentication: ['accessToken'],
-					},
-				},
-			},
-			{
 				name: 'ersAppOAuth2Api',
 				required: true,
 				displayOptions: {
 					show: {
 						authentication: ['oAuth2'],
+					},
+				},
+			},
+			{
+				name: 'ersAppAccessTokenApi',
+				required: true,
+				displayOptions: {
+					show: {
+						authentication: ['accessToken'],
 					},
 				},
 			},
@@ -716,6 +718,7 @@ export class ErsApp implements INodeType {
 					if (isAccessTokenError(error)) {
 						return [];
 					}
+					this.logger.error('Error fetching resource types:', { error });
 					return [];
 				}
 			},
@@ -766,6 +769,7 @@ export class ErsApp implements INodeType {
 							) as PublicApiResourceTypeDetail;
 						} catch (error: unknown) {
 							if (isAccessTokenError(error)) return [];
+							this.logger.error('Error fetching resource type fields:', { error });
 							return [];
 						}
 						resourceTypeCache[resourceTypeIdStr] = mapPublicApiFieldsToUDF(resourceTypeResponse.fields);
@@ -790,7 +794,8 @@ export class ErsApp implements INodeType {
 							name: field.display_name || field.code,
 							value: JSON.stringify({ code: field.code, field_type: normalizeUdfFieldTypeForOption(field.field_type) }),
 						}));
-				} catch {
+				} catch (error) {
+					this.logger.error('Error fetching UDF fields:', { error });
 					return [];
 				}
 			},
@@ -826,6 +831,7 @@ export class ErsApp implements INodeType {
 							) as PublicApiResourceTypeDetail;
 						} catch (error: unknown) {
 							if (isAccessTokenError(error)) return [];
+							this.logger.error('Error fetching resource type fields:', { error });
 							return [];
 						}
 						resourceTypeCache[resourceTypeIdStr] = mapPublicApiFieldsToUDF(resourceTypeResponse.fields);
@@ -844,7 +850,8 @@ export class ErsApp implements INodeType {
 							name: field.display_name || field.code,
 							value: JSON.stringify({ code: field.code, field_type: normalizeUdfFieldTypeForOption(field.field_type) }),
 						}));
-				} catch {
+				} catch (error) {
+					this.logger.error('Error fetching mandatory UDF fields:', { error });
 					return [];
 				}
 			},
@@ -881,6 +888,7 @@ export class ErsApp implements INodeType {
 							) as PublicApiResourceTypeDetail;
 						} catch (error: unknown) {
 							if (isAccessTokenError(error)) return [];
+							this.logger.error('Error fetching resource type fields:', { error });
 							return [];
 						}
 						resourceTypeCache[resourceTypeIdStr] = mapPublicApiFieldsToUDF(resourceTypeResponse.fields);
@@ -899,7 +907,8 @@ export class ErsApp implements INodeType {
 							name: field.display_name || field.code,
 							value: JSON.stringify({ code: field.code, field_type: normalizeUdfFieldTypeForOption(field.field_type) }),
 						}));
-				} catch {
+				} catch (error) {
+					this.logger.error('Error fetching other UDF fields:', { error });
 					return [];
 				}
 			},
@@ -948,6 +957,7 @@ export class ErsApp implements INodeType {
 					if (isAccessTokenError(error)) {
 						return [];
 					}
+					this.logger.error('Error fetching project types:', { error });
 					return [];
 				}
 			},
@@ -1002,6 +1012,7 @@ export class ErsApp implements INodeType {
 							});
 						} catch (error: unknown) {
 							if (isAccessTokenError(error)) return [];
+							this.logger.error('Error fetching project type fields:', { error });
 							return [];
 						}
 					}
@@ -1026,6 +1037,7 @@ export class ErsApp implements INodeType {
 						}));
 				} catch (error: unknown) {
 					if (isAccessTokenError(error)) return [];
+					this.logger.error('Error fetching UDF fields:', { error });
 					return [];
 				}
 			},
@@ -1067,6 +1079,7 @@ export class ErsApp implements INodeType {
 							});
 						} catch (error: unknown) {
 							if (isAccessTokenError(error)) return [];
+							this.logger.error('Error fetching project type fields:', { error });
 							return [];
 						}
 					}
@@ -1084,7 +1097,8 @@ export class ErsApp implements INodeType {
 							name: field.display_name || field.code,
 							value: JSON.stringify({ code: field.code, field_type: normalizeUdfFieldTypeForOption(field.field_type) }),
 						}));
-				} catch {
+				} catch (error) {
+					this.logger.error('Error fetching mandatory project UDF fields:', { error });
 					return [];
 				}
 			},
@@ -1126,6 +1140,7 @@ export class ErsApp implements INodeType {
 							});
 						} catch (error: unknown) {
 							if (isAccessTokenError(error)) return [];
+							this.logger.error('Error fetching project type fields:', { error });
 							return [];
 						}
 					}
@@ -1143,7 +1158,8 @@ export class ErsApp implements INodeType {
 							name: field.display_name || field.code,
 							value: JSON.stringify({ code: field.code, field_type: normalizeUdfFieldTypeForOption(field.field_type) }),
 						}));
-				} catch {
+				} catch (error) {
+					this.logger.error('Error fetching other project UDF fields:', { error });
 					return [];
 				}
 			},
@@ -1153,6 +1169,7 @@ export class ErsApp implements INodeType {
 					return await getProfileFieldListOptions(this, 'booking', 'mandatory');
 				} catch (error: unknown) {
 					if (isAccessTokenError(error)) return [];
+					this.logger.error('Error fetching mandatory booking fields:', { error });
 					return [];
 				}
 			},
@@ -1162,6 +1179,7 @@ export class ErsApp implements INodeType {
 					return await getProfileFieldListOptions(this, 'booking', 'other');
 				} catch (error: unknown) {
 					if (isAccessTokenError(error)) return [];
+					this.logger.error('Error fetching other booking fields:', { error });
 					return [];
 				}
 			},
@@ -1171,6 +1189,7 @@ export class ErsApp implements INodeType {
 					return await getProfileFieldListOptions(this, 'booking', 'all');
 				} catch (error: unknown) {
 					if (isAccessTokenError(error)) return [];
+					this.logger.error('Error fetching booking fields:', { error });
 					return [];
 				}
 			},
@@ -1197,7 +1216,8 @@ export class ErsApp implements INodeType {
 
 					if (!fieldName || fieldName === '') return [];
 					return await getResourceFieldValueOptionsByFieldName(this, fieldName);
-				} catch {
+				} catch (error) {
+					this.logger.error('Error in getResourceUDFFieldOptions:', { error });
 					return [];
 				}
 			},
@@ -1218,7 +1238,8 @@ export class ErsApp implements INodeType {
 					const fieldName = resolveLatestProfileFieldName(parameters.mandatoryFields?.field);
 					if (!fieldName || fieldName === '') return [];
 					return await getResourceFieldValueOptionsByFieldName(this, fieldName);
-				} catch {
+				} catch (error) {
+					this.logger.error('Error in getResourceUDFFieldOptionsMandatory:', { error });
 					return [];
 				}
 			},
@@ -1239,7 +1260,8 @@ export class ErsApp implements INodeType {
 					const fieldName = resolveLatestProfileFieldName(parameters.otherFields?.field);
 					if (!fieldName || fieldName === '') return [];
 					return await getResourceFieldValueOptionsByFieldName(this, fieldName);
-				} catch {
+				} catch (error) {
+					this.logger.error('Error in getResourceUDFFieldOptionsOther:', { error });
 					return [];
 				}
 			},
@@ -1260,7 +1282,8 @@ export class ErsApp implements INodeType {
 					const fieldName = resolveLatestProfileFieldName(parameters.udfFields?.field);
 					if (!fieldName || fieldName === '') return [];
 					return await getResourceFieldValueOptionsByFieldName(this, fieldName);
-				} catch {
+				} catch (error) {
+					this.logger.error('Error in getResourceUDFFieldOptionsUpdate:', { error });
 					return [];
 				}
 			},
@@ -1282,7 +1305,8 @@ export class ErsApp implements INodeType {
 
 					if (!fieldName || fieldName === '') return [];
 					return await getProfileFieldValueOptionsByFieldName(this, 'booking', fieldName);
-				} catch {
+				} catch (error: unknown) {
+					this.logger.error('Error in getBookingFieldOptions:', { error });
 					return [];
 				}
 			},
@@ -1296,7 +1320,8 @@ export class ErsApp implements INodeType {
 					const fieldName = resolveLatestProfileFieldName(rows);
 					if (!fieldName) return [];
 					return await getProfileFieldValueOptionsByFieldName(this, 'booking', fieldName);
-				} catch {
+				} catch (error: unknown) {
+					this.logger.error('Error in getBookingFieldOptionsMandatory:', { error });
 					return [];
 				}
 			},
@@ -1310,7 +1335,8 @@ export class ErsApp implements INodeType {
 					const fieldName = resolveLatestProfileFieldName(rows);
 					if (!fieldName) return [];
 					return await getProfileFieldValueOptionsByFieldName(this, 'booking', fieldName);
-				} catch {
+				} catch (error: unknown) {
+					this.logger.error('Error in getBookingFieldOptionsOther:', { error });
 					return [];
 				}
 			},
@@ -1324,7 +1350,8 @@ export class ErsApp implements INodeType {
 					const fieldName = resolveLatestProfileFieldName(rows);
 					if (!fieldName) return [];
 					return await getProfileFieldValueOptionsByFieldName(this, 'booking', fieldName);
-				} catch {
+				} catch (error: unknown) {
+					this.logger.error('Error in getBookingFieldOptionsAdditional:', { error });
 					return [];
 				}
 			},
@@ -1335,6 +1362,7 @@ export class ErsApp implements INodeType {
 					return await getProfileFieldListOptions(this, 'timesheet', 'mandatory');
 				} catch (error: unknown) {
 					if (isAccessTokenError(error)) return [];
+					this.logger.error('Error fetching mandatory timesheet fields:', { error });
 					return [];
 				}
 			},
@@ -1344,6 +1372,7 @@ export class ErsApp implements INodeType {
 					return await getProfileFieldListOptions(this, 'timesheet', 'other');
 				} catch (error: unknown) {
 					if (isAccessTokenError(error)) return [];
+					this.logger.error('Error fetching other timesheet fields:', { error });
 					return [];
 				}
 			},
@@ -1367,7 +1396,8 @@ export class ErsApp implements INodeType {
 
 					if (!fieldName || fieldName === '') return [];
 					return await getProfileFieldValueOptionsByFieldName(this, 'timesheet', fieldName);
-				} catch {
+				} catch (error: unknown) {
+					this.logger.error('Error in getTimesheetFieldOptions:', { error });
 					return [];
 				}
 			},
@@ -1380,7 +1410,8 @@ export class ErsApp implements INodeType {
 					const fieldName = resolveLatestProfileFieldName(parameters.mandatoryFields?.field);
 					if (!fieldName || fieldName === '') return [];
 					return await getProfileFieldValueOptionsByFieldName(this, 'timesheet', fieldName);
-				} catch {
+				} catch (error: unknown) {
+					this.logger.error('Error in getTimesheetFieldOptionsMandatory:', { error });
 					return [];
 				}
 			},
@@ -1393,7 +1424,8 @@ export class ErsApp implements INodeType {
 					const fieldName = resolveLatestProfileFieldName(parameters.otherFields?.field);
 					if (!fieldName || fieldName === '') return [];
 					return await getProfileFieldValueOptionsByFieldName(this, 'timesheet', fieldName);
-				} catch {
+				} catch (error: unknown) {
+					this.logger.error('Error in getTimesheetFieldOptionsOther:', { error });
 					return [];
 				}
 			},
@@ -1406,7 +1438,8 @@ export class ErsApp implements INodeType {
 					const fieldName = resolveLatestProfileFieldName(parameters.updateMandatoryFields?.field);
 					if (!fieldName || fieldName === '') return [];
 					return await getProfileFieldValueOptionsByFieldName(this, 'timesheet', fieldName);
-				} catch {
+				} catch (error: unknown) {
+					this.logger.error('Error in getTimesheetFieldOptionsUpdateMandatory:', { error });
 					return [];
 				}
 			},
@@ -1419,7 +1452,8 @@ export class ErsApp implements INodeType {
 					const fieldName = resolveLatestProfileFieldName(parameters.updateOtherFields?.field);
 					if (!fieldName || fieldName === '') return [];
 					return await getProfileFieldValueOptionsByFieldName(this, 'timesheet', fieldName);
-				} catch {
+				} catch (error: unknown) {
+					this.logger.error('Error in getTimesheetFieldOptionsUpdateOther:', { error });
 					return [];
 				}
 			},
@@ -1429,6 +1463,7 @@ export class ErsApp implements INodeType {
 					return await getProfileFieldListOptions(this, 'requirement', 'mandatory');
 				} catch (error: unknown) {
 					if (isAccessTokenError(error)) return [];
+					this.logger.error('Error fetching mandatory requirement fields:', { error });
 					return [];
 				}
 			},
@@ -1438,6 +1473,7 @@ export class ErsApp implements INodeType {
 					return await getProfileFieldListOptions(this, 'requirement', 'other');
 				} catch (error: unknown) {
 					if (isAccessTokenError(error)) return [];
+					this.logger.error('Error fetching other requirement fields:', { error });
 					return [];
 				}
 			},
@@ -1447,6 +1483,7 @@ export class ErsApp implements INodeType {
 					return await getProfileFieldListOptions(this, 'requirement', 'all');
 				} catch (error: unknown) {
 					if (isAccessTokenError(error)) return [];
+					this.logger.error('Error fetching requirement fields:', { error });
 					return [];
 				}
 			},
@@ -1471,7 +1508,8 @@ export class ErsApp implements INodeType {
 
 					if (!fieldName || fieldName === '') return [];
 					return await getProfileFieldValueOptionsByFieldName(this, 'requirement', fieldName);
-				} catch {
+				} catch (error: unknown) {
+					this.logger.error('Error in getRequirementFieldOptions:', { error });
 					return [];
 				}
 			},
@@ -1484,7 +1522,8 @@ export class ErsApp implements INodeType {
 					const fieldName = resolveLatestProfileFieldName(parameters.mandatoryFields?.field);
 					if (!fieldName || fieldName === '') return [];
 					return await getProfileFieldValueOptionsByFieldName(this, 'requirement', fieldName);
-				} catch {
+				} catch (error: unknown) {
+					this.logger.error('Error in getRequirementFieldOptionsMandatory:', { error });
 					return [];
 				}
 			},
@@ -1497,7 +1536,8 @@ export class ErsApp implements INodeType {
 					const fieldName = resolveLatestProfileFieldName(parameters.otherFields?.field);
 					if (!fieldName || fieldName === '') return [];
 					return await getProfileFieldValueOptionsByFieldName(this, 'requirement', fieldName);
-				} catch {
+				} catch (error: unknown) {
+					this.logger.error('Error in getRequirementFieldOptionsOther:', { error });
 					return [];
 				}
 			},
@@ -1510,7 +1550,8 @@ export class ErsApp implements INodeType {
 					const fieldName = resolveLatestProfileFieldName(parameters.updateMandatoryFields?.field);
 					if (!fieldName || fieldName === '') return [];
 					return await getProfileFieldValueOptionsByFieldName(this, 'requirement', fieldName);
-				} catch {
+				} catch (error: unknown) {
+					this.logger.error('Error in getRequirementFieldOptionsUpdateMandatory:', { error });
 					return [];
 				}
 			},
@@ -1523,7 +1564,8 @@ export class ErsApp implements INodeType {
 					const fieldName = resolveLatestProfileFieldName(parameters.updateOtherFields?.field);
 					if (!fieldName || fieldName === '') return [];
 					return await getProfileFieldValueOptionsByFieldName(this, 'requirement', fieldName);
-				} catch {
+				} catch (error: unknown) {
+					this.logger.error('Error in getRequirementFieldOptionsUpdateOther:', { error });
 					return [];
 				}
 			},
@@ -1536,7 +1578,8 @@ export class ErsApp implements INodeType {
 					const fieldName = resolveLatestProfileFieldName(parameters.additionalFields?.field);
 					if (!fieldName || fieldName === '') return [];
 					return await getProfileFieldValueOptionsByFieldName(this, 'requirement', fieldName);
-				} catch {
+				} catch (error: unknown) {
+					this.logger.error('Error in getRequirementFieldOptionsAdditional:', { error });
 					return [];
 				}
 			},
@@ -1620,6 +1663,7 @@ export class ErsApp implements INodeType {
 							projectTypeCache[projectTypeIdStr] = fields;
 						} catch (error: unknown) {
 							if (isAccessTokenError(error)) return [];
+							this.logger.error('Error fetching project type field options:', { error });
 							return [];
 						}
 					}
@@ -1644,7 +1688,8 @@ export class ErsApp implements INodeType {
 					}));
 
 					return limited;
-				} catch {
+				} catch (error) {
+					this.logger.error('Error in getProjectUDFFieldOptions:', { error });
 					return [];
 				}
 			},
