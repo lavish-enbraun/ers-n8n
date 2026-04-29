@@ -96,7 +96,7 @@ export const requirementUpdateDescription: INodeProperties[] = [
 			show: showOnlyForRequirementUpdate,
 		},
 		description:
-			'Whether this requirement can be allocated to multiple resources simultaneously',
+			'Whether to allow allocating this requirement to multiple resources at the same time',
 	},
 	{
 		displayName: 'Sync To Booking',
@@ -107,7 +107,7 @@ export const requirementUpdateDescription: INodeProperties[] = [
 			show: showOnlyForRequirementUpdate,
 		},
 		description:
-			'Whether common custom field values in bookings linked to this requirement are always synced from the requirement (users cannot modify those common custom fields in the booking form)',
+			'Whether common custom field values in linked bookings stay synced from this requirement, with those fields read-only on the booking form',
 	},
 	{
 		displayName: 'Flexi Range Duration',

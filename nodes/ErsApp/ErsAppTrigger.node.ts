@@ -46,6 +46,7 @@ function getValidEventsForEntity(entity: number, events: number[]): number[] {
 	}
 
 	const filtered = events.filter((event) => validEvents.includes(event));
+	
 	return filtered;
 }
 
@@ -82,20 +83,20 @@ export class ErsAppTrigger implements INodeType {
 		outputs: [NodeConnectionTypes.Main],
 		credentials: [
 			{
-				name: 'ersAppAccessTokenApi',
-				required: true,
-				displayOptions: {
-					show: {
-						authentication: ['accessToken'],
-					},
-				},
-			},
-			{
 				name: 'ersAppOAuth2Api',
 				required: true,
 				displayOptions: {
 					show: {
 						authentication: ['oAuth2'],
+					},
+				},
+			},
+			{
+				name: 'ersAppAccessTokenApi',
+				required: true,
+				displayOptions: {
+					show: {
+						authentication: ['accessToken'],
 					},
 				},
 			},
@@ -265,6 +266,7 @@ export class ErsAppTrigger implements INodeType {
 				const webhookId = staticData.webhookId as number | string | undefined;
 				
 				if (webhookId) {
+					Logger.info('[ERS Webhook] Webhook already registered with ID', { webhookId });
 					return true;
 				}
 				
@@ -294,15 +296,18 @@ export class ErsAppTrigger implements INodeType {
 				try {
 					const auth = this.getNodeParameter('authentication', 'oAuth2') as string;
 					const credentialName =
-						auth === 'accessToken' ? 'ersAppAccessTokenApi' : 'ersAppOAuth2Api';
+						auth === 'accessToken'
+							? 'ersAppAccessTokenApi'
+							: 'ersAppOAuth2Api';
 
 					const staticData = this.getWorkflowStaticData('node');
 					let webhookId: number | string | undefined = staticData.webhookId as number | string | undefined;
 					let webhookExists = false;
 
 					const webhooksListUrl = `${BASE_URL}/rest/webhooks`;
+					Logger.info('[ERS Webhook] Checking for existing webhook at ERS API', { webhooksListUrl });
 
-					const getWebhooksResponse = (await this.helpers.httpRequestWithAuthentication.call(
+					const getWebhooksResponse = await this.helpers.httpRequestWithAuthentication.call(
 						this,
 						credentialName,
 						{
@@ -310,137 +315,166 @@ export class ErsAppTrigger implements INodeType {
 							url: webhooksListUrl,
 							json: true,
 						},
-					)) as Record<string, unknown>;
-
-					const webhooksData = getWebhooksResponse.data as Array<Record<string, unknown>> | undefined;
-					if (webhooksData && Array.isArray(webhooksData)) {
-						const existingWebhook = webhooksData.find((wh) => {
-							const whUrl = wh.url as string | undefined;
-							return whUrl && whUrl === webhookUrl;
-						});
-
-						if (existingWebhook && existingWebhook.id) {
-							webhookId = existingWebhook.id as number | string;
-							webhookExists = true;
-							staticData.webhookId = webhookId;
-						}
+					) as Record<string, unknown>;
+					
+				// Extract webhook ID from GET response by matching the URL
+				const webhooksData = getWebhooksResponse.data as Array<Record<string, unknown>> | undefined;
+				if (webhooksData && Array.isArray(webhooksData)) {
+					// Find the webhook we're looking for by matching the URL
+					const existingWebhook = webhooksData.find(wh => {
+						const whUrl = wh.url as string | undefined;
+						return whUrl && whUrl === webhookUrl;
+					});
+					
+					if (existingWebhook && existingWebhook.id) {
+						webhookId = existingWebhook.id as number | string;
+						webhookExists = true;
+						staticData.webhookId = webhookId;
+						Logger.info('[ERS Webhook] Found existing webhook with ID', { webhookId });
 					}
+				}
 
-					if (!webhookExists) {
-						const webhookRequestUrl = `${BASE_URL}/rest/webhooks`;
-
-						await this.helpers.httpRequestWithAuthentication.call(this, credentialName, {
-							method: 'POST',
-							url: webhookRequestUrl,
-							headers: {
-								'Content-Type': 'application/json',
-							},
-							body: webhookPayload,
-							json: true,
-						});
-
-						const getWebhooksResponseAfterCreate = (await this.helpers.httpRequestWithAuthentication.call(
-							this,
-							credentialName,
-							{
-								method: 'GET',
-								url: webhooksListUrl,
-								json: true,
-							},
-						)) as Record<string, unknown>;
-
-						const webhooksDataAfterCreate = getWebhooksResponseAfterCreate.data as
-							| Array<Record<string, unknown>>
-							| undefined;
-						if (webhooksDataAfterCreate && Array.isArray(webhooksDataAfterCreate)) {
-							const createdWebhook = webhooksDataAfterCreate.find((wh) => {
-								const whUrl = wh.url as string | undefined;
-								return whUrl && whUrl === webhookUrl;
-							});
-
-							if (createdWebhook && createdWebhook.id) {
-								webhookId = createdWebhook.id as number | string;
-								staticData.webhookId = webhookId;
-							} else {
-								throw new NodeApiError(this.getNode(), {
-									message: `Webhook created but could not find it in the list. Searched for URL: ${webhookUrl}`,
-								});
-							}
-						} else {
-							throw new NodeApiError(this.getNode(), {
-								message: 'Webhook created but failed to retrieve webhook list to get ID.',
-							});
-						}
-					}
-
-					if (!webhookId) {
-						throw new NodeApiError(this.getNode(), {
-							message:
-								'ERS webhook setup failed: no webhook ID returned from ERS. Please try activating the node again.',
-						});
-					}
-
-					let entities = this.getNodeParameter('entities', []) as number[];
-					let events = this.getNodeParameter('events', []) as number[];
-
-					if (entities.length === 0 || events.length === 0) {
-						const legacyWebhookParam = this.getNodeParameter('webhook', {}) as {
-							webhookSettings?: { entities?: number[]; events?: number[] };
-						};
-						const legacyConfig = legacyWebhookParam.webhookSettings || {};
-
-						if (Array.isArray(legacyConfig.entities) && legacyConfig.entities.length > 0) {
-							entities = legacyConfig.entities;
-						}
-						if (Array.isArray(legacyConfig.events) && legacyConfig.events.length > 0) {
-							events = legacyConfig.events;
-						}
-					}
-
-					if (entities.length === 0 || events.length === 0) {
-						throw new NodeApiError(this.getNode(), {
-							message:
-								'ERS webhook configuration is invalid. Select at least one entity and one event in the node settings.',
-						});
-					}
-
-					const triggers = entities
-						.map((entity) => {
-							const validEvents = getValidEventsForEntity(entity, events);
-							return {
-								entity,
-								events: validEvents,
-							};
-						})
-						.filter((trigger) => trigger.events.length > 0);
-
-					if (triggers.length === 0) {
-						throw new NodeApiError(this.getNode(), {
-							message:
-								'ERS webhook configuration is invalid. The selected entities do not support the chosen events.',
-						});
-					}
-
-					const triggerPayload = {
-						status: true,
-						triggers: triggers,
-					};
-
-					const triggerRequestUrl = `${BASE_URL}/rest/webhooks/${webhookId}/triggers`;
+				if (!webhookExists) {
+					const webhookRequestUrl = `${BASE_URL}/rest/webhooks`;
+					Logger.info('[ERS Webhook] Creating ERS webhook', { webhookRequestUrl });
 
 					await this.helpers.httpRequestWithAuthentication.call(this, credentialName, {
 						method: 'POST',
-						url: triggerRequestUrl,
-						headers: {
-							'Content-Type': 'application/json',
-						},
-						body: triggerPayload,
+						url: webhookRequestUrl,
+						body: webhookPayload,
 						json: true,
 					});
 
+					Logger.info('[ERS Webhook] ERS webhook created successfully.');
+
+					const getWebhooksResponseAfterCreate = await this.helpers.httpRequestWithAuthentication.call(
+						this,
+						credentialName,
+						{
+							method: 'GET',
+							url: webhooksListUrl,
+							json: true,
+						},
+					) as Record<string, unknown>;
+
+					const webhooksDataAfterCreate = getWebhooksResponseAfterCreate.data as Array<Record<string, unknown>> | undefined;
+					if (webhooksDataAfterCreate && Array.isArray(webhooksDataAfterCreate)) {
+						const createdWebhook = webhooksDataAfterCreate.find(wh => {
+							const whUrl = wh.url as string | undefined;
+							return whUrl && whUrl === webhookUrl;
+						});
+						
+						if (createdWebhook && createdWebhook.id) {
+							webhookId = createdWebhook.id as number | string;
+							staticData.webhookId = webhookId;
+							Logger.info('[ERS Webhook] Created new webhook with ID', { webhookId });
+						} else {
+							throw new NodeApiError(this.getNode(), {
+								message: `Webhook created but could not find it in the list. Searched for URL: ${webhookUrl}`,
+							});
+						}
+					} else {
+						throw new NodeApiError(this.getNode(), {
+							message: 'Webhook created but failed to retrieve webhook list to get ID.',
+						});
+					}
+				} else {
+					Logger.info('[ERS Webhook] Using existing webhook. Skipping webhook creation.');
+				}
+
+				if (!webhookId) {
+					Logger.error('[ERS Webhook] No webhook ID available. Cannot proceed with trigger update.');
+					throw new NodeApiError(this.getNode(), {
+						message: 'ERS webhook setup failed: no webhook ID returned from ERS. Please try activating the node again.',
+					});
+				}
+
+				Logger.info('[ERS Webhook] Proceeding to update triggers with webhook ID', { webhookId });
+				
+				// Step 3: Always update triggers whenever entities or events change
+				// This ensures triggers are updated even when webhook already exists
+
+				// Get selected entities and events from the new top-level
+				// parameters so they are always visible in the UI.
+				let entities = this.getNodeParameter('entities', []) as number[];
+				let events = this.getNodeParameter('events', []) as number[];
+
+				// Backwards compatibility: if no entities/events are set on the
+				// new fields, fall back to the legacy nested webhook settings
+				// for existing workflows.
+				if (entities.length === 0 || events.length === 0) {
+					const legacyWebhookParam = this.getNodeParameter('webhook', {}) as {
+						webhookSettings?: { entities?: number[]; events?: number[] };
+					};
+					const legacyConfig = legacyWebhookParam.webhookSettings || {};
+
+					if (Array.isArray(legacyConfig.entities) && legacyConfig.entities.length > 0) {
+						entities = legacyConfig.entities;
+					}
+					if (Array.isArray(legacyConfig.events) && legacyConfig.events.length > 0) {
+						events = legacyConfig.events;
+					}
+				}
+				
+				Logger.info('[ERS Webhook] Selected entities and events', { entities, events });
+
+				if (entities.length === 0 || events.length === 0) {
+					Logger.error('[ERS Webhook] No entities or events selected. Cannot configure webhook triggers.');
+					throw new NodeApiError(this.getNode(), {
+						message: 'ERS webhook configuration is invalid. Select at least one entity and one event in the node settings.',
+					});
+				}
+
+				// Build triggers array - each entity gets only valid events for that entity
+				const triggers = entities.map(entity => {
+					const validEvents = getValidEventsForEntity(entity, events);
+					return {
+						entity,
+						events: validEvents,
+					};
+				}).filter(trigger => trigger.events.length > 0); // Remove triggers with no valid events
+
+				if (triggers.length === 0) {
+					Logger.error(
+						'[ERS Webhook] No valid triggers after filtering. All selected events are invalid for the selected entities.',
+					);
+					throw new NodeApiError(this.getNode(), {
+						message: 'ERS webhook configuration is invalid. The selected entities do not support the chosen events.',
+					});
+				}
+
+				const triggerPayload = {
+					status: true,
+					triggers: triggers,
+				};
+
+				// Step 3: POST request to /rest/webhooks/${id}/triggers to create/update triggers
+				// Using POST as it handles both creation and updates
+				const triggerRequestUrl = `${BASE_URL}/rest/webhooks/${webhookId}/triggers`;
+				Logger.info('[ERS Webhook] Updating ERS webhook triggers', { triggerRequestUrl, webhookId });
+
+				await this.helpers.httpRequestWithAuthentication.call(this, credentialName, {
+					method: 'POST',
+					url: triggerRequestUrl,
+					body: triggerPayload,
+					json: true,
+				});
+
+				Logger.info('[ERS Webhook] ERS webhook triggers updated successfully.');
+					// ERS will immediately try to validate the webhook URL
+					// The webhook handler will respond to the challenge
 					return true;
 				} catch (error) {
 					const errorMessage = error instanceof Error ? error.message : String(error);
+					Logger.error('[ERS Webhook] Webhook setup error', { errorMessage, error });
+					if (error && typeof error === 'object' && 'response' in error) {
+						const httpError = error as { response?: { status?: number; statusText?: string; data?: unknown } };
+						Logger.error('[ERS Webhook] HTTP error details', {
+							status: httpError.response?.status,
+							statusText: httpError.response?.statusText,
+							body: httpError.response?.data,
+						});
+					}
 					throw new NodeApiError(this.getNode(), {
 						message: `ERS webhook setup failed while creating the webhook or updating triggers. Details: ${errorMessage}`,
 					});
@@ -455,19 +489,26 @@ export class ErsAppTrigger implements INodeType {
 			 * remote webhook (and its triggers) whenever a webhookId is present.
 			 */
 			async delete(this: IHookFunctions): Promise<boolean> {
+				Logger.info('[ERS Webhook] DELETE METHOD CALLED');
 				try {
 					const staticData = this.getWorkflowStaticData('node');
 					const webhookId = staticData.webhookId as number | string | undefined;
 
 					if (!webhookId) {
+						Logger.info(
+							'[ERS Webhook] No webhook ID found in static data. Webhook may have already been deleted or never created.',
+						);
 						return true;
 					}
 
 					const auth = this.getNodeParameter('authentication', 'oAuth2') as string;
 					const credentialName =
-						auth === 'accessToken' ? 'ersAppAccessTokenApi' : 'ersAppOAuth2Api';
+						auth === 'accessToken'
+							? 'ersAppAccessTokenApi'
+							: 'ersAppOAuth2Api';
 
 					const deleteWebhookUrl = `${BASE_URL}/rest/webhooks/${webhookId}?force_delete_logs=true&force_delete_triggers=true`;
+					Logger.info('[ERS Webhook] Deleting ERS webhook', { webhookId, deleteWebhookUrl });
 
 					try {
 						await this.helpers.httpRequestWithAuthentication.call(this, credentialName, {
@@ -476,20 +517,41 @@ export class ErsAppTrigger implements INodeType {
 							json: true,
 						});
 					} catch (error) {
-						if (error && typeof error === 'object' && 'response' in error) {
-							const httpError = error as { response?: { status?: number } };
-							if (httpError.response?.status === 404) {
-								delete staticData.webhookId;
-								return true;
-							}
+						if (
+							error &&
+							typeof error === 'object' &&
+							'response' in error &&
+							(error as { response?: { status?: number } }).response?.status === 404
+						) {
+							Logger.info('[ERS Webhook] Webhook not found on server (404). It may have already been deleted.');
+							delete staticData.webhookId;
+							return true;
 						}
+						throw error;
 					}
 
+					Logger.info('[ERS Webhook] ERS webhook deleted successfully.');
+
 					delete staticData.webhookId;
+
 					return true;
-				} catch {
+				} catch (error) {
+					const errorMessage = error instanceof Error ? error.message : String(error);
+					Logger.error('[ERS Webhook] WEBHOOK DELETION ERROR', { errorMessage, error });
+
+					if (error && typeof error === 'object' && 'response' in error) {
+						const httpError = error as { response?: { status?: number; statusText?: string; data?: unknown } };
+						Logger.error('[ERS Webhook] HTTP error details', {
+							status: httpError.response?.status,
+							statusText: httpError.response?.statusText,
+							body: httpError.response?.data,
+						});
+					}
+
 					const staticData = this.getWorkflowStaticData('node');
 					delete staticData.webhookId;
+
+					Logger.warn('[ERS Webhook] Failed to delete webhook from server, but continuing with node deletion.');
 					return true;
 				}
 			},
@@ -524,7 +586,7 @@ export class ErsAppTrigger implements INodeType {
 
 			// Check if this is a challenge request by looking for the challenge field in the payload
 			const isChallenge = body && typeof body === 'object' && challengeField in body;
-			
+
 			if (isChallenge) {
 				const challengeValue = (body as Record<string, unknown>)[challengeField];
 				Logger.info('[ERS Webhook] Challenge token received (POST)', {
@@ -537,7 +599,9 @@ export class ErsAppTrigger implements INodeType {
 				return { noWebhookResponse: true };
 			}
 
-			Logger.info('[ERS Webhook] POST request is not a challenge - treating as regular webhook event', { body });
+			Logger.info('[ERS Webhook] POST request is not a challenge - treating as regular webhook event', {
+				body,
+			});
 			// Regular POST webhook event from ERS
 			const items = this.helpers.returnJsonArray(body);
 			for (const item of items) {
