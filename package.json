@@ -5,14 +5,13 @@
 	"license": "MIT",
 	"homepage": "https://github.com/sarthak-enbraun/n8n-nodes-ers-app.git#readme",
 	"keywords": [
-		"n8n-community-node-package",
 		"n8n",
+		"n8n-nodes",
+		"n8n-community-node-package",
 		"ers",
 		"eResource Scheduler",
 		"resource-planning",
-		"scheduling",
-		"api",
-		"integration"
+		"scheduling"
 	],
 	"author": {
 		"name": "Sarthak ahuja",
