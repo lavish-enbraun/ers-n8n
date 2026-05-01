@@ -219,8 +219,7 @@ export const timesheetCreateDescription: INodeProperties[] = [
 						type: 'number',
 						default: 0,
 						typeOptions: {
-							maxValue: 999999999,
-							minValue: -999999999,
+							minValue: 0,
 						},
 						displayOptions: {
 							show: {
@@ -244,7 +243,7 @@ export const timesheetCreateDescription: INodeProperties[] = [
 						},
 						displayOptions: {
 							show: {
-								fieldName: [{ _cnd: { regex: '.*"field_type":"MLTEXT".*' } }],
+								fieldName: [{ _cnd: { regex: '.*"field_type":"MLTEXT".*' } }],	
 							},
 						},
 					},
@@ -475,10 +474,6 @@ export const timesheetCreateDescription: INodeProperties[] = [
 						name: 'fieldValueNumber',
 						type: 'number',
 						default: 0,
-						typeOptions: {
-							maxValue: 999999999,
-							minValue: -999999999,
-						},
 						displayOptions: {
 							show: {
 								fieldName: [

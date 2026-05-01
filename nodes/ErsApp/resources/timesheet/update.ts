@@ -228,10 +228,6 @@ export const timesheetUpdateDescription: INodeProperties[] = [
 						name: 'fieldValueNumber',
 						type: 'number',
 						default: 0,
-						typeOptions: {
-							maxValue: 999999999,
-							minValue: -999999999,
-						},
 						displayOptions: {
 							show: {
 								fieldName: [
@@ -485,10 +481,6 @@ export const timesheetUpdateDescription: INodeProperties[] = [
 						name: 'fieldValueNumber',
 						type: 'number',
 						default: 0,
-						typeOptions: {
-							maxValue: 999999999,
-							minValue: -999999999,
-						},
 						displayOptions: {
 							show: {
 								fieldName: [
