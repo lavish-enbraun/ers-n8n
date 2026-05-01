@@ -58,7 +58,7 @@ export const requirementGetAllDescription: INodeProperties[] = [
 			send: {
 				type: 'query',
 				property: 'start',
-				value: '={{ $value ? new Date($value).toISOString().split("T")[0] : undefined }}',
+				value: '={{ (() => { if (!$value) return undefined; const t = String($value).trim(); if (!t) return undefined; if (/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(t)) return t; const d = new Date(t); if (isNaN(d.getTime())) return undefined; const y = d.getFullYear(); const m = String(d.getMonth() + 1).padStart(2, "0"); const day = String(d.getDate()).padStart(2, "0"); return `${y}-${m}-${day}`; })() }}',
 			},
 		},
 	},
@@ -75,7 +75,7 @@ export const requirementGetAllDescription: INodeProperties[] = [
 			send: {
 				type: 'query',
 				property: 'end',
-				value: '={{ $value ? new Date($value).toISOString().split("T")[0] : undefined }}',
+				value: '={{ (() => { if (!$value) return undefined; const t = String($value).trim(); if (!t) return undefined; if (/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(t)) return t; const d = new Date(t); if (isNaN(d.getTime())) return undefined; const y = d.getFullYear(); const m = String(d.getMonth() + 1).padStart(2, "0"); const day = String(d.getDate()).padStart(2, "0"); return `${y}-${m}-${day}`; })() }}',
 			},
 		},
 	},
