@@ -949,7 +949,7 @@ export class ErsApp implements INodeType {
 							const id = type.id as number;
 							return {
 								name: type.name || `Project Type ${id}`,
-								value: id,
+								value: JSON.stringify({ id }),
 								description: type.description || undefined,
 							};
 						});
