@@ -68,7 +68,7 @@ interface ResourceType {
 	fields?: ResourceTypeField[];
 }
 
-interface PublicApiProjectTypeField {
+interface ProjectTypeField {
 	id?: number;
 	code: string;
 	display_name?: string;
@@ -85,31 +85,12 @@ interface PublicApiProjectTypeField {
 	minlength?: number;
 }
 
-interface PublicApiProjectTypeDetail {
+interface ProjectType {
 	id?: number;
 	name?: string;
 	description?: string;
 	color?: string;
-	fields?: PublicApiProjectTypeField[];
-}
-
-// profile field metadata
-interface ProfileFieldDefinition {
-	id?: number;
-	code: string;
-	display_name?: string;
-	field_type?: string;
-	is_system_defined?: boolean;
-	is_required?: boolean;
-	options?: Array<{ id: number; name: string; description?: string | null }>;
-	mindate?: string;
-	maxdate?: string;
-	minlength?: number;
-	maxlength?: number;
-	regex?: string;
-	placeholder_text?: string;
-	minnum?: number;
-	maxnum?: number;
+	fields?: ProjectTypeField[];
 }
 
 interface ProfileFieldOption {
@@ -150,7 +131,7 @@ function getOptionDisplayName(
 	return opt.name;
 }
 
-function mapProfileFieldDefinitions(fields: ProfileFieldDefinition[] | undefined): ProfileField[] {
+function mapProfileFieldsFromApi(fields: ProfileField[] | undefined): ProfileField[] {
 	if (!Array.isArray(fields)) return [];
 	const result: ProfileField[] = [];
 	for (const f of fields) {
@@ -161,21 +142,8 @@ function mapProfileFieldDefinitions(fields: ProfileFieldDefinition[] | undefined
 				description: opt.description ?? undefined,
 			}));
 			result.push({
-				id: f.id,
-				code: f.code,
-				display_name: f.display_name,
-				field_type: f.field_type,
-				is_system_defined: f.is_system_defined,
-				is_required: f.is_required,
+				...f,
 				options,
-				mindate: f.mindate,
-				maxdate: f.maxdate,
-				minlength: f.minlength,
-				maxlength: f.maxlength,
-				regex: f.regex,
-				placeholder_text: f.placeholder_text,
-				minnum: f.minnum,
-				maxnum: f.maxnum,
 			});
 		}
 	}
@@ -279,18 +247,9 @@ interface ProjectUDFField {
 }
 
 const projectTypeCache: Record<string, ProjectUDFField[]> = {};
-let projectTypesListCache: PublicApiProjectTypeDetail[] | undefined;
+let projectTypesListCache: ProjectType[] | undefined;
 
 const PROJECT_EXCLUDED_SYSTEM_FIELDS = ['id', 'project_type_id', 'title'];
-
-// Booking fields cache (fetched from /booking/fields)
-let bookingFieldsCache: ProfileField[] | undefined;
-
-// Requirement fields cache (GET /requirement/fields; same ProfileFieldDefinition response shape)
-let requirementFieldsCache: ProfileField[] | undefined;
-
-// Timesheet fields cache (fetched from /timesheet/fields)
-let timesheetFieldsCache: ProfileField[] | undefined;
 
 type ProfileEntityKey = 'booking' | 'timesheet' | 'requirement';
 type ProfileFieldListMode = 'mandatory' | 'other' | 'all';
@@ -310,44 +269,7 @@ const PROFILE_ENTITY_META: Record<ProfileEntityKey,{ endpoint: string; excludedC
 	},
 };
 
-function getProfileFieldsCache(entity: ProfileEntityKey): ProfileField[] | undefined {
-	if (entity === 'booking') return bookingFieldsCache;
-	if (entity === 'timesheet') return timesheetFieldsCache;
-	return requirementFieldsCache;
-}
-
-function setProfileFieldsCache(entity: ProfileEntityKey, fields: ProfileField[] | undefined): void {
-	if (entity === 'booking') {
-		bookingFieldsCache = fields;
-		return;
-	}
-	if (entity === 'timesheet') {
-		timesheetFieldsCache = fields;
-		return;
-	}
-	requirementFieldsCache = fields;
-}
-
-function resolveLatestProfileFieldName(rows: Array<{ fieldName?: string }> | undefined): string | undefined {
-	if (!Array.isArray(rows) || rows.length === 0) return undefined;
-	for (let i = rows.length - 1; i >= 0; i--) {
-		const item = rows[i];
-		if (item?.fieldName && typeof item.fieldName === 'string' && item.fieldName.trim() !== '') {
-			return item.fieldName;
-		}
-	}
-	return undefined;
-}
-
-function resolveLatestProfileFieldNameFromCollections(
-	collections: Array<Array<{ fieldName?: string }> | undefined>,
-): string | undefined {
-	for (const rows of collections) {
-		const fieldName = resolveLatestProfileFieldName(rows);
-		if (fieldName) return fieldName;
-	}
-	return undefined;
-}
+const profileFieldsCache: Partial<Record<ProfileEntityKey, ProfileField[]>> = {};
 
 function parseProfileFieldCode(fieldName: string): string | undefined {
 	let parsed: { code?: string };
@@ -386,24 +308,24 @@ async function ensureProfileFieldsCache(
 ): Promise<ProfileField[] | undefined> {
 	try {
 		const auth = (ctx.getNode().parameters as { authentication?: string }).authentication;
-		const credentialType = auth === 'accessToken' ? 'ersAppAccessTokenApi' : 'ersAppOAuth2Api';
+		const credentialType = getAuthCredentialType(auth);
 		const meta = PROFILE_ENTITY_META[entity];
 
 		if (invalidateCache) {
-			setProfileFieldsCache(entity, undefined);
+			delete profileFieldsCache[entity];
 		}
 
-		let cache = getProfileFieldsCache(entity);
+		let cache = profileFieldsCache[entity];
 		if (!cache?.length) {
 			const response = await ctx.helpers.httpRequestWithAuthentication.call(ctx, credentialType, {
 				method: 'GET',
 				url: `${BASE_URL}${API_BASE_PATH}${meta.endpoint}`,
 				headers: { Accept: 'application/json' },
-			}) as { data?: ProfileFieldDefinition[] } | ProfileFieldDefinition[];
+			}) as { data?: ProfileField[] } | ProfileField[];
 
 			const list = Array.isArray(response) ? response : (response.data ?? []);
-			cache = mapProfileFieldDefinitions(list);
-			setProfileFieldsCache(entity, cache);
+			cache = mapProfileFieldsFromApi(list);
+			profileFieldsCache[entity] = cache;
 		}
 
 		return cache;
@@ -448,7 +370,7 @@ async function getProfileFieldListOptions(
 	entity: ProfileEntityKey,
 	mode: ProfileFieldListMode,
 ): Promise<INodePropertyOptions[]> {
-	const fields = await ensureProfileFieldsCache(ctx, entity, true);
+	const fields = await ensureProfileFieldsCache(ctx, entity, false);
 	return buildProfileFieldListOptions(fields, entity, mode);
 }
 
@@ -460,7 +382,7 @@ async function getProfileFieldValueOptionsByFieldName(
 	const fieldCode = parseProfileFieldCode(fieldName);
 	if (!fieldCode) return [];
 
-	let fields = getProfileFieldsCache(entity);
+	let fields = profileFieldsCache[entity];
 	if (!fields?.length) {
 		fields = await ensureProfileFieldsCache(ctx, entity, false);
 	}
@@ -474,14 +396,19 @@ async function getProfileFieldValueOptionsByFieldName(
 	return buildProfileFieldValueOptions(fields, fieldCode, search);
 }
 
-function parseResourceFieldCode(fieldName: string): string | undefined {
-	let parsed: { code?: string };
+async function withProfileFieldListLoader(
+	ctx: ILoadOptionsFunctions,
+	entity: ProfileEntityKey,
+	mode: ProfileFieldListMode,
+	errorContext: string,
+): Promise<INodePropertyOptions[]> {
 	try {
-		parsed = JSON.parse(fieldName);
-	} catch {
-		return undefined;
+		return await getProfileFieldListOptions(ctx, entity, mode);
+	} catch (error: unknown) {
+		if (isAccessTokenError(error)) return [];
+		ctx.logger.error(`Error fetching ${errorContext}:`, { error });
+		return [];
 	}
-	return parsed.code;
 }
 
 function getAuthCredentialType(authentication: string | undefined): string {
@@ -612,7 +539,7 @@ async function getResourceFieldValueOptionsByFieldName(
 	ctx: ILoadOptionsFunctions,
 	fieldName: string,
 ): Promise<INodePropertyOptions[]> {
-	const fieldCode = parseResourceFieldCode(fieldName);
+	const fieldCode = parseProfileFieldCode(fieldName);
 	if (!fieldCode) return [];
 
 	const parameters = ctx.getNode().parameters as { resource_type_id?: number | string };
@@ -642,15 +569,15 @@ async function getResourceFieldValueOptionsByFieldName(
 }
 
 function parseProjectTypesListResponse(
-	response: PublicApiProjectTypeDetail[] | { data?: PublicApiProjectTypeDetail[]; items?: PublicApiProjectTypeDetail[] },
-): PublicApiProjectTypeDetail[] {
+	response: ProjectType[] | { data?: ProjectType[]; items?: ProjectType[] },
+): ProjectType[] {
 	if (Array.isArray(response)) return response;
 	if (Array.isArray(response.data)) return response.data;
 	if (Array.isArray(response.items)) return response.items;
 	return [];
 }
 
-function mapProjectTypesToOptions(list: PublicApiProjectTypeDetail[]): INodePropertyOptions[] {
+function mapProjectTypesToOptions(list: ProjectType[]): INodePropertyOptions[] {
 	return list
 		.filter((type) => type.id != null)
 		.map((type) => {
@@ -663,7 +590,7 @@ function mapProjectTypesToOptions(list: PublicApiProjectTypeDetail[]): INodeProp
 		});
 }
 
-async function fetchProjectTypesList(ctx: ILoadOptionsFunctions): Promise<PublicApiProjectTypeDetail[]> {
+async function fetchProjectTypesList(ctx: ILoadOptionsFunctions): Promise<ProjectType[]> {
 	if (projectTypesListCache?.length) return projectTypesListCache;
 
 	const parameters = ctx.getNode().parameters as { authentication?: string };
@@ -677,7 +604,7 @@ async function fetchProjectTypesList(ctx: ILoadOptionsFunctions): Promise<Public
 				url: `${BASE_URL}${API_BASE_PATH}/projecttypes`,
 				headers: { Accept: 'application/json' },
 			},
-		) as PublicApiProjectTypeDetail[] | { data?: PublicApiProjectTypeDetail[]; items?: PublicApiProjectTypeDetail[] };
+		) as ProjectType[] | { data?: ProjectType[]; items?: ProjectType[] };
 
 		const list = parseProjectTypesListResponse(response);
 		projectTypesListCache = list;
@@ -714,7 +641,7 @@ async function fetchProjectTypeFields(
 				url: `${BASE_URL}${API_BASE_PATH}/projecttypes/${projectTypeIdStr}`,
 				headers: { Accept: 'application/json' },
 			},
-		) as PublicApiProjectTypeDetail;
+		) as ProjectType;
 		const fields = mapPublicApiProjectFieldsToUDF(projectTypeResponse.fields);
 		projectTypeCache[projectTypeIdStr] = fields;
 		return fields;
@@ -758,7 +685,7 @@ async function getProjectFieldValueOptionsByFieldName(
 	}));
 }
 
-function mapPublicApiProjectFieldsToUDF(fields: PublicApiProjectTypeField[] | undefined): ProjectUDFField[] {
+function mapPublicApiProjectFieldsToUDF(fields: ProjectTypeField[] | undefined): ProjectUDFField[] {
 	if (!Array.isArray(fields)) return [];
 	const result: ProjectUDFField[] = [];
 	for (const f of fields) {
@@ -1051,34 +978,16 @@ export class ErsApp implements INodeType {
 				}
 			},
 
-			async getBookingFieldsMandatory(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-				try {
-					return await getProfileFieldListOptions(this, 'booking', 'mandatory');
-				} catch (error: unknown) {
-					if (isAccessTokenError(error)) return [];
-					this.logger.error('Error fetching mandatory booking fields:', { error });
-					return [];
-				}
+			async getBookingUDFFieldsMandatory(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				return withProfileFieldListLoader(this, 'booking', 'mandatory', 'mandatory booking UDF fields');
 			},
 
-			async getBookingFieldsOther(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-				try {
-					return await getProfileFieldListOptions(this, 'booking', 'other');
-				} catch (error: unknown) {
-					if (isAccessTokenError(error)) return [];
-					this.logger.error('Error fetching other booking fields:', { error });
-					return [];
-				}
+			async getBookingUDFFieldsOther(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				return withProfileFieldListLoader(this, 'booking', 'other', 'other booking UDF fields');
 			},
 
-			async getBookingFieldsAll(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-				try {
-					return await getProfileFieldListOptions(this, 'booking', 'all');
-				} catch (error: unknown) {
-					if (isAccessTokenError(error)) return [];
-					this.logger.error('Error fetching booking fields:', { error });
-					return [];
-				}
+			async getBookingUDFFieldsAll(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				return withProfileFieldListLoader(this, 'booking', 'all', 'booking UDF fields');
 			},
 
 			async getResourceUDFFieldOptions(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
@@ -1092,298 +1001,55 @@ export class ErsApp implements INodeType {
 				}
 			},
 
-			// Layer 3: Dynamic option loader for booking fields — read from cache, filter by search, limit.
-			async getBookingFieldOptions(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+			async getBookingUDFFieldOptions(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 				try {
-					const parameters = this.getNode().parameters as {
-						mandatoryFields?: { field?: Array<{ fieldName?: string }> };
-						otherFields?: { field?: Array<{ fieldName?: string }> };
-						additionalBookingFields?: { field?: Array<{ fieldName?: string }> };
-					};
-
-					const fieldName = resolveLatestProfileFieldNameFromCollections([
-						parameters.mandatoryFields?.field,
-						parameters.otherFields?.field,
-						parameters.additionalBookingFields?.field,
-					]);
-
-					if (!fieldName || fieldName === '') return [];
-					return await getProfileFieldValueOptionsByFieldName(this, 'booking', fieldName);
-				} catch (error: unknown) {
-					this.logger.error('Error in getBookingFieldOptions:', { error });
-					return [];
-				}
-			},
-
-			async getBookingFieldOptionsMandatory(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-				try {
-					const parameters = this.getNode().parameters as {
-						mandatoryFields?: { field?: Array<{ fieldName?: string }> };
-					};
-					const rows = parameters.mandatoryFields?.field;
-					const fieldName = resolveLatestProfileFieldName(rows);
+					const fieldName = resolveCurrentCollectionFieldName(this);
 					if (!fieldName) return [];
 					return await getProfileFieldValueOptionsByFieldName(this, 'booking', fieldName);
 				} catch (error: unknown) {
-					this.logger.error('Error in getBookingFieldOptionsMandatory:', { error });
+					this.logger.error('Error in getBookingUDFFieldOptions:', { error });
 					return [];
 				}
 			},
 
-			async getBookingFieldOptionsOther(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+			async getTimesheetUDFFieldsMandatory(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				return withProfileFieldListLoader(this, 'timesheet', 'mandatory', 'mandatory timesheet UDF fields');
+			},
+
+			async getTimesheetUDFFieldsOther(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				return withProfileFieldListLoader(this, 'timesheet', 'other', 'other timesheet UDF fields');
+			},
+
+			async getTimesheetUDFFieldOptions(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 				try {
-					const parameters = this.getNode().parameters as {
-						otherFields?: { field?: Array<{ fieldName?: string }> };
-					};
-					const rows = parameters.otherFields?.field;
-					const fieldName = resolveLatestProfileFieldName(rows);
+					const fieldName = resolveCurrentCollectionFieldName(this);
 					if (!fieldName) return [];
-					return await getProfileFieldValueOptionsByFieldName(this, 'booking', fieldName);
+					return await getProfileFieldValueOptionsByFieldName(this, 'timesheet', fieldName);
 				} catch (error: unknown) {
-					this.logger.error('Error in getBookingFieldOptionsOther:', { error });
+					this.logger.error('Error in getTimesheetUDFFieldOptions:', { error });
 					return [];
 				}
 			},
 
-			async getBookingFieldOptionsAdditional(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+			async getRequirementUDFFieldsMandatory(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				return withProfileFieldListLoader(this, 'requirement', 'mandatory', 'mandatory requirement UDF fields');
+			},
+
+			async getRequirementUDFFieldsOther(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				return withProfileFieldListLoader(this, 'requirement', 'other', 'other requirement UDF fields');
+			},
+
+			async getRequirementUDFFieldsAll(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				return withProfileFieldListLoader(this, 'requirement', 'all', 'requirement UDF fields');
+			},
+
+			async getRequirementUDFFieldOptions(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 				try {
-					const parameters = this.getNode().parameters as {
-						additionalBookingFields?: { field?: Array<{ fieldName?: string }> };
-					};
-					const rows = parameters.additionalBookingFields?.field;
-					const fieldName = resolveLatestProfileFieldName(rows);
+					const fieldName = resolveCurrentCollectionFieldName(this);
 					if (!fieldName) return [];
-					return await getProfileFieldValueOptionsByFieldName(this, 'booking', fieldName);
-				} catch (error: unknown) {
-					this.logger.error('Error in getBookingFieldOptionsAdditional:', { error });
-					return [];
-				}
-			},
-
-			// Layer 3: Dynamic fields list for timesheet (from GET /timesheet/fields)
-			async getTimesheetFieldsMandatory(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-				try {
-					return await getProfileFieldListOptions(this, 'timesheet', 'mandatory');
-				} catch (error: unknown) {
-					if (isAccessTokenError(error)) return [];
-					this.logger.error('Error fetching mandatory timesheet fields:', { error });
-					return [];
-				}
-			},
-
-			async getTimesheetFieldsOther(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-				try {
-					return await getProfileFieldListOptions(this, 'timesheet', 'other');
-				} catch (error: unknown) {
-					if (isAccessTokenError(error)) return [];
-					this.logger.error('Error fetching other timesheet fields:', { error });
-					return [];
-				}
-			},
-
-			// Layer 3: Dynamic option loader for timesheet fields — read from cache, filter by search, limit.
-			async getTimesheetFieldOptions(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-				try {
-					const parameters = this.getNode().parameters as {
-						mandatoryFields?: { field?: Array<{ fieldName?: string }> };
-						otherFields?: { field?: Array<{ fieldName?: string }> };
-						updateMandatoryFields?: { field?: Array<{ fieldName?: string }> };
-						updateOtherFields?: { field?: Array<{ fieldName?: string }> };
-					};
-
-					const fieldName = resolveLatestProfileFieldNameFromCollections([
-						parameters.mandatoryFields?.field,
-						parameters.otherFields?.field,
-						parameters.updateMandatoryFields?.field,
-						parameters.updateOtherFields?.field,
-					]);
-
-					if (!fieldName || fieldName === '') return [];
-					return await getProfileFieldValueOptionsByFieldName(this, 'timesheet', fieldName);
-				} catch (error: unknown) {
-					this.logger.error('Error in getTimesheetFieldOptions:', { error });
-					return [];
-				}
-			},
-
-			async getTimesheetFieldOptionsMandatory(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-				try {
-					const parameters = this.getNode().parameters as {
-						mandatoryFields?: { field?: Array<{ fieldName?: string }> };
-					};
-					const fieldName = resolveLatestProfileFieldName(parameters.mandatoryFields?.field);
-					if (!fieldName || fieldName === '') return [];
-					return await getProfileFieldValueOptionsByFieldName(this, 'timesheet', fieldName);
-				} catch (error: unknown) {
-					this.logger.error('Error in getTimesheetFieldOptionsMandatory:', { error });
-					return [];
-				}
-			},
-
-			async getTimesheetFieldOptionsOther(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-				try {
-					const parameters = this.getNode().parameters as {
-						otherFields?: { field?: Array<{ fieldName?: string }> };
-					};
-					const fieldName = resolveLatestProfileFieldName(parameters.otherFields?.field);
-					if (!fieldName || fieldName === '') return [];
-					return await getProfileFieldValueOptionsByFieldName(this, 'timesheet', fieldName);
-				} catch (error: unknown) {
-					this.logger.error('Error in getTimesheetFieldOptionsOther:', { error });
-					return [];
-				}
-			},
-
-			async getTimesheetFieldOptionsUpdateMandatory(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-				try {
-					const parameters = this.getNode().parameters as {
-						updateMandatoryFields?: { field?: Array<{ fieldName?: string }> };
-					};
-					const fieldName = resolveLatestProfileFieldName(parameters.updateMandatoryFields?.field);
-					if (!fieldName || fieldName === '') return [];
-					return await getProfileFieldValueOptionsByFieldName(this, 'timesheet', fieldName);
-				} catch (error: unknown) {
-					this.logger.error('Error in getTimesheetFieldOptionsUpdateMandatory:', { error });
-					return [];
-				}
-			},
-
-			async getTimesheetFieldOptionsUpdateOther(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-				try {
-					const parameters = this.getNode().parameters as {
-						updateOtherFields?: { field?: Array<{ fieldName?: string }> };
-					};
-					const fieldName = resolveLatestProfileFieldName(parameters.updateOtherFields?.field);
-					if (!fieldName || fieldName === '') return [];
-					return await getProfileFieldValueOptionsByFieldName(this, 'timesheet', fieldName);
-				} catch (error: unknown) {
-					this.logger.error('Error in getTimesheetFieldOptionsUpdateOther:', { error });
-					return [];
-				}
-			},
-
-			async getRequirementFieldsMandatory(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-				try {
-					return await getProfileFieldListOptions(this, 'requirement', 'mandatory');
-				} catch (error: unknown) {
-					if (isAccessTokenError(error)) return [];
-					this.logger.error('Error fetching mandatory requirement fields:', { error });
-					return [];
-				}
-			},
-
-			async getRequirementFieldsOther(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-				try {
-					return await getProfileFieldListOptions(this, 'requirement', 'other');
-				} catch (error: unknown) {
-					if (isAccessTokenError(error)) return [];
-					this.logger.error('Error fetching other requirement fields:', { error });
-					return [];
-				}
-			},
-
-			async getRequirementFieldsAll(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-				try {
-					return await getProfileFieldListOptions(this, 'requirement', 'all');
-				} catch (error: unknown) {
-					if (isAccessTokenError(error)) return [];
-					this.logger.error('Error fetching requirement fields:', { error });
-					return [];
-				}
-			},
-
-			async getRequirementFieldOptions(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-				try {
-					const parameters = this.getNode().parameters as {
-						mandatoryFields?: { field?: Array<{ fieldName?: string }> };
-						otherFields?: { field?: Array<{ fieldName?: string }> };
-						updateMandatoryFields?: { field?: Array<{ fieldName?: string }> };
-						updateOtherFields?: { field?: Array<{ fieldName?: string }> };
-						additionalFields?: { field?: Array<{ fieldName?: string }> };
-					};
-
-					const fieldName = resolveLatestProfileFieldNameFromCollections([
-						parameters.mandatoryFields?.field,
-						parameters.otherFields?.field,
-						parameters.updateMandatoryFields?.field,
-						parameters.updateOtherFields?.field,
-						parameters.additionalFields?.field,
-					]);
-
-					if (!fieldName || fieldName === '') return [];
 					return await getProfileFieldValueOptionsByFieldName(this, 'requirement', fieldName);
 				} catch (error: unknown) {
-					this.logger.error('Error in getRequirementFieldOptions:', { error });
-					return [];
-				}
-			},
-
-			async getRequirementFieldOptionsMandatory(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-				try {
-					const parameters = this.getNode().parameters as {
-						mandatoryFields?: { field?: Array<{ fieldName?: string }> };
-					};
-					const fieldName = resolveLatestProfileFieldName(parameters.mandatoryFields?.field);
-					if (!fieldName || fieldName === '') return [];
-					return await getProfileFieldValueOptionsByFieldName(this, 'requirement', fieldName);
-				} catch (error: unknown) {
-					this.logger.error('Error in getRequirementFieldOptionsMandatory:', { error });
-					return [];
-				}
-			},
-
-			async getRequirementFieldOptionsOther(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-				try {
-					const parameters = this.getNode().parameters as {
-						otherFields?: { field?: Array<{ fieldName?: string }> };
-					};
-					const fieldName = resolveLatestProfileFieldName(parameters.otherFields?.field);
-					if (!fieldName || fieldName === '') return [];
-					return await getProfileFieldValueOptionsByFieldName(this, 'requirement', fieldName);
-				} catch (error: unknown) {
-					this.logger.error('Error in getRequirementFieldOptionsOther:', { error });
-					return [];
-				}
-			},
-
-			async getRequirementFieldOptionsUpdateMandatory(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-				try {
-					const parameters = this.getNode().parameters as {
-						updateMandatoryFields?: { field?: Array<{ fieldName?: string }> };
-					};
-					const fieldName = resolveLatestProfileFieldName(parameters.updateMandatoryFields?.field);
-					if (!fieldName || fieldName === '') return [];
-					return await getProfileFieldValueOptionsByFieldName(this, 'requirement', fieldName);
-				} catch (error: unknown) {
-					this.logger.error('Error in getRequirementFieldOptionsUpdateMandatory:', { error });
-					return [];
-				}
-			},
-
-			async getRequirementFieldOptionsUpdateOther(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-				try {
-					const parameters = this.getNode().parameters as {
-						updateOtherFields?: { field?: Array<{ fieldName?: string }> };
-					};
-					const fieldName = resolveLatestProfileFieldName(parameters.updateOtherFields?.field);
-					if (!fieldName || fieldName === '') return [];
-					return await getProfileFieldValueOptionsByFieldName(this, 'requirement', fieldName);
-				} catch (error: unknown) {
-					this.logger.error('Error in getRequirementFieldOptionsUpdateOther:', { error });
-					return [];
-				}
-			},
-
-			async getRequirementFieldOptionsAdditional(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-				try {
-					const parameters = this.getNode().parameters as {
-						additionalFields?: { field?: Array<{ fieldName?: string }> };
-					};
-					const fieldName = resolveLatestProfileFieldName(parameters.additionalFields?.field);
-					if (!fieldName || fieldName === '') return [];
-					return await getProfileFieldValueOptionsByFieldName(this, 'requirement', fieldName);
-				} catch (error: unknown) {
-					this.logger.error('Error in getRequirementFieldOptionsAdditional:', { error });
+					this.logger.error('Error in getRequirementUDFFieldOptions:', { error });
 					return [];
 				}
 			},

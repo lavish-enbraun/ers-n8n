@@ -196,29 +196,14 @@ export const requirementUpdateDescription: INodeProperties[] = [
 				displayName: 'Field',
 				name: 'field',
 				values: requirementCreateFieldValues.map((p) => {
-					if (p.name === 'fieldName' && p.type === 'options') {
-						return {
-							...p,
-							typeOptions: {
-								...p.typeOptions,
-								loadOptionsMethod: 'getRequirementFieldsAll',
-							},
-						};
-					}
-					if (
-						(p.name === 'fieldValueMultiSelect' || p.name === 'fieldValueSelect') &&
-						p.typeOptions &&
-						'loadOptionsMethod' in p.typeOptions
-					) {
-						return {
-							...p,
-							typeOptions: {
-								...p.typeOptions,
-								loadOptionsMethod: 'getRequirementFieldOptionsAdditional',
-							},
-						};
-					}
-					return p;
+					if (p.name !== 'fieldName' || p.type !== 'options') return p;
+					return {
+						...p,
+						typeOptions: {
+							...p.typeOptions,
+							loadOptionsMethod: 'getRequirementUDFFieldsAll',
+						},
+					};
 				}),
 			},
 		],

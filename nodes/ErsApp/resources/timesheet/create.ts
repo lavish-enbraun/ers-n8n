@@ -80,7 +80,7 @@ export const timesheetCreateDescription: INodeProperties[] = [
 						name: 'fieldName',
 						type: 'options',
 						typeOptions: {
-							loadOptionsMethod: 'getTimesheetFieldsMandatory',
+							loadOptionsMethod: 'getTimesheetUDFFieldsMandatory',
 						},
 						default: '',
 						description:
@@ -195,7 +195,7 @@ export const timesheetCreateDescription: INodeProperties[] = [
 						type: 'multiOptions',
 						noDataExpression: true,
 						typeOptions: {
-							loadOptionsMethod: 'getTimesheetFieldOptionsMandatory',
+							loadOptionsMethod: 'getTimesheetUDFFieldOptions',
 							loadOptionsDependsOn: ['fieldName'],
 							searchable: true,
 						},
@@ -253,7 +253,7 @@ export const timesheetCreateDescription: INodeProperties[] = [
 						type: 'options',
 						noDataExpression: true,
 						typeOptions: {
-							loadOptionsMethod: 'getTimesheetFieldOptionsMandatory',
+							loadOptionsMethod: 'getTimesheetUDFFieldOptions',
 							loadOptionsDependsOn: ['fieldName'],
 							searchable: true,
 						},
@@ -336,7 +336,7 @@ export const timesheetCreateDescription: INodeProperties[] = [
 						name: 'fieldName',
 						type: 'options',
 						typeOptions: {
-							loadOptionsMethod: 'getTimesheetFieldsOther',
+							loadOptionsMethod: 'getTimesheetUDFFieldsOther',
 						},
 						default: '',
 						description:
@@ -451,7 +451,7 @@ export const timesheetCreateDescription: INodeProperties[] = [
 						type: 'multiOptions',
 						noDataExpression: true,
 						typeOptions: {
-							loadOptionsMethod: 'getTimesheetFieldOptionsOther',
+							loadOptionsMethod: 'getTimesheetUDFFieldOptions',
 							loadOptionsDependsOn: ['fieldName'],
 							searchable: true,
 						},
@@ -506,7 +506,7 @@ export const timesheetCreateDescription: INodeProperties[] = [
 						type: 'options',
 						noDataExpression: true,
 						typeOptions: {
-							loadOptionsMethod: 'getTimesheetFieldOptionsOther',
+							loadOptionsMethod: 'getTimesheetUDFFieldOptions',
 							loadOptionsDependsOn: ['fieldName'],
 							searchable: true,
 						},
