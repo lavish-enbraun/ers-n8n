@@ -80,7 +80,7 @@ export const bookingCreateDescription: INodeProperties[] = [
 						name: 'fieldName',
 						type: 'options',
 						typeOptions: {
-							loadOptionsMethod: 'getBookingFieldsMandatory',
+							loadOptionsMethod: 'getBookingUDFFieldsMandatory',
 						},
 						default: '',
 						description:
@@ -216,7 +216,7 @@ export const bookingCreateDescription: INodeProperties[] = [
 						type: 'multiOptions',
 						noDataExpression: true,
 						typeOptions: {
-							loadOptionsMethod: 'getBookingFieldOptionsMandatory',
+							loadOptionsMethod: 'getBookingUDFFieldOptions',
 							loadOptionsDependsOn: ['fieldName'],
 							searchable: true,
 						},
@@ -275,7 +275,7 @@ export const bookingCreateDescription: INodeProperties[] = [
 						type: 'options',
 						noDataExpression: true,
 						typeOptions: {
-							loadOptionsMethod: 'getBookingFieldOptionsMandatory',
+							loadOptionsMethod: 'getBookingUDFFieldOptions',
 							loadOptionsDependsOn: ['fieldName'],
 							searchable: true,
 						},
@@ -360,7 +360,7 @@ export const bookingCreateDescription: INodeProperties[] = [
 						name: 'fieldName',
 						type: 'options',
 						typeOptions: {
-							loadOptionsMethod: 'getBookingFieldsOther',
+							loadOptionsMethod: 'getBookingUDFFieldsOther',
 						},
 						default: '',
 						description:
@@ -492,7 +492,7 @@ export const bookingCreateDescription: INodeProperties[] = [
 						type: 'multiOptions',
 						noDataExpression: true,
 						typeOptions: {
-							loadOptionsMethod: 'getBookingFieldOptionsOther',
+							loadOptionsMethod: 'getBookingUDFFieldOptions',
 							loadOptionsDependsOn: ['fieldName'],
 							searchable: true,
 						},
@@ -551,7 +551,7 @@ export const bookingCreateDescription: INodeProperties[] = [
 						type: 'options',
 						noDataExpression: true,
 						typeOptions: {
-							loadOptionsMethod: 'getBookingFieldOptionsOther',
+							loadOptionsMethod: 'getBookingUDFFieldOptions',
 							loadOptionsDependsOn: ['fieldName'],
 							searchable: true,
 						},

@@ -129,7 +129,7 @@ export const bookingUpdateDescription: INodeProperties[] = [
 						name: 'fieldName',
 						type: 'options',
 						typeOptions: {
-							loadOptionsMethod: 'getBookingFieldsAll',
+							loadOptionsMethod: 'getBookingUDFFieldsAll',
 						},
 						default: '',
 						description:
@@ -261,7 +261,7 @@ export const bookingUpdateDescription: INodeProperties[] = [
 						type: 'multiOptions',
 						noDataExpression: true,
 						typeOptions: {
-							loadOptionsMethod: 'getBookingFieldOptionsAdditional',
+							loadOptionsMethod: 'getBookingUDFFieldOptions',
 							loadOptionsDependsOn: ['fieldName'],
 							searchable: true,
 						},
@@ -320,7 +320,7 @@ export const bookingUpdateDescription: INodeProperties[] = [
 						type: 'options',
 						noDataExpression: true,
 						typeOptions: {
-							loadOptionsMethod: 'getBookingFieldOptionsAdditional',
+							loadOptionsMethod: 'getBookingUDFFieldOptions',
 							loadOptionsDependsOn: ['fieldName'],
 							searchable: true,
 						},
