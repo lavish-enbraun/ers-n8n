@@ -279,6 +279,9 @@ interface ProjectUDFField {
 }
 
 const projectTypeCache: Record<string, ProjectUDFField[]> = {};
+let projectTypesListCache: PublicApiProjectTypeDetail[] | undefined;
+
+const PROJECT_EXCLUDED_SYSTEM_FIELDS = ['id', 'project_type_id', 'title'];
 
 // Booking fields cache (fetched from /booking/fields)
 let bookingFieldsCache: ProfileField[] | undefined;
@@ -481,11 +484,15 @@ function parseResourceFieldCode(fieldName: string): string | undefined {
 	return parsed.code;
 }
 
-function parseResourceTypeId(resourceTypeId: number | string | undefined | null): string | undefined {
-	if (resourceTypeId === undefined || resourceTypeId === null || resourceTypeId === '') {
+function getAuthCredentialType(authentication: string | undefined): string {
+	return authentication === 'accessToken' ? 'ersAppAccessTokenApi' : 'ersAppOAuth2Api';
+}
+
+function parseTypeIdParameter(typeId: number | string | undefined | null): string | undefined {
+	if (typeId === undefined || typeId === null || typeId === '') {
 		return undefined;
 	}
-	let id: number | string = resourceTypeId;
+	let id: number | string = typeId;
 	if (typeof id === 'string') {
 		try {
 			const parsed = JSON.parse(id);
@@ -499,8 +506,8 @@ function parseResourceTypeId(resourceTypeId: number | string | undefined | null)
 	return String(id);
 }
 
-function getResourceAuthCredentialType(authentication: string | undefined): string {
-	return authentication === 'accessToken' ? 'ersAppAccessTokenApi' : 'ersAppOAuth2Api';
+function parseResourceTypeId(resourceTypeId: number | string | undefined | null): string | undefined {
+	return parseTypeIdParameter(resourceTypeId);
 }
 
 function parseResourceTypesListResponse(
@@ -535,7 +542,7 @@ async function fetchResourceTypesList(
 	if (resourceTypesListCache?.length) return resourceTypesListCache;
 
 	const parameters = ctx.getNode().parameters as { authentication?: string };
-	const credentialType = getResourceAuthCredentialType(parameters.authentication);
+	const credentialType = getAuthCredentialType(parameters.authentication);
 	try {
 		const response = await ctx.helpers.httpRequestWithAuthentication.call(
 			ctx,
@@ -570,7 +577,7 @@ async function fetchResourceTypeFields(
 	if (cached?.length) return cached;
 
 	const parameters = ctx.getNode().parameters as { authentication?: string };
-	const credentialType = getResourceAuthCredentialType(parameters.authentication);
+	const credentialType = getAuthCredentialType(parameters.authentication);
 	try {
 		const resourceTypeResponse = await ctx.helpers.httpRequestWithAuthentication.call(
 			ctx,
@@ -591,8 +598,7 @@ async function fetchResourceTypeFields(
 	}
 }
 
-function resolveCurrentResourceFieldName(ctx: ILoadOptionsFunctions): string | undefined {
-
+function resolveCurrentCollectionFieldName(ctx: ILoadOptionsFunctions): string | undefined {
 	const direct = ctx.getCurrentNodeParameter('fieldName') as string | undefined;
 	if (typeof direct === 'string' && direct.trim() !== '') return direct;
 
@@ -614,6 +620,123 @@ async function getResourceFieldValueOptionsByFieldName(
 	if (!resourceTypeIdStr) return [];
 
 	const fields = await fetchResourceTypeFields(ctx, resourceTypeIdStr);
+	if (!fields.length) return [];
+
+	const field = fields.find((f) => f.code === fieldCode);
+	if (!field?.options?.length) return [];
+
+	const search = (
+		ctx.getCurrentNodeParameter('fieldValue') ??
+		ctx.getCurrentNodeParameter('fieldValueSelect') ??
+		ctx.getCurrentNodeParameter('fieldValueMultiSelect')
+	) as string | undefined;
+	const searchLower = typeof search === 'string' && search.trim() ? search.trim().toLowerCase() : '';
+	const filtered = searchLower
+		? field.options.filter((opt) => (opt.name || '').toLowerCase().includes(searchLower))
+		: field.options;
+
+	return filtered.slice(0, 500).map((opt) => ({
+		name: opt.name || String(opt.id),
+		value: opt.id,
+	}));
+}
+
+function parseProjectTypesListResponse(
+	response: PublicApiProjectTypeDetail[] | { data?: PublicApiProjectTypeDetail[]; items?: PublicApiProjectTypeDetail[] },
+): PublicApiProjectTypeDetail[] {
+	if (Array.isArray(response)) return response;
+	if (Array.isArray(response.data)) return response.data;
+	if (Array.isArray(response.items)) return response.items;
+	return [];
+}
+
+function mapProjectTypesToOptions(list: PublicApiProjectTypeDetail[]): INodePropertyOptions[] {
+	return list
+		.filter((type) => type.id != null)
+		.map((type) => {
+			const id = type.id as number;
+			return {
+				name: type.name || `Project Type ${id}`,
+				value: JSON.stringify({ id }),
+				description: type.description || undefined,
+			};
+		});
+}
+
+async function fetchProjectTypesList(ctx: ILoadOptionsFunctions): Promise<PublicApiProjectTypeDetail[]> {
+	if (projectTypesListCache?.length) return projectTypesListCache;
+
+	const parameters = ctx.getNode().parameters as { authentication?: string };
+	const credentialType = getAuthCredentialType(parameters.authentication);
+	try {
+		const response = await ctx.helpers.httpRequestWithAuthentication.call(
+			ctx,
+			credentialType,
+			{
+				method: 'GET',
+				url: `${BASE_URL}${API_BASE_PATH}/projecttypes`,
+				headers: { Accept: 'application/json' },
+			},
+		) as PublicApiProjectTypeDetail[] | { data?: PublicApiProjectTypeDetail[]; items?: PublicApiProjectTypeDetail[] };
+
+		const list = parseProjectTypesListResponse(response);
+		projectTypesListCache = list;
+		return list;
+	} catch (error: unknown) {
+		if (isAccessTokenError(error)) return [];
+		ctx.logger.error('Error fetching project types:', { error });
+		return [];
+	}
+}
+
+function filterEditableProjectFields(fields: ProjectUDFField[]): ProjectUDFField[] {
+	return fields.filter((field) => {
+		if (field.is_system_defined && PROJECT_EXCLUDED_SYSTEM_FIELDS.includes(field.code)) return false;
+		return true;
+	});
+}
+
+async function fetchProjectTypeFields(
+	ctx: ILoadOptionsFunctions,
+	projectTypeIdStr: string,
+): Promise<ProjectUDFField[]> {
+	const cached = projectTypeCache[projectTypeIdStr];
+	if (cached?.length) return cached;
+
+	const parameters = ctx.getNode().parameters as { authentication?: string };
+	const credentialType = getAuthCredentialType(parameters.authentication);
+	try {
+		const projectTypeResponse = await ctx.helpers.httpRequestWithAuthentication.call(
+			ctx,
+			credentialType,
+			{
+				method: 'GET',
+				url: `${BASE_URL}${API_BASE_PATH}/projecttypes/${projectTypeIdStr}`,
+				headers: { Accept: 'application/json' },
+			},
+		) as PublicApiProjectTypeDetail;
+		const fields = mapPublicApiProjectFieldsToUDF(projectTypeResponse.fields);
+		projectTypeCache[projectTypeIdStr] = fields;
+		return fields;
+	} catch (error: unknown) {
+		if (isAccessTokenError(error)) return [];
+		ctx.logger.error('Error fetching project type fields:', { error });
+		return [];
+	}
+}
+
+async function getProjectFieldValueOptionsByFieldName(
+	ctx: ILoadOptionsFunctions,
+	fieldName: string,
+): Promise<INodePropertyOptions[]> {
+	const fieldCode = parseProfileFieldCode(fieldName);
+	if (!fieldCode) return [];
+
+	const parameters = ctx.getNode().parameters as { project_type_id?: number | string };
+	const projectTypeIdStr = parseTypeIdParameter(parameters.project_type_id);
+	if (!projectTypeIdStr) return [];
+
+	const fields = filterEditableProjectFields(await fetchProjectTypeFields(ctx, projectTypeIdStr));
 	if (!fields.length) return [];
 
 	const field = fields.find((f) => f.code === fieldCode);
@@ -850,119 +973,27 @@ export class ErsApp implements INodeType {
 				}
 			},
 
-			// Fetch project types from public API (list returns full objects with id, name, description, color, fields)
 			async getProjectTypes(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 				try {
-					const auth = (this.getNode().parameters as { authentication?: string }).authentication;
-					const credentialType =
-						auth === 'accessToken'
-							? 'ersAppAccessTokenApi'
-							: 'ersAppOAuth2Api';
-					const response = await this.helpers.httpRequestWithAuthentication.call(
-						this,
-						credentialType,
-						{
-							method: 'GET',
-							url: `${BASE_URL}${API_BASE_PATH}/projecttypes`,
-							headers: {
-								'Accept': 'application/json',
-							},
-						},
-					) as PublicApiProjectTypeDetail[] | { data?: PublicApiProjectTypeDetail[]; items?: PublicApiProjectTypeDetail[] };
-
-					let list: PublicApiProjectTypeDetail[] = [];
-					if (Array.isArray(response)) {
-						list = response;
-					} else if (Array.isArray((response as { data?: PublicApiProjectTypeDetail[] }).data)) {
-						list = (response as { data: PublicApiProjectTypeDetail[] }).data;
-					} else if (Array.isArray((response as { items?: PublicApiProjectTypeDetail[] }).items)) {
-						list = (response as { items: PublicApiProjectTypeDetail[] }).items;
-					}
+					const list = await fetchProjectTypesList(this);
 					if (list.length === 0) return [];
-
-					return list
-						.filter((type) => type.id != null)
-						.map((type) => {
-							const id = type.id as number;
-							return {
-								name: type.name || `Project Type ${id}`,
-								value: JSON.stringify({ id }),
-								description: type.description || undefined,
-							};
-						});
-				} catch (error: unknown) {
-					if (isAccessTokenError(error)) {
-						return [];
-					}
+					return mapProjectTypesToOptions(list);
+				} catch (error) {
 					this.logger.error('Error fetching project types:', { error });
 					return [];
 				}
 			},
 
-			// Layer 1: Load field definitions (lightweight only). Layer 2: cache raw API response once per project type.
 			async getProjectUDFFields(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 				try {
-					const currentNode = this.getNode();
-					const parameters = currentNode.parameters as { project_type_id?: number | string; authentication?: string };
-					let projectTypeId = parameters.project_type_id;
-					const credentialType =
-						parameters.authentication === 'accessToken'
-							? 'ersAppAccessTokenApi'
-							: 'ersAppOAuth2Api';
+					const parameters = this.getNode().parameters as { project_type_id?: number | string };
+					const projectTypeIdStr = parseTypeIdParameter(parameters.project_type_id);
+					if (!projectTypeIdStr) return [];
 
-					if (projectTypeId === '' || projectTypeId === null || projectTypeId === undefined) {
-						return [];
-					}
-
-					if (typeof projectTypeId === 'string') {
-						try {
-							const parsed = JSON.parse(projectTypeId);
-							if (parsed && typeof parsed === 'object' && 'id' in parsed) {
-								projectTypeId = parsed.id;
-							}
-						} catch {
-							// not JSON
-						}
-					}
-
-					const projectTypeIdStr = String(projectTypeId);
-
-					delete projectTypeCache[projectTypeIdStr];
-
-					// Fetch once and cache
-					if (!projectTypeCache[projectTypeIdStr]) {
-						const excludedSystemFields = ['id', 'project_type_id', 'title'];
-						try {
-							const projectTypeResponse = await this.helpers.httpRequestWithAuthentication.call(
-								this,
-								credentialType,
-								{
-									method: 'GET',
-									url: `${BASE_URL}${API_BASE_PATH}/projecttypes/${projectTypeIdStr}`,
-									headers: { 'Accept': 'application/json' },
-								},
-							) as PublicApiProjectTypeDetail;
-							const mapped = mapPublicApiProjectFieldsToUDF(projectTypeResponse.fields);
-							projectTypeCache[projectTypeIdStr] = mapped.filter((field) => {
-								if (field.is_system_defined && excludedSystemFields.includes(field.code)) return false;
-								return true;
-							});
-						} catch (error: unknown) {
-							if (isAccessTokenError(error)) return [];
-							this.logger.error('Error fetching project type fields:', { error });
-							return [];
-						}
-					}
-
-					const udfFields = projectTypeCache[projectTypeIdStr];
+					const udfFields = filterEditableProjectFields(await fetchProjectTypeFields(this, projectTypeIdStr));
 					if (udfFields.length === 0) return [];
 
-					const excludedSystemFields = ['id', 'project_type_id', 'title'];
 					return udfFields
-						.filter((field) => {
-							if (field.is_system_defined && excludedSystemFields.includes(field.code)) return false;
-							return true;
-						})
 						.sort((a, b) => {
 							const aRequired = a.is_required === true ? 1 : 0;
 							const bRequired = b.is_required === true ? 1 : 0;
@@ -972,64 +1003,23 @@ export class ErsApp implements INodeType {
 							name: field.display_name || field.code,
 							value: JSON.stringify({ code: field.code, field_type: normalizeUdfFieldTypeForOption(field.field_type) }),
 						}));
-				} catch (error: unknown) {
-					if (isAccessTokenError(error)) return [];
+				} catch (error) {
 					this.logger.error('Error fetching UDF fields:', { error });
 					return [];
 				}
 			},
 
-			// Layer 1 + 2: Lightweight field list; use cache (populated by getProjectUDFFields or here).
 			async getProjectUDFFieldsMandatory(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 				try {
-					const parameters = this.getNode().parameters as { project_type_id?: number | string; authentication?: string };
-					let projectTypeId = parameters.project_type_id;
-					const credentialType =
-						parameters.authentication === 'accessToken' ? 'ersAppAccessTokenApi' : 'ersAppOAuth2Api';
+					const parameters = this.getNode().parameters as { project_type_id?: number | string };
+					const projectTypeIdStr = parseTypeIdParameter(parameters.project_type_id);
+					if (!projectTypeIdStr) return [];
 
-					if (projectTypeId === '' || projectTypeId === null || projectTypeId === undefined) return [];
-
-					if (typeof projectTypeId === 'string') {
-						try {
-							const parsed = JSON.parse(projectTypeId);
-							if (parsed && typeof parsed === 'object' && 'id' in parsed) projectTypeId = parsed.id;
-						} catch {
-							// not JSON
-						}
-					}
-					const projectTypeIdStr = String(projectTypeId);
-
-					// Invalidate cache so "Refresh List" and dropdown open always get fresh data from API
-					delete projectTypeCache[projectTypeIdStr];
-
-					if (!projectTypeCache[projectTypeIdStr]) {
-						const excludedSystemFields = ['id', 'project_type_id', 'title'];
-						try {
-							const projectTypeResponse = await this.helpers.httpRequestWithAuthentication.call(
-								this, credentialType,
-								{ method: 'GET', url: `${BASE_URL}${API_BASE_PATH}/projecttypes/${projectTypeIdStr}`, headers: { 'Accept': 'application/json' } },
-							) as PublicApiProjectTypeDetail;
-							const mapped = mapPublicApiProjectFieldsToUDF(projectTypeResponse.fields);
-							projectTypeCache[projectTypeIdStr] = mapped.filter((field) => {
-								if (field.is_system_defined && excludedSystemFields.includes(field.code)) return false;
-								return true;
-							});
-						} catch (error: unknown) {
-							if (isAccessTokenError(error)) return [];
-							this.logger.error('Error fetching project type fields:', { error });
-							return [];
-						}
-					}
-
-					const udfFields = projectTypeCache[projectTypeIdStr];
+					const udfFields = filterEditableProjectFields(await fetchProjectTypeFields(this, projectTypeIdStr));
 					if (udfFields.length === 0) return [];
 
-					const excludedSystemFields = ['id', 'project_type_id', 'title'];
 					return udfFields
-						.filter((field) => {
-							if (field.is_system_defined && excludedSystemFields.includes(field.code)) return false;
-							return field.is_required === true;
-						})
+						.filter((field) => field.is_required === true)
 						.map((field) => ({
 							name: field.display_name || field.code,
 							value: JSON.stringify({ code: field.code, field_type: normalizeUdfFieldTypeForOption(field.field_type) }),
@@ -1040,57 +1030,17 @@ export class ErsApp implements INodeType {
 				}
 			},
 
-			// Layer 1 + 2: Lightweight field list; use cache (populated by getProjectUDFFields or here).
 			async getProjectUDFFieldsOther(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 				try {
-					const parameters = this.getNode().parameters as { project_type_id?: number | string; authentication?: string };
-					let projectTypeId = parameters.project_type_id;
-					const credentialType =
-						parameters.authentication === 'accessToken' ? 'ersAppAccessTokenApi' : 'ersAppOAuth2Api';
+					const parameters = this.getNode().parameters as { project_type_id?: number | string };
+					const projectTypeIdStr = parseTypeIdParameter(parameters.project_type_id);
+					if (!projectTypeIdStr) return [];
 
-					if (projectTypeId === '' || projectTypeId === null || projectTypeId === undefined) return [];
-
-					if (typeof projectTypeId === 'string') {
-						try {
-							const parsed = JSON.parse(projectTypeId);
-							if (parsed && typeof parsed === 'object' && 'id' in parsed) projectTypeId = parsed.id;
-						} catch {
-							// not JSON
-						}
-					}
-					const projectTypeIdStr = String(projectTypeId);
-
-
-					delete projectTypeCache[projectTypeIdStr];
-
-					if (!projectTypeCache[projectTypeIdStr]) {
-						const excludedSystemFields = ['id', 'project_type_id', 'title'];
-						try {
-							const projectTypeResponse = await this.helpers.httpRequestWithAuthentication.call(
-								this, credentialType,
-								{ method: 'GET', url: `${BASE_URL}${API_BASE_PATH}/projecttypes/${projectTypeIdStr}`, headers: { 'Accept': 'application/json' } },
-							) as PublicApiProjectTypeDetail;
-							const mapped = mapPublicApiProjectFieldsToUDF(projectTypeResponse.fields);
-							projectTypeCache[projectTypeIdStr] = mapped.filter((field) => {
-								if (field.is_system_defined && excludedSystemFields.includes(field.code)) return false;
-								return true;
-							});
-						} catch (error: unknown) {
-							if (isAccessTokenError(error)) return [];
-							this.logger.error('Error fetching project type fields:', { error });
-							return [];
-						}
-					}
-
-					const udfFields = projectTypeCache[projectTypeIdStr];
+					const udfFields = filterEditableProjectFields(await fetchProjectTypeFields(this, projectTypeIdStr));
 					if (udfFields.length === 0) return [];
 
-					const excludedSystemFields = ['id', 'project_type_id', 'title'];
 					return udfFields
-						.filter((field) => {
-							if (field.is_system_defined && excludedSystemFields.includes(field.code)) return false;
-							return field.is_required !== true;
-						})
+						.filter((field) => field.is_required !== true)
 						.map((field) => ({
 							name: field.display_name || field.code,
 							value: JSON.stringify({ code: field.code, field_type: normalizeUdfFieldTypeForOption(field.field_type) }),
@@ -1131,12 +1081,11 @@ export class ErsApp implements INodeType {
 				}
 			},
 
-			// Scoped loader for resource create mandatory fields (row-scoped fieldName only).
 			async getResourceUDFFieldOptionsMandatory(
 				this: ILoadOptionsFunctions,
 			): Promise<INodePropertyOptions[]> {
 				try {
-					const fieldName = resolveCurrentResourceFieldName(this);
+					const fieldName = resolveCurrentCollectionFieldName(this);
 					if (!fieldName) return [];
 					return await getResourceFieldValueOptionsByFieldName(this, fieldName);
 				} catch (error) {
@@ -1145,12 +1094,11 @@ export class ErsApp implements INodeType {
 				}
 			},
 
-			// Scoped loader for resource create other fields (row-scoped fieldName only).
 			async getResourceUDFFieldOptionsOther(
 				this: ILoadOptionsFunctions,
 			): Promise<INodePropertyOptions[]> {
 				try {
-					const fieldName = resolveCurrentResourceFieldName(this);
+					const fieldName = resolveCurrentCollectionFieldName(this);
 					if (!fieldName) return [];
 					return await getResourceFieldValueOptionsByFieldName(this, fieldName);
 				} catch (error) {
@@ -1159,12 +1107,11 @@ export class ErsApp implements INodeType {
 				}
 			},
 
-			// Scoped loader for resource update udf fields (row-scoped fieldName only).
 			async getResourceUDFFieldOptionsUpdate(
 				this: ILoadOptionsFunctions,	
 			): Promise<INodePropertyOptions[]> {
 				try {
-					const fieldName = resolveCurrentResourceFieldName(this);
+					const fieldName = resolveCurrentCollectionFieldName(this);
 					if (!fieldName) return [];
 					return await getResourceFieldValueOptionsByFieldName(this, fieldName);
 				} catch (error) {
@@ -1469,110 +1416,11 @@ export class ErsApp implements INodeType {
 				}
 			},
 
-			// Layer 3: Dynamic option loader for projects — read from cache, filter by search, limit 500.
 			async getProjectUDFFieldOptions(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 				try {
-					const parameters = this.getNode().parameters as {
-						project_type_id?: number | string;
-						mandatoryFields?: { field?: Array<{ fieldName?: string }> };
-						otherFields?: { field?: Array<{ fieldName?: string }> };
-						udfFields?: { field?: Array<{ fieldName?: string }> };
-					};
-
-					let fieldName: string | undefined;
-					for (const arr of [
-						parameters.mandatoryFields?.field,
-						parameters.otherFields?.field,
-						parameters.udfFields?.field,
-					]) {
-						if (Array.isArray(arr) && arr.length > 0) {
-							for (let i = arr.length - 1; i >= 0; i--) {
-								const item = arr[i];
-								if (item?.fieldName && typeof item.fieldName === 'string' && item.fieldName.trim() !== '') {
-									fieldName = item.fieldName;
-									break;
-								}
-							}
-							if (fieldName) break;
-							const first = arr[0];
-							if (first?.fieldName) {
-								fieldName = first.fieldName as string;
-								break;
-							}
-						}
-					}
-
-					if (!fieldName || fieldName === '') return [];
-
-					let parsed: { code?: string; field_type?: string };
-					try {
-						parsed = JSON.parse(fieldName);
-					} catch {
-						return [];
-					}
-
-					let projectTypeId: number | string | undefined = parameters.project_type_id;
-					if (projectTypeId === undefined || projectTypeId === null || projectTypeId === '') {
-						return [];
-					}
-					if (typeof projectTypeId === 'string') {
-						try {
-							const p = JSON.parse(projectTypeId);
-							if (p && typeof p === 'object' && 'id' in p) projectTypeId = p.id;
-						} catch {
-							// not JSON
-						}
-					}
-					const projectTypeIdStr = String(projectTypeId);
-
-					let fields = projectTypeCache[projectTypeIdStr];
-					if (!fields?.length) {
-						const auth = (this.getNode().parameters as { authentication?: string }).authentication;
-						const credentialType = auth === 'accessToken' ? 'ersAppAccessTokenApi' : 'ersAppOAuth2Api';
-						const excludedSystemFields = ['id', 'project_type_id', 'title'];
-						try {
-							const projectTypeResponse = await this.helpers.httpRequestWithAuthentication.call(
-								this,
-								credentialType,
-								{
-									method: 'GET',
-									url: `${BASE_URL}${API_BASE_PATH}/projecttypes/${projectTypeIdStr}`,
-									headers: { Accept: 'application/json' },
-								},
-							) as PublicApiProjectTypeDetail;
-							const mapped = mapPublicApiProjectFieldsToUDF(projectTypeResponse.fields);
-							fields = mapped.filter((field) => {
-								if (field.is_system_defined && excludedSystemFields.includes(field.code)) return false;
-								return true;
-							});
-							projectTypeCache[projectTypeIdStr] = fields;
-						} catch (error: unknown) {
-							if (isAccessTokenError(error)) return [];
-							this.logger.error('Error fetching project type field options:', { error });
-							return [];
-						}
-					}
-					if (!fields?.length) return [{ name: '', value: '' }];
-
-					const field = fields.find((f) => f.code === parsed.code);
-					if (!field || !field.options?.length) return [{ name: '', value: '' }];
-
-					const search = (
-						this.getCurrentNodeParameter('fieldValue') ??
-						this.getCurrentNodeParameter('fieldValueSelect') ??
-						this.getCurrentNodeParameter('fieldValueMultiSelect')
-					) as string | undefined;
-					const searchLower = typeof search === 'string' && search.trim() ? search.trim().toLowerCase() : '';
-
-					const filtered = searchLower
-						? field.options.filter((opt) => (opt.name || '').toLowerCase().includes(searchLower))
-						: field.options;
-					const limited = filtered.slice(0, 500).map((opt) => ({
-						name: opt.name || String(opt.id),
-						value: opt.id,
-					}));
-
-					return limited;
+					const fieldName = resolveCurrentCollectionFieldName(this);
+					if (!fieldName) return [];
+					return await getProjectFieldValueOptionsByFieldName(this, fieldName);
 				} catch (error) {
 					this.logger.error('Error in getProjectUDFFieldOptions:', { error });
 					return [];
