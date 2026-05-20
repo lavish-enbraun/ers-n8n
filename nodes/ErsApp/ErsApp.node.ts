@@ -1081,41 +1081,13 @@ export class ErsApp implements INodeType {
 				}
 			},
 
-			async getResourceUDFFieldOptionsMandatory(
-				this: ILoadOptionsFunctions,
-			): Promise<INodePropertyOptions[]> {
+			async getResourceUDFFieldOptions(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 				try {
 					const fieldName = resolveCurrentCollectionFieldName(this);
 					if (!fieldName) return [];
 					return await getResourceFieldValueOptionsByFieldName(this, fieldName);
 				} catch (error) {
-					this.logger.error('Error in getResourceUDFFieldOptionsMandatory:', { error });
-					return [];
-				}
-			},
-
-			async getResourceUDFFieldOptionsOther(
-				this: ILoadOptionsFunctions,
-			): Promise<INodePropertyOptions[]> {
-				try {
-					const fieldName = resolveCurrentCollectionFieldName(this);
-					if (!fieldName) return [];
-					return await getResourceFieldValueOptionsByFieldName(this, fieldName);
-				} catch (error) {
-					this.logger.error('Error in getResourceUDFFieldOptionsOther:', { error });
-					return [];
-				}
-			},
-
-			async getResourceUDFFieldOptionsUpdate(
-				this: ILoadOptionsFunctions,	
-			): Promise<INodePropertyOptions[]> {
-				try {
-					const fieldName = resolveCurrentCollectionFieldName(this);
-					if (!fieldName) return [];
-					return await getResourceFieldValueOptionsByFieldName(this, fieldName);
-				} catch (error) {
-					this.logger.error('Error in getResourceUDFFieldOptionsUpdate:', { error });
+					this.logger.error('Error in getResourceUDFFieldOptions:', { error });
 					return [];
 				}
 			},
