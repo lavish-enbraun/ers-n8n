@@ -42,7 +42,7 @@ function isAccessTokenError(error: unknown): error is AccessTokenErrorShape {
 }
 
 //resource response shape
-interface PublicApiResourceTypeField {
+interface ResourceTypeField {
 	id?: number;
 	code: string;
 	display_name?: string;
@@ -56,16 +56,16 @@ interface PublicApiResourceTypeField {
 	regex?: string;
 	mindate?: string;
 	maxdate?: string;
-	minlength?: number;
+	minlength?: number;	
 }
 
-interface PublicApiResourceTypeDetail {
+interface ResourceType {
 	id?: number;
 	name?: string;
 	description?: string;
 	is_human?: boolean;
 	color?: string;
-	fields?: PublicApiResourceTypeField[];
+	fields?: ResourceTypeField[];
 }
 
 interface PublicApiProjectTypeField {
@@ -182,7 +182,7 @@ function mapProfileFieldDefinitions(fields: ProfileFieldDefinition[] | undefined
 	return result;
 }
 
-function mapPublicApiFieldsToUDF(fields: PublicApiResourceTypeField[] | undefined): ResourceUDFField[] {
+function mapPublicApiFieldsToUDF(fields: ResourceTypeField[] | undefined): ResourceUDFField[] {
 	if (!Array.isArray(fields)) return [];
 	const result: ResourceUDFField[] = [];
 	for (const f of fields) {
@@ -248,6 +248,7 @@ interface ResourceUDFField {
 }
 
 const resourceTypeCache: Record<string, ResourceUDFField[]> = {};
+let resourceTypesListCache: ResourceType[] | undefined;
 
 // Layer 2: Cache for project UDFs — global UDF list (fetched once) and per–project-type filtered list
 interface ProjectUDFOption {
@@ -480,6 +481,127 @@ function parseResourceFieldCode(fieldName: string): string | undefined {
 	return parsed.code;
 }
 
+function parseResourceTypeId(resourceTypeId: number | string | undefined | null): string | undefined {
+	if (resourceTypeId === undefined || resourceTypeId === null || resourceTypeId === '') {
+		return undefined;
+	}
+	let id: number | string = resourceTypeId;
+	if (typeof id === 'string') {
+		try {
+			const parsed = JSON.parse(id);
+			if (parsed && typeof parsed === 'object' && 'id' in parsed) {
+				id = (parsed as { id: number | string }).id;
+			}
+		} catch {
+			// not JSON
+		}
+	}
+	return String(id);
+}
+
+function getResourceAuthCredentialType(authentication: string | undefined): string {
+	return authentication === 'accessToken' ? 'ersAppAccessTokenApi' : 'ersAppOAuth2Api';
+}
+
+function parseResourceTypesListResponse(
+	response: ResourceType[] | { data?: ResourceType[]; items?: ResourceType[] },
+): ResourceType[] {
+	if (Array.isArray(response)) return response;
+	if (Array.isArray(response.data)) return response.data;
+	if (Array.isArray(response.items)) return response.items;
+	return [];
+}
+
+function mapResourceTypesToOptions(list: ResourceType[]): INodePropertyOptions[] {
+	return list.map((type) => {
+		const id = type.id;
+		const isHuman = type.is_human === true;
+		return {
+			name: type.name || `Resource Type ${id}`,
+			value: JSON.stringify({ id, is_human: isHuman }),
+			description: type.description || undefined,
+		};
+	});
+}
+
+async function fetchResourceTypesList(
+	ctx: ILoadOptionsFunctions,
+	refresh = false,
+): Promise<ResourceType[]> {
+	if (refresh) {
+		resourceTypesListCache = undefined;
+	}
+
+	if (resourceTypesListCache?.length) return resourceTypesListCache;
+
+	const parameters = ctx.getNode().parameters as { authentication?: string };
+	const credentialType = getResourceAuthCredentialType(parameters.authentication);
+	try {
+		const response = await ctx.helpers.httpRequestWithAuthentication.call(
+			ctx,
+			credentialType,
+			{
+				method: 'GET',
+				url: `${BASE_URL}${API_BASE_PATH}/resourcetypes`,
+				headers: { Accept: 'application/json' },
+			},
+		) as ResourceType[] | { data?: ResourceType[]; items?: ResourceType[] };
+
+		const list = parseResourceTypesListResponse(response);
+		resourceTypesListCache = list;
+		return list;
+	} catch (error: unknown) {
+		if (isAccessTokenError(error)) return [];
+		ctx.logger.error('Error fetching resource types:', { error });
+		return [];
+	}
+}
+
+async function fetchResourceTypeFields(
+	ctx: ILoadOptionsFunctions,
+	resourceTypeIdStr: string,
+	refresh = false,
+): Promise<ResourceUDFField[]> {
+	if (refresh) {
+		delete resourceTypeCache[resourceTypeIdStr];
+	}
+
+	const cached = resourceTypeCache[resourceTypeIdStr];
+	if (cached?.length) return cached;
+
+	const parameters = ctx.getNode().parameters as { authentication?: string };
+	const credentialType = getResourceAuthCredentialType(parameters.authentication);
+	try {
+		const resourceTypeResponse = await ctx.helpers.httpRequestWithAuthentication.call(
+			ctx,
+			credentialType,
+			{
+				method: 'GET',
+				url: `${BASE_URL}${API_BASE_PATH}/resourcetypes/${resourceTypeIdStr}`,
+				headers: { Accept: 'application/json' },
+			},
+		) as ResourceType;
+		const fields = mapPublicApiFieldsToUDF(resourceTypeResponse.fields);
+		resourceTypeCache[resourceTypeIdStr] = fields;
+		return fields;
+	} catch (error: unknown) {
+		if (isAccessTokenError(error)) return [];
+		ctx.logger.error('Error fetching resource type fields:', { error });
+		return [];
+	}
+}
+
+function resolveCurrentResourceFieldName(ctx: ILoadOptionsFunctions): string | undefined {
+
+	const direct = ctx.getCurrentNodeParameter('fieldName') as string | undefined;
+	if (typeof direct === 'string' && direct.trim() !== '') return direct;
+
+	const sibling = ctx.getCurrentNodeParameter('&fieldName') as string | undefined;
+	if (typeof sibling === 'string' && sibling.trim() !== '') return sibling;
+
+	return undefined;
+}
+
 async function getResourceFieldValueOptionsByFieldName(
 	ctx: ILoadOptionsFunctions,
 	fieldName: string,
@@ -487,52 +609,13 @@ async function getResourceFieldValueOptionsByFieldName(
 	const fieldCode = parseResourceFieldCode(fieldName);
 	if (!fieldCode) return [];
 
-	const parameters = ctx.getNode().parameters as {
-		resource_type_id?: number | string;
-		authentication?: string;
-	};
+	const parameters = ctx.getNode().parameters as { resource_type_id?: number | string };
+	const resourceTypeIdStr = parseResourceTypeId(parameters.resource_type_id);
+	if (!resourceTypeIdStr) return [];
 
-	let resourceTypeId: number | string | undefined = parameters.resource_type_id;
-	if (resourceTypeId === undefined || resourceTypeId === null || resourceTypeId === '') {
-		return [];
-	}
+	const fields = await fetchResourceTypeFields(ctx, resourceTypeIdStr);
+	if (!fields.length) return [];
 
-	if (typeof resourceTypeId === 'string') {
-		try {
-			const parsed = JSON.parse(resourceTypeId);
-			if (parsed && typeof parsed === 'object' && 'id' in parsed) {
-				resourceTypeId = (parsed as { id: number | string }).id;
-			}
-		} catch {
-			// not JSON
-		}
-	}
-
-	const resourceTypeIdStr = String(resourceTypeId);
-	let fields = resourceTypeCache[resourceTypeIdStr];
-	if (!fields?.length) {
-		const credentialType =
-			parameters.authentication === 'accessToken' ? 'ersAppAccessTokenApi' : 'ersAppOAuth2Api';
-		try {
-			const resourceTypeResponse = await ctx.helpers.httpRequestWithAuthentication.call(
-				ctx,
-				credentialType,
-				{
-					method: 'GET',
-					url: `${BASE_URL}${API_BASE_PATH}/resourcetypes/${resourceTypeIdStr}`,
-					headers: { Accept: 'application/json' },
-				},
-			) as PublicApiResourceTypeDetail;
-			fields = mapPublicApiFieldsToUDF(resourceTypeResponse.fields);
-			resourceTypeCache[resourceTypeIdStr] = fields;
-		} catch (error: unknown) {
-			if (isAccessTokenError(error)) return [];
-			ctx.logger.error('Error fetching resource type field options:', { error });
-			return [];
-		}
-	}
-
-	if (!fields?.length) return [];
 	const field = fields.find((f) => f.code === fieldCode);
 	if (!field?.options?.length) return [];
 
@@ -675,107 +758,24 @@ export class ErsApp implements INodeType {
 
 	methods = {
 		loadOptions: {
-			// Fetch resource types from public API (list returns full objects with id, name, is_human, fields)
 			async getResourceTypes(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 				try {
-					const auth = (this.getNode().parameters as { authentication?: string }).authentication;
-					const credentialType =
-						auth === 'accessToken'
-							? 'ersAppAccessTokenApi'
-							: 'ersAppOAuth2Api';
-					const response = await this.helpers.httpRequestWithAuthentication.call(
-						this,
-						credentialType,
-						{
-							method: 'GET',
-							url: `${BASE_URL}${API_BASE_PATH}/resourcetypes`,
-							headers: {
-								'Accept': 'application/json',
-							},
-						},
-					) as PublicApiResourceTypeDetail[] | { data?: PublicApiResourceTypeDetail[]; items?: PublicApiResourceTypeDetail[] };
-
-					let list: PublicApiResourceTypeDetail[] = [];
-					if (Array.isArray(response)) {
-						list = response;
-					} else if (Array.isArray((response as { data?: PublicApiResourceTypeDetail[] }).data)) {
-						list = (response as { data: PublicApiResourceTypeDetail[] }).data;
-					} else if (Array.isArray((response as { items?: PublicApiResourceTypeDetail[] }).items)) {
-						list = (response as { items: PublicApiResourceTypeDetail[] }).items;
-					}
+					const list = await fetchResourceTypesList(this);
 					if (list.length === 0) return [];
-
-					return list.map((type) => {
-						const id = type.id;
-						const isHuman = type.is_human === true;
-						return {
-							name: type.name || `Resource Type ${id}`,
-							value: JSON.stringify({ id, is_human: isHuman }),
-							description: type.description || undefined,
-						};
-					});
-				} catch (error: unknown) {
-					if (isAccessTokenError(error)) {
-						return [];
-					}
+					return mapResourceTypesToOptions(list);
+				} catch (error) {
 					this.logger.error('Error fetching resource types:', { error });
 					return [];
 				}
 			},
 
-			// Layer 1: Load field definitions (lightweight only). Layer 2: cache raw API response once.
 			async getResourceUDFFields(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 				try {
-					const currentNode = this.getNode();
-					const parameters = currentNode.parameters as { resource_type_id?: number | string; authentication?: string };
-					let resourceTypeId = parameters.resource_type_id;
-					const credentialType =
-						parameters.authentication === 'accessToken'
-							? 'ersAppAccessTokenApi'
-							: 'ersAppOAuth2Api';
+					const parameters = this.getNode().parameters as { resource_type_id?: number | string };
+					const resourceTypeIdStr = parseResourceTypeId(parameters.resource_type_id);
+					if (!resourceTypeIdStr) return [];
 
-					if (resourceTypeId === '' || resourceTypeId === null || resourceTypeId === undefined) {
-						return [];
-					}
-
-					if (typeof resourceTypeId === 'string') {
-						try {
-							const parsed = JSON.parse(resourceTypeId);
-							if (parsed && typeof parsed === 'object' && 'id' in parsed) {
-								resourceTypeId = parsed.id;
-							}
-						} catch {
-							// not JSON
-						}
-					}
-
-					const resourceTypeIdStr = String(resourceTypeId);
-
-					// Invalidate cache so "Refresh List" and dropdown open always get fresh data from API
-					delete resourceTypeCache[resourceTypeIdStr];
-
-					// Fetch once and cache (public API: top-level fields array)
-					if (!resourceTypeCache[resourceTypeIdStr]) {
-						let resourceTypeResponse: PublicApiResourceTypeDetail;
-						try {
-							resourceTypeResponse = await this.helpers.httpRequestWithAuthentication.call(
-								this,
-								credentialType,
-								{
-									method: 'GET',
-									url: `${BASE_URL}${API_BASE_PATH}/resourcetypes/${resourceTypeIdStr}`,
-									headers: { 'Accept': 'application/json' },
-								},
-							) as PublicApiResourceTypeDetail;
-						} catch (error: unknown) {
-							if (isAccessTokenError(error)) return [];
-							this.logger.error('Error fetching resource type fields:', { error });
-							return [];
-						}
-						resourceTypeCache[resourceTypeIdStr] = mapPublicApiFieldsToUDF(resourceTypeResponse.fields);
-					}
-
-					const udfFields = resourceTypeCache[resourceTypeIdStr];
+					const udfFields = await fetchResourceTypeFields(this, resourceTypeIdStr);
 					if (udfFields.length === 0) return [];
 
 					// Exclude system fields that are not editable as UDFs. start_date is included so it can be set via UDF in resource update.
@@ -800,44 +800,13 @@ export class ErsApp implements INodeType {
 				}
 			},
 
-			// Layer 1 + 2: Lightweight field list; use cache (populated by getResourceUDFFields or here).
 			async getResourceUDFFieldsMandatory(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 				try {
-					const parameters = this.getNode().parameters as { resource_type_id?: number | string; authentication?: string };
-					let resourceTypeId = parameters.resource_type_id;
-					const credentialType =
-						parameters.authentication === 'accessToken' ? 'ersAppAccessTokenApi' : 'ersAppOAuth2Api';
+					const parameters = this.getNode().parameters as { resource_type_id?: number | string };
+					const resourceTypeIdStr = parseResourceTypeId(parameters.resource_type_id);
+					if (!resourceTypeIdStr) return [];
 
-					if (resourceTypeId === '' || resourceTypeId === null || resourceTypeId === undefined) return [];
-
-					if (typeof resourceTypeId === 'string') {
-						try {
-							const parsed = JSON.parse(resourceTypeId);
-							if (parsed && typeof parsed === 'object' && 'id' in parsed) resourceTypeId = parsed.id;
-						} catch {
-							// not JSON
-						}
-					}
-					const resourceTypeIdStr = String(resourceTypeId);
-
-					// Invalidate cache so "Refresh List" and dropdown open always get fresh data from API
-					delete resourceTypeCache[resourceTypeIdStr];
-
-					if (!resourceTypeCache[resourceTypeIdStr]) {
-						let resourceTypeResponse: PublicApiResourceTypeDetail;
-						try {
-							resourceTypeResponse = await this.helpers.httpRequestWithAuthentication.call(
-								this, credentialType, { method: 'GET', url: `${BASE_URL}${API_BASE_PATH}/resourcetypes/${resourceTypeIdStr}`, headers: { 'Accept': 'application/json' } },
-							) as PublicApiResourceTypeDetail;
-						} catch (error: unknown) {
-							if (isAccessTokenError(error)) return [];
-							this.logger.error('Error fetching resource type fields:', { error });
-							return [];
-						}
-						resourceTypeCache[resourceTypeIdStr] = mapPublicApiFieldsToUDF(resourceTypeResponse.fields);
-					}
-
-					const udfFields = resourceTypeCache[resourceTypeIdStr];
+					const udfFields = await fetchResourceTypeFields(this, resourceTypeIdStr);
 					if (udfFields.length === 0) return [];
 
 					const excludedSystemFields = ['id', 'resource_type_id', 'first_name', 'start_date', 'name'];
@@ -856,45 +825,13 @@ export class ErsApp implements INodeType {
 				}
 			},
 
-			// Layer 1 + 2: Lightweight field list; use cache (populated by getResourceUDFFields or here).
 			async getResourceUDFFieldsOther(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 				try {
-					const parameters = this.getNode().parameters as { resource_type_id?: number | string; authentication?: string };
-					let resourceTypeId = parameters.resource_type_id;
-					const credentialType =
-						parameters.authentication === 'accessToken' ? 'ersAppAccessTokenApi' : 'ersAppOAuth2Api';
+					const parameters = this.getNode().parameters as { resource_type_id?: number | string };
+					const resourceTypeIdStr = parseResourceTypeId(parameters.resource_type_id);
+					if (!resourceTypeIdStr) return [];
 
-					if (resourceTypeId === '' || resourceTypeId === null || resourceTypeId === undefined) return [];
-
-					if (typeof resourceTypeId === 'string') {
-						try {
-							const parsed = JSON.parse(resourceTypeId);
-							if (parsed && typeof parsed === 'object' && 'id' in parsed) resourceTypeId = parsed.id;
-						} catch {
-							// not JSON
-						}
-					}
-					const resourceTypeIdStr = String(resourceTypeId);
-
-					// Invalidate cache so "Refresh List" and dropdown open always get fresh data from API
-					delete resourceTypeCache[resourceTypeIdStr];
-
-					if (!resourceTypeCache[resourceTypeIdStr]) {
-						let resourceTypeResponse: PublicApiResourceTypeDetail;
-						try {
-							resourceTypeResponse = await this.helpers.httpRequestWithAuthentication.call(
-								this, credentialType,
-								{ method: 'GET', url: `${BASE_URL}${API_BASE_PATH}/resourcetypes/${resourceTypeIdStr}`, headers: { 'Accept': 'application/json' } },
-							) as PublicApiResourceTypeDetail;
-						} catch (error: unknown) {
-							if (isAccessTokenError(error)) return [];
-							this.logger.error('Error fetching resource type fields:', { error });
-							return [];
-						}
-						resourceTypeCache[resourceTypeIdStr] = mapPublicApiFieldsToUDF(resourceTypeResponse.fields);
-					}
-
-					const udfFields = resourceTypeCache[resourceTypeIdStr];
+					const udfFields = await fetchResourceTypeFields(this, resourceTypeIdStr);
 					if (udfFields.length === 0) return [];
 
 					const excludedSystemFields = ['id', 'resource_type_id', 'first_name', 'start_date'];
@@ -1194,49 +1131,13 @@ export class ErsApp implements INodeType {
 				}
 			},
 
-			// Backward-compatible fallback loader for resource UDF options.
-			async getResourceUDFFieldOptions(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-				try {
-					const parameters = this.getNode().parameters as {
-						resource_type_id?: number | string;
-						mandatoryFields?: { field?: Array<{ fieldName?: string }> };
-						otherFields?: { field?: Array<{ fieldName?: string }> };
-						udfFields?: { field?: Array<{ fieldName?: string }> };
-					};
-					const currentFieldName = this.getCurrentNodeParameter('fieldName') as string | undefined;
-					if (currentFieldName && currentFieldName.trim() !== '') {
-						return await getResourceFieldValueOptionsByFieldName(this, currentFieldName);
-					}
-
-					const fieldName = resolveLatestProfileFieldNameFromCollections([
-						parameters.mandatoryFields?.field,
-						parameters.otherFields?.field,
-						parameters.udfFields?.field,
-					]);
-
-					if (!fieldName || fieldName === '') return [];
-					return await getResourceFieldValueOptionsByFieldName(this, fieldName);
-				} catch (error) {
-					this.logger.error('Error in getResourceUDFFieldOptions:', { error });
-					return [];
-				}
-			},
-
-			// Scoped loader for resource create mandatory fields.
+			// Scoped loader for resource create mandatory fields (row-scoped fieldName only).
 			async getResourceUDFFieldOptionsMandatory(
 				this: ILoadOptionsFunctions,
 			): Promise<INodePropertyOptions[]> {
 				try {
-					const currentFieldName = this.getCurrentNodeParameter('fieldName') as string | undefined;
-					if (currentFieldName && currentFieldName.trim() !== '') {
-						return await getResourceFieldValueOptionsByFieldName(this, currentFieldName);
-					}
-
-					const parameters = this.getNode().parameters as {
-						mandatoryFields?: { field?: Array<{ fieldName?: string }> };
-					};
-					const fieldName = resolveLatestProfileFieldName(parameters.mandatoryFields?.field);
-					if (!fieldName || fieldName === '') return [];
+					const fieldName = resolveCurrentResourceFieldName(this);
+					if (!fieldName) return [];
 					return await getResourceFieldValueOptionsByFieldName(this, fieldName);
 				} catch (error) {
 					this.logger.error('Error in getResourceUDFFieldOptionsMandatory:', { error });
@@ -1244,21 +1145,13 @@ export class ErsApp implements INodeType {
 				}
 			},
 
-			// Scoped loader for resource create other fields.
+			// Scoped loader for resource create other fields (row-scoped fieldName only).
 			async getResourceUDFFieldOptionsOther(
 				this: ILoadOptionsFunctions,
 			): Promise<INodePropertyOptions[]> {
 				try {
-					const currentFieldName = this.getCurrentNodeParameter('fieldName') as string | undefined;
-					if (currentFieldName && currentFieldName.trim() !== '') {
-						return await getResourceFieldValueOptionsByFieldName(this, currentFieldName);
-					}
-
-					const parameters = this.getNode().parameters as {
-						otherFields?: { field?: Array<{ fieldName?: string }> };
-					};
-					const fieldName = resolveLatestProfileFieldName(parameters.otherFields?.field);
-					if (!fieldName || fieldName === '') return [];
+					const fieldName = resolveCurrentResourceFieldName(this);
+					if (!fieldName) return [];
 					return await getResourceFieldValueOptionsByFieldName(this, fieldName);
 				} catch (error) {
 					this.logger.error('Error in getResourceUDFFieldOptionsOther:', { error });
@@ -1266,21 +1159,13 @@ export class ErsApp implements INodeType {
 				}
 			},
 
-			// Scoped loader for resource update udf fields.
+			// Scoped loader for resource update udf fields (row-scoped fieldName only).
 			async getResourceUDFFieldOptionsUpdate(
-				this: ILoadOptionsFunctions,
+				this: ILoadOptionsFunctions,	
 			): Promise<INodePropertyOptions[]> {
 				try {
-					const currentFieldName = this.getCurrentNodeParameter('fieldName') as string | undefined;
-					if (currentFieldName && currentFieldName.trim() !== '') {
-						return await getResourceFieldValueOptionsByFieldName(this, currentFieldName);
-					}
-
-					const parameters = this.getNode().parameters as {
-						udfFields?: { field?: Array<{ fieldName?: string }> };
-					};
-					const fieldName = resolveLatestProfileFieldName(parameters.udfFields?.field);
-					if (!fieldName || fieldName === '') return [];
+					const fieldName = resolveCurrentResourceFieldName(this);
+					if (!fieldName) return [];
 					return await getResourceFieldValueOptionsByFieldName(this, fieldName);
 				} catch (error) {
 					this.logger.error('Error in getResourceUDFFieldOptionsUpdate:', { error });
