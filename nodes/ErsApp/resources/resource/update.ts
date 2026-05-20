@@ -133,7 +133,7 @@ export const resourceUpdateDescription: INodeProperties[] = [
 						type: 'multiOptions',
 						noDataExpression: true,
 						typeOptions: {
-							loadOptionsMethod: 'getResourceUDFFieldOptionsUpdate',
+							loadOptionsMethod: 'getResourceUDFFieldOptions',
 							loadOptionsDependsOn: ['fieldName', 'resource_type_id'],
 							searchable: true,
 						},
@@ -232,7 +232,7 @@ export const resourceUpdateDescription: INodeProperties[] = [
 						type: 'options',
 						noDataExpression: true,
 						typeOptions: {
-							loadOptionsMethod: 'getResourceUDFFieldOptionsUpdate',
+							loadOptionsMethod: 'getResourceUDFFieldOptions',
 							loadOptionsDependsOn: ['fieldName', 'resource_type_id'],
 							searchable: true,
 						},
