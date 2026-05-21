@@ -74,12 +74,6 @@ export class ErsAppOAuth2Api implements ICredentialType {
 			type: 'hidden',
 			default: 'header',
 		},
-		{
-			displayName: 'OAuth Redirect URL',
-			name: 'oauthRedirectUrl',
-			type: 'hidden',
-			default: 'http://localhost:5678/rest/oauth2-credential/callback',
-		},
 	];
 }
 
