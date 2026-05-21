@@ -3,7 +3,6 @@ import type {
 	INodeProperties,
 	IconFile,
 } from 'n8n-workflow';
-import { BASE_URL, OAUTH_REDIRECT_URL } from '../nodes/ErsApp/constants';
 
 export class ErsAppOAuth2Api implements ICredentialType {
 	name = 'ersAppOAuth2Api';
@@ -55,13 +54,13 @@ export class ErsAppOAuth2Api implements ICredentialType {
 			displayName: 'Authorization URL',
 			name: 'authUrl',
 			type: 'hidden',
-			default: `${BASE_URL}/login/oauth/authorize`,
+			default: 'http://dev.eresourcescheduler.cloud:8080/login/oauth/authorize',
 		},
 		{
 			displayName: 'Access Token URL',
 			name: 'accessTokenUrl',
 			type: 'hidden',
-			default: `${BASE_URL}/login/oauth/token`,
+			default: 'http://dev.eresourcescheduler.cloud:8080/login/oauth/token',
 		},
 		{
 			displayName: 'Scope',
@@ -79,7 +78,7 @@ export class ErsAppOAuth2Api implements ICredentialType {
 			displayName: 'OAuth Redirect URL',
 			name: 'oauthRedirectUrl',
 			type: 'hidden',
-			default: OAUTH_REDIRECT_URL,
+			default: 'http://localhost:5678/rest/oauth2-credential/callback',
 		},
 	];
 }

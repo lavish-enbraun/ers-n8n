@@ -1,5 +1,4 @@
 import type { INodeProperties } from 'n8n-workflow';
-import { BASE_URL, API_BASE_PATH } from '../../constants';
 import { timesheetCreateDescription } from './create';
 import { timesheetUpdateDescription } from './update';
 import { timesheetDeleteDescription } from './delete';
@@ -28,7 +27,7 @@ export const timesheetDescription: INodeProperties[] = [
 				routing: {
 					request: {
 						method: 'POST',
-						url: `${BASE_URL}${API_BASE_PATH}/timesheet`,
+						url: `http://dev.eresourcescheduler.cloud:8080/rest/v1/timesheet`,
 						headers: {
 							'Content-Type': 'application/json',
 							Accept: 'application/json',
@@ -46,7 +45,7 @@ export const timesheetDescription: INodeProperties[] = [
 				routing: {
 					request: {
 						method: 'PUT',
-						url: `={{ "${BASE_URL}${API_BASE_PATH}/timesheet/" + $parameter.timesheet_id }}`,
+						url: `={{ "http://dev.eresourcescheduler.cloud:8080/rest/v1/timesheet/" + $parameter.timesheet_id }}`,
 						headers: {
 							'Content-Type': 'application/json',
 							Accept: 'application/json',
@@ -64,7 +63,7 @@ export const timesheetDescription: INodeProperties[] = [
 				routing: {
 					request: {
 						method: 'DELETE',
-						url: `={{ "${BASE_URL}${API_BASE_PATH}/timesheet/" + $parameter.timesheet_id }}`,
+						url: `={{ "http://dev.eresourcescheduler.cloud:8080/rest/v1/timesheet/" + $parameter.timesheet_id }}`,
 						headers: {
 							Authorization: '={{ $parameter.authentication === "accessToken" && $credentials.accessToken ? "Bearer " + $credentials.accessToken : undefined }}',
 						},
@@ -79,7 +78,7 @@ export const timesheetDescription: INodeProperties[] = [
 				routing: {
 					request: {
 						method: 'GET',
-						url: `={{ "${BASE_URL}${API_BASE_PATH}/timesheet/" + $parameter.timesheet_id }}`,
+						url: `={{ "http://dev.eresourcescheduler.cloud:8080/rest/v1/timesheet/" + $parameter.timesheet_id }}`,
 						headers: {
 							Authorization: '={{ $parameter.authentication === "accessToken" && $credentials.accessToken ? "Bearer " + $credentials.accessToken : undefined }}',
 						},
@@ -95,7 +94,7 @@ export const timesheetDescription: INodeProperties[] = [
 				routing: {
 					request: {
 						method: 'POST',
-						url: `${BASE_URL}${API_BASE_PATH}/timesheet/search`,
+						url: `http://dev.eresourcescheduler.cloud:8080/rest/v1/timesheet/search`,
 						headers: {
 							'Content-Type': 'application/json',
 							Accept: 'application/json',

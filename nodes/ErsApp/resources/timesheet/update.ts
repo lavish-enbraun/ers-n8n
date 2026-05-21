@@ -90,7 +90,7 @@ export const timesheetUpdateDescription: INodeProperties[] = [
 						name: 'fieldName',
 						type: 'options',
 						typeOptions: {
-							loadOptionsMethod: 'getTimesheetFieldsMandatory',
+							loadOptionsMethod: 'getTimesheetUDFFieldsMandatory',
 						},
 						default: '',
 						description:
@@ -205,7 +205,7 @@ export const timesheetUpdateDescription: INodeProperties[] = [
 						type: 'multiOptions',
 						noDataExpression: true,
 						typeOptions: {
-							loadOptionsMethod: 'getTimesheetFieldOptionsUpdateMandatory',
+							loadOptionsMethod: 'getTimesheetUDFFieldOptions',
 							loadOptionsDependsOn: ['fieldName'],
 							searchable: true,
 						},
@@ -260,7 +260,7 @@ export const timesheetUpdateDescription: INodeProperties[] = [
 						type: 'options',
 						noDataExpression: true,
 						typeOptions: {
-							loadOptionsMethod: 'getTimesheetFieldOptionsUpdateMandatory',
+							loadOptionsMethod: 'getTimesheetUDFFieldOptions',
 							loadOptionsDependsOn: ['fieldName'],
 							searchable: true,
 						},
@@ -343,7 +343,7 @@ export const timesheetUpdateDescription: INodeProperties[] = [
 						name: 'fieldName',
 						type: 'options',
 						typeOptions: {
-							loadOptionsMethod: 'getTimesheetFieldsOther',
+							loadOptionsMethod: 'getTimesheetUDFFieldsOther',
 						},
 						default: '',
 						description:
@@ -458,7 +458,7 @@ export const timesheetUpdateDescription: INodeProperties[] = [
 						type: 'multiOptions',
 						noDataExpression: true,
 						typeOptions: {
-							loadOptionsMethod: 'getTimesheetFieldOptionsUpdateOther',
+							loadOptionsMethod: 'getTimesheetUDFFieldOptions',
 							loadOptionsDependsOn: ['fieldName'],
 							searchable: true,
 						},
@@ -513,7 +513,7 @@ export const timesheetUpdateDescription: INodeProperties[] = [
 						type: 'options',
 						noDataExpression: true,
 						typeOptions: {
-							loadOptionsMethod: 'getTimesheetFieldOptionsUpdateOther',
+							loadOptionsMethod: 'getTimesheetUDFFieldOptions',
 							loadOptionsDependsOn: ['fieldName'],
 							searchable: true,
 						},

@@ -5,7 +5,6 @@ import type {
 	INodeProperties,
 	IconFile,
 } from 'n8n-workflow';
-import { BASE_URL } from '../nodes/ErsApp/constants';
 
 export class ErsAppAccessTokenApi implements ICredentialType {
 	name = 'ersAppAccessTokenApi';
@@ -44,7 +43,7 @@ export class ErsAppAccessTokenApi implements ICredentialType {
 
 	test: ICredentialTestRequest = {
 		request: {
-			baseURL: BASE_URL,
+			baseURL: 'http://dev.eresourcescheduler.cloud:8080',
 			url: '/rest/user_profile',
 			method: 'GET',
 			headers: {

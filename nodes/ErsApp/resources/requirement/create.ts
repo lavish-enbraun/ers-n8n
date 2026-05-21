@@ -11,7 +11,7 @@ export const requirementCreateFieldValues: INodeProperties[] = [
 		name: 'fieldName',
 		type: 'options',
 		typeOptions: {
-			loadOptionsMethod: 'getRequirementFieldsMandatory',
+			loadOptionsMethod: 'getRequirementUDFFieldsMandatory',
 		},
 		default: '',
 		description:
@@ -52,7 +52,7 @@ export const requirementCreateFieldValues: INodeProperties[] = [
 		type: 'multiOptions',
 		noDataExpression: true,
 		typeOptions: {
-			loadOptionsMethod: 'getRequirementFieldOptionsMandatory',
+			loadOptionsMethod: 'getRequirementUDFFieldOptions',
 			loadOptionsDependsOn: ['fieldName'],
 			searchable: true,
 		},
@@ -144,7 +144,7 @@ export const requirementCreateFieldValues: INodeProperties[] = [
 		type: 'options',
 		noDataExpression: true,
 		typeOptions: {
-			loadOptionsMethod: 'getRequirementFieldOptionsMandatory',
+			loadOptionsMethod: 'getRequirementUDFFieldOptions',
 			loadOptionsDependsOn: ['fieldName'],
 			searchable: true,
 		},
@@ -200,31 +200,19 @@ export const requirementCreateFieldValues: INodeProperties[] = [
 	},
 ];
 
+/** Reuse shared field value controls with the "other fields" field-name loader. */
 export function withRequirementOtherFieldLoader(values: INodeProperties[]): INodeProperties[] {
 	return values.map((prop) => {
-		if (prop.name === 'fieldName' && prop.typeOptions && 'loadOptionsMethod' in prop.typeOptions) {
-			return {
-				...prop,
-				typeOptions: {
-					...prop.typeOptions,
-					loadOptionsMethod: 'getRequirementFieldsOther',
-				},
-			};
+		if (prop.name !== 'fieldName' || !prop.typeOptions || !('loadOptionsMethod' in prop.typeOptions)) {
+			return prop;
 		}
-		if (
-			(prop.name === 'fieldValueMultiSelect' || prop.name === 'fieldValueSelect') &&
-			prop.typeOptions &&
-			'loadOptionsMethod' in prop.typeOptions
-		) {
-			return {
-				...prop,
-				typeOptions: {
-					...prop.typeOptions,
-					loadOptionsMethod: 'getRequirementFieldOptionsOther',
-				},
-			};
-		}
-		return prop;
+		return {
+			...prop,
+			typeOptions: {
+				...prop.typeOptions,
+				loadOptionsMethod: 'getRequirementUDFFieldsOther',
+			},
+		};
 	});
 }
 
