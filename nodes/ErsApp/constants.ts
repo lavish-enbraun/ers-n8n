@@ -1,4 +1,4 @@
-export const BASE_URL = 'http://dev.eresourcescheduler.cloud:8080';
+export const BASE_URL = 'https://app.eresourcescheduler.cloud';
 
 export const API_BASE_PATH = '/rest/v1';
 
