@@ -1,5 +1,4 @@
 import type { INodeProperties } from 'n8n-workflow';
-import { BASE_URL, API_BASE_PATH } from '../../constants';
 import { resourceGetResourcesDescription } from './getAll';
 import { resourceCreateDescription } from './create';
 import { resourceUpdateDescription } from './update';
@@ -29,7 +28,7 @@ export const resourceDescription: INodeProperties[] = [
 				routing: {
 					request: {
 						method: 'POST',
-						url: `${BASE_URL}${API_BASE_PATH}/resources`,
+						url: `http://dev.eresourcescheduler.cloud:8080/rest/v1/resources`,
 						headers: {
 							'Content-Type': 'application/json',
 							Accept: 'application/json',
@@ -47,7 +46,7 @@ export const resourceDescription: INodeProperties[] = [
 				routing: {
 					request: {
 						method: 'PUT',
-						url: `={{ "${BASE_URL}${API_BASE_PATH}/resources/" + $parameter.resource_id }}`,
+						url: `={{ "http://dev.eresourcescheduler.cloud:8080/rest/v1/resources/" + $parameter.resource_id }}`,
 						headers: {
 							'Content-Type': 'application/json',
 							Accept: 'application/json',
@@ -65,7 +64,7 @@ export const resourceDescription: INodeProperties[] = [
 				routing: {
 					request: {
 						method: 'DELETE',
-						url: '={{ (() => { const base = "' + BASE_URL + API_BASE_PATH + '/resources/" + $parameter.resource_id + "/"; const opts = $parameter.forceDeleteOptions || {}; const params = []; if (opts.force_delete_bookings === true) params.push("force_delete_bookings=true"); if (opts.force_delete_rates === true) params.push("force_delete_rates=true"); if (opts.force_delete_timesheet_entry === true) params.push("force_delete_timesheet_entry=true"); return params.length ? base + "?" + params.join("&") : base; })() }}',
+						url: '={{ (() => { const base = "http://dev.eresourcescheduler.cloud:8080/rest/v1/resources/" + $parameter.resource_id + "/"; const opts = $parameter.forceDeleteOptions || {}; const params = []; if (opts.force_delete_bookings === true) params.push("force_delete_bookings=true"); if (opts.force_delete_rates === true) params.push("force_delete_rates=true"); if (opts.force_delete_timesheet_entry === true) params.push("force_delete_timesheet_entry=true"); return params.length ? base + "?" + params.join("&") : base; })() }}',
 						headers: {
 							Authorization: '={{ $parameter.authentication === "accessToken" && $credentials.accessToken ? "Bearer " + $credentials.accessToken : undefined }}',
 						},
@@ -80,7 +79,7 @@ export const resourceDescription: INodeProperties[] = [
 			routing: {
 				request: {
 					method: 'GET',
-					url: `${BASE_URL}${API_BASE_PATH}/resources`,
+					url: `http://dev.eresourcescheduler.cloud:8080/rest/v1/resources`,
 					headers: {
 						Authorization: '={{ $parameter.authentication === "accessToken" && $credentials.accessToken ? "Bearer " + $credentials.accessToken : undefined }}',
 					},
@@ -105,7 +104,7 @@ export const resourceDescription: INodeProperties[] = [
 			routing: {
 				request: {
 					method: 'GET',
-					url: `={{ "${BASE_URL}${API_BASE_PATH}/resources/" + $parameter.resource_id }}`,
+					url: `={{ "http://dev.eresourcescheduler.cloud:8080/rest/v1/resources/" + $parameter.resource_id }}`,
 					headers: {
 						Authorization: '={{ $parameter.authentication === "accessToken" && $credentials.accessToken ? "Bearer " + $credentials.accessToken : undefined }}',
 					},
@@ -121,7 +120,7 @@ export const resourceDescription: INodeProperties[] = [
 				routing: {
 					request: {
 						method: 'POST',
-						url: `${BASE_URL}${API_BASE_PATH}/resources/search`,
+						url: `http://dev.eresourcescheduler.cloud:8080/rest/v1/resources/search`,
 						headers: {
 							'Content-Type': 'application/json',
 							Accept: 'application/json',

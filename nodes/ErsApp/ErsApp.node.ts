@@ -5,7 +5,6 @@ import {
 	type ILoadOptionsFunctions,
 	type INodePropertyOptions,
 } from 'n8n-workflow';
-import { API_BASE_PATH, BASE_URL } from './constants';
 import { resourceDescription } from './resources/resource';
 import { projectDescription } from './resources/project';
 import { bookingDescription } from './resources/booking';
@@ -319,7 +318,7 @@ async function ensureProfileFieldsCache(
 		if (!cache?.length) {
 			const response = await ctx.helpers.httpRequestWithAuthentication.call(ctx, credentialType, {
 				method: 'GET',
-				url: `${BASE_URL}${API_BASE_PATH}${meta.endpoint}`,
+				url: `http://dev.eresourcescheduler.cloud:8080/rest/v1${meta.endpoint}`,
 				headers: { Accept: 'application/json' },
 			}) as { data?: ProfileField[] } | ProfileField[];
 
@@ -476,7 +475,7 @@ async function fetchResourceTypesList(
 			credentialType,
 			{
 				method: 'GET',
-				url: `${BASE_URL}${API_BASE_PATH}/resourcetypes`,
+				url: 'http://dev.eresourcescheduler.cloud:8080/rest/v1/resourcetypes',
 				headers: { Accept: 'application/json' },
 			},
 		) as ResourceType[] | { data?: ResourceType[]; items?: ResourceType[] };
@@ -511,7 +510,7 @@ async function fetchResourceTypeFields(
 			credentialType,
 			{
 				method: 'GET',
-				url: `${BASE_URL}${API_BASE_PATH}/resourcetypes/${resourceTypeIdStr}`,
+				url: `http://dev.eresourcescheduler.cloud:8080/rest/v1/resourcetypes/${resourceTypeIdStr}`,
 				headers: { Accept: 'application/json' },
 			},
 		) as ResourceType;
@@ -601,7 +600,7 @@ async function fetchProjectTypesList(ctx: ILoadOptionsFunctions): Promise<Projec
 			credentialType,
 			{
 				method: 'GET',
-				url: `${BASE_URL}${API_BASE_PATH}/projecttypes`,
+				url: `http://dev.eresourcescheduler.cloud:8080/rest/v1/projecttypes`,
 				headers: { Accept: 'application/json' },
 			},
 		) as ProjectType[] | { data?: ProjectType[]; items?: ProjectType[] };
@@ -638,7 +637,7 @@ async function fetchProjectTypeFields(
 			credentialType,
 			{
 				method: 'GET',
-				url: `${BASE_URL}${API_BASE_PATH}/projecttypes/${projectTypeIdStr}`,
+				url: 'http://dev.eresourcescheduler.cloud:8080/rest/v1/projecttypes/${projectTypeIdStr}',
 				headers: { Accept: 'application/json' },
 			},
 		) as ProjectType;

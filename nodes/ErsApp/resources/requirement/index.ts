@@ -1,5 +1,4 @@
 import type { INodeProperties } from 'n8n-workflow';
-import { BASE_URL, API_BASE_PATH } from '../../constants';
 import { requirementCreateDescription } from './create';
 import { requirementUpdateDescription } from './update';
 import { requirementDeleteDescription } from './delete';
@@ -29,7 +28,7 @@ export const requirementDescription: INodeProperties[] = [
 				routing: {
 					request: {
 						method: 'POST',
-						url: `${BASE_URL}${API_BASE_PATH}/requirements`,
+						url: `http://dev.eresourcescheduler.cloud:8080/rest/v1/requirements`,
 						headers: {
 							'Content-Type': 'application/json',
 							Accept: 'application/json',
@@ -47,7 +46,7 @@ export const requirementDescription: INodeProperties[] = [
 				routing: {
 					request: {
 						method: 'PUT',
-						url: `={{ "${BASE_URL}${API_BASE_PATH}/requirements/" + $parameter.requirement_id }}`,
+						url: `={{ "http://dev.eresourcescheduler.cloud:8080/rest/v1/requirements/" + $parameter.requirement_id }}`,
 						headers: {
 							'Content-Type': 'application/json',
 							Accept: 'application/json',
@@ -65,7 +64,7 @@ export const requirementDescription: INodeProperties[] = [
 				routing: {
 					request: {
 						method: 'DELETE',
-						url: `={{ "${BASE_URL}${API_BASE_PATH}/requirements/" + $parameter.requirement_id }}`,
+						url: `={{ "http://dev.eresourcescheduler.cloud:8080/rest/v1/requirements/" + $parameter.requirement_id }}`,
 						headers: {
 							Authorization: '={{ $parameter.authentication === "accessToken" && $credentials.accessToken ? "Bearer " + $credentials.accessToken : undefined }}',
 						},
@@ -80,7 +79,7 @@ export const requirementDescription: INodeProperties[] = [
 			routing: {
 				request: {
 					method: 'GET',
-					url: `${BASE_URL}${API_BASE_PATH}/requirements`,
+					url: `http://dev.eresourcescheduler.cloud:8080/rest/v1/requirements`,
 					headers: {
 						Authorization: '={{ $parameter.authentication === "accessToken" && $credentials.accessToken ? "Bearer " + $credentials.accessToken : undefined }}',
 					},
@@ -105,7 +104,7 @@ export const requirementDescription: INodeProperties[] = [
 			routing: {
 				request: {
 					method: 'GET',
-					url: `={{ "${BASE_URL}${API_BASE_PATH}/requirements/" + $parameter.requirement_id }}`,
+					url: `={{ "http://dev.eresourcescheduler.cloud:8080/rest/v1/requirements/" + $parameter.requirement_id }}`,
 					headers: {
 						Authorization: '={{ $parameter.authentication === "accessToken" && $credentials.accessToken ? "Bearer " + $credentials.accessToken : undefined }}',
 					},
@@ -121,7 +120,7 @@ export const requirementDescription: INodeProperties[] = [
 				routing: {
 					request: {
 						method: 'POST',
-						url: `${BASE_URL}${API_BASE_PATH}/requirements/search`,
+						url: `http://dev.eresourcescheduler.cloud:8080/rest/v1/requirements/search`,
 						headers: {
 							'Content-Type': 'application/json',
 							Accept: 'application/json',
