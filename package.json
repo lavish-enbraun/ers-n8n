@@ -3,7 +3,6 @@
 	"version": "0.1.1",
 	"description": "n8n community node for the eResource Scheduler (ERS App) API to manage resources, projects, bookings, requirements, and timesheets in n8n workflows.",
 	"license": "MIT",
-	"homepage": "https://github.com/sarthak-enbraun/n8n-nodes-ers-app.git#readme",
 	"keywords": [
 		"n8n",
 		"n8n-nodes",
@@ -14,15 +13,12 @@
 		"scheduling"
 	],
 	"author": {
-		"name": "Sarthak ahuja",
-		"email": "sarthak.ahuja@enbraun.com"
+		"name": "Lavish Pareta",
+		"email": "lavish.pareta@enbraun.com"
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/sarthak-enbraun/n8n-nodes-ers-app.git"
-	},
-	"bugs": {
-		"url": "https://github.com/sarthak-enbraun/n8n-nodes-ers-app.git/issues"
+		"url": "https://github.com/lavish-enbraun/ers-n8n.git"
 	},
 	"scripts": {
 		"postinstall": "patch-package",
