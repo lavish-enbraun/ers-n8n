@@ -18,21 +18,23 @@
 # ─── ONE-TIME SETUP ────────────────────────────────────────────────────────────
 #
 # Option A — OIDC Trusted Publishing (recommended, no long-lived secrets):
-#   1. Log in to npmjs.com and open your package's settings.
-#   2. Under "Publish access" → "Trusted Publishers", click "Add a publisher".
-#   3. Select GitHub Actions and fill in:
+#   1. Log in to npmjs.com → your account (or org) → Trusted Publishers.
+#      For a brand-new package name, configure at account level; after the first
+#      publish you can also manage publishers under the package settings.
+#   2. Add a GitHub Actions publisher:
 #        Repository owner: <your-github-username-or-org>
 #        Repository name:  <your-repo-name>
-#        Workflow name:    publish.yml
+#        Workflow filename: publish.yml
 #        Environment:      (leave blank unless you use GitHub Environments)
-#   4. Leave the NPM_TOKEN secret unset in this repository. GitHub's OIDC
-#      token is used instead — no secret ever touches your repo settings.
+#   3. Leave NPM_TOKEN unset in this repository. setup-node exchanges the
+#      workflow OIDC token with npm when registry-url is set (see Release step).
 #
-# Option B — npm Automation Token (fallback):
+# Option B — npm Automation Token (fallback, required for first publish if OIDC
+# is not configured at account level):
 #   1. On npmjs.com: Access Tokens → Generate New Token → Granular Access Token.
 #      Scope it to this package with "Read and write" publish permission.
 #   2. In GitHub: Settings → Secrets and variables → Actions → New secret.
-#      Name it NPM_TOKEN and paste the token value.
+#      Name it NPM_TOKEN. The Release step passes it as NODE_AUTH_TOKEN.
 #
 # Both options work with --provenance. Provenance is signed by GitHub's OIDC
 # infrastructure regardless of how npm authentication is handled.
@@ -80,20 +82,19 @@ jobs:
         with:
           node-version: 'lts/*'
           cache: 'npm'
+          # Required for npm OIDC trusted publishing; also wires NODE_AUTH_TOKEN when set.
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
-        run: 'npm ci'
+        run: npm ci
 
       - name: Release
         # Publishes to npm with a provenance attestation (requires id-token: write above).
         # Lint and build run automatically as part of the release process.
         #
-        # Option A (OIDC): leave NPM_TOKEN unset — the token step is skipped and
-        #   npm uses the OIDC exchange instead.
-        # Option B (token): set NPM_TOKEN in repo secrets — it is written to
-        #   .npmrc here before publishing.
-        run: |
-          [ -n "$NPM_TOKEN" ] && npm config set //registry.npmjs.org/:_authToken "$NPM_TOKEN"
-          npm run release
+        # Option A (OIDC): leave NPM_TOKEN unset — setup-node + registry-url use the
+        #   workflow OIDC token with npm trusted publishing.
+        # Option B (token): set NPM_TOKEN in repo secrets — passed as NODE_AUTH_TOKEN.
+        run: npm run release
         env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
