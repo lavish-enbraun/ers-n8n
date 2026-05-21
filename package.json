@@ -1,10 +1,10 @@
 {
 	"name": "n8n-nodes-ers-app",
-	"version": "0.1.2",
+	"version": "0.1.3",
 	"description": "n8n community node for the eResource Scheduler (ERS App) API to manage resources, projects, bookings, requirements, and timesheets in n8n workflows.",
 	"license": "MIT",
 	"publishConfig": {
-	  "access": "public"
+		"access": "public"
 	},
 	"keywords": [
 		"n8n",
