@@ -637,7 +637,7 @@ async function fetchProjectTypeFields(
 			credentialType,
 			{
 				method: 'GET',
-				url: 'http://dev.eresourcescheduler.cloud:8080/rest/v1/projecttypes/${projectTypeIdStr}',
+				url: `http://dev.eresourcescheduler.cloud:8080/rest/v1/projecttypes/${projectTypeIdStr}`,
 				headers: { Accept: 'application/json' },
 			},
 		) as ProjectType;
