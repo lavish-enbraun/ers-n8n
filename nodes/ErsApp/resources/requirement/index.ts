@@ -1,4 +1,5 @@
 import type { INodeProperties } from 'n8n-workflow';
+import { ERS_APP_V1_BASE_URL } from '../../shared/api.constants';
 import { requirementCreateDescription } from './create';
 import { requirementUpdateDescription } from './update';
 import { requirementDeleteDescription } from './delete';
@@ -28,7 +29,7 @@ export const requirementDescription: INodeProperties[] = [
 				routing: {
 					request: {
 						method: 'POST',
-						url: `http://dev.eresourcescheduler.cloud:8080/rest/v1/requirements`,
+						url: `${ERS_APP_V1_BASE_URL}/requirements`,
 						headers: {
 							'Content-Type': 'application/json',
 							Accept: 'application/json',
@@ -46,7 +47,7 @@ export const requirementDescription: INodeProperties[] = [
 				routing: {
 					request: {
 						method: 'DELETE',
-						url: `={{ "http://dev.eresourcescheduler.cloud:8080/rest/v1/requirements/" + $parameter.requirement_id }}`,
+						url: `={{ "${ERS_APP_V1_BASE_URL}/requirements/" + $parameter.requirement_id }}`,
 						headers: {
 							Authorization: '={{ $parameter.authentication === "accessToken" && $credentials.accessToken ? "Bearer " + $credentials.accessToken : undefined }}',
 						},
@@ -61,7 +62,7 @@ export const requirementDescription: INodeProperties[] = [
 			routing: {
 				request: {
 					method: 'GET',
-					url: `http://dev.eresourcescheduler.cloud:8080/rest/v1/requirements`,
+					url: `${ERS_APP_V1_BASE_URL}/requirements`,
 					headers: {
 						Authorization: '={{ $parameter.authentication === "accessToken" && $credentials.accessToken ? "Bearer " + $credentials.accessToken : undefined }}',
 					},
@@ -86,7 +87,7 @@ export const requirementDescription: INodeProperties[] = [
 			routing: {
 				request: {
 					method: 'GET',
-					url: `={{ "http://dev.eresourcescheduler.cloud:8080/rest/v1/requirements/" + $parameter.requirement_id }}`,
+					url: `={{ "${ERS_APP_V1_BASE_URL}/requirements/" + $parameter.requirement_id }}`,
 					headers: {
 						Authorization: '={{ $parameter.authentication === "accessToken" && $credentials.accessToken ? "Bearer " + $credentials.accessToken : undefined }}',
 					},
@@ -102,7 +103,7 @@ export const requirementDescription: INodeProperties[] = [
 				routing: {
 					request: {
 						method: 'POST',
-						url: `http://dev.eresourcescheduler.cloud:8080/rest/v1/requirements/search`,
+						url: `${ERS_APP_V1_BASE_URL}/requirements/search`,
 						headers: {
 							'Content-Type': 'application/json',
 							Accept: 'application/json',
@@ -131,7 +132,7 @@ export const requirementDescription: INodeProperties[] = [
 				routing: {
 					request: {
 						method: 'PUT',
-						url: `={{ "http://dev.eresourcescheduler.cloud:8080/rest/v1/requirements/" + $parameter.requirement_id }}`,
+						url: `={{ "${ERS_APP_V1_BASE_URL}/requirements/" + $parameter.requirement_id }}`,
 						headers: {
 							'Content-Type': 'application/json',
 							Accept: 'application/json',

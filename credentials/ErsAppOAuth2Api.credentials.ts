@@ -3,6 +3,10 @@ import type {
 	INodeProperties,
 	IconFile,
 } from 'n8n-workflow';
+import {
+	ERS_APP_OAUTH_AUTHORIZE_URL,
+	ERS_APP_OAUTH_TOKEN_URL,
+} from '../nodes/ErsApp/shared/api.constants';
 
 export class ErsAppOAuth2Api implements ICredentialType {
 	name = 'ersAppOAuth2Api';
@@ -54,13 +58,13 @@ export class ErsAppOAuth2Api implements ICredentialType {
 			displayName: 'Authorization URL',
 			name: 'authUrl',
 			type: 'hidden',
-			default: 'http://dev.eresourcescheduler.cloud:8080/login/oauth/authorize',
+			default: ERS_APP_OAUTH_AUTHORIZE_URL,
 		},
 		{
 			displayName: 'Access Token URL',
 			name: 'accessTokenUrl',
 			type: 'hidden',
-			default: 'http://dev.eresourcescheduler.cloud:8080/login/oauth/token',
+			default: ERS_APP_OAUTH_TOKEN_URL,
 		},
 		{
 			displayName: 'Scope',

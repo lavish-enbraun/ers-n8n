@@ -1,4 +1,5 @@
 import type { INodeProperties } from 'n8n-workflow';
+import { ERS_APP_V1_BASE_URL } from '../../shared/api.constants';
 import { timesheetCreateDescription } from './create';
 import { timesheetUpdateDescription } from './update';
 import { timesheetDeleteDescription } from './delete';
@@ -27,7 +28,7 @@ export const timesheetDescription: INodeProperties[] = [
 				routing: {
 					request: {
 						method: 'POST',
-						url: `http://dev.eresourcescheduler.cloud:8080/rest/v1/timesheet`,
+						url: `${ERS_APP_V1_BASE_URL}/timesheet`,
 						headers: {
 							'Content-Type': 'application/json',
 							Accept: 'application/json',
@@ -45,7 +46,7 @@ export const timesheetDescription: INodeProperties[] = [
 				routing: {
 					request: {
 						method: 'DELETE',
-						url: `={{ "http://dev.eresourcescheduler.cloud:8080/rest/v1/timesheet/" + $parameter.timesheet_id }}`,
+						url: `={{ "${ERS_APP_V1_BASE_URL}/timesheet/" + $parameter.timesheet_id }}`,
 						headers: {
 							Authorization: '={{ $parameter.authentication === "accessToken" && $credentials.accessToken ? "Bearer " + $credentials.accessToken : undefined }}',
 						},
@@ -60,7 +61,7 @@ export const timesheetDescription: INodeProperties[] = [
 				routing: {
 					request: {
 						method: 'GET',
-						url: `={{ "http://dev.eresourcescheduler.cloud:8080/rest/v1/timesheet/" + $parameter.timesheet_id }}`,
+						url: `={{ "${ERS_APP_V1_BASE_URL}/timesheet/" + $parameter.timesheet_id }}`,
 						headers: {
 							Authorization: '={{ $parameter.authentication === "accessToken" && $credentials.accessToken ? "Bearer " + $credentials.accessToken : undefined }}',
 						},
@@ -76,7 +77,7 @@ export const timesheetDescription: INodeProperties[] = [
 				routing: {
 					request: {
 						method: 'POST',
-						url: `http://dev.eresourcescheduler.cloud:8080/rest/v1/timesheet/search`,
+						url: `${ERS_APP_V1_BASE_URL}/timesheet/search`,
 						headers: {
 							'Content-Type': 'application/json',
 							Accept: 'application/json',
@@ -105,7 +106,7 @@ export const timesheetDescription: INodeProperties[] = [
 				routing: {
 					request: {
 						method: 'PUT',
-						url: `={{ "http://dev.eresourcescheduler.cloud:8080/rest/v1/timesheet/" + $parameter.timesheet_id }}`,
+						url: `={{ "${ERS_APP_V1_BASE_URL}/timesheet/" + $parameter.timesheet_id }}`,
 						headers: {
 							'Content-Type': 'application/json',
 							Accept: 'application/json',

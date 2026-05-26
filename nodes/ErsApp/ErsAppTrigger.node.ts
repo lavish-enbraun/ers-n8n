@@ -8,6 +8,7 @@ import {
 	LoggerProxy as Logger,
 	NodeConnectionTypes,
 } from 'n8n-workflow';
+import { ERS_APP_REST_BASE_URL } from './shared/api.constants';
 
 /**
  * Maps ERS entity IDs to the event IDs they support.
@@ -303,7 +304,7 @@ export class ErsAppTrigger implements INodeType {
 					let webhookId: number | string | undefined = staticData.webhookId as number | string | undefined;
 					let webhookExists = false;
 
-					const webhooksListUrl = `http://dev.eresourcescheduler.cloud:8080/rest/webhooks`;
+					const webhooksListUrl = `${ERS_APP_REST_BASE_URL}/webhooks`;
 					Logger.info('[ERS Webhook] Checking for existing webhook at ERS API', { webhooksListUrl });
 
 					const getWebhooksResponse = await this.helpers.httpRequestWithAuthentication.call(
@@ -334,7 +335,7 @@ export class ErsAppTrigger implements INodeType {
 				}
 
 				if (!webhookExists) {
-					const webhookRequestUrl = `http://dev.eresourcescheduler.cloud:8080/rest/webhooks`;
+					const webhookRequestUrl = `${ERS_APP_REST_BASE_URL}/webhooks`;
 					Logger.info('[ERS Webhook] Creating ERS webhook', { webhookRequestUrl });
 
 					await this.helpers.httpRequestWithAuthentication.call(this, credentialName, {
@@ -449,7 +450,7 @@ export class ErsAppTrigger implements INodeType {
 
 				// Step 3: POST request to /rest/webhooks/${id}/triggers to create/update triggers
 				// Using POST as it handles both creation and updates
-				const triggerRequestUrl = `http://dev.eresourcescheduler.cloud:8080/rest/webhooks/${webhookId}/triggers`;
+				const triggerRequestUrl = `${ERS_APP_REST_BASE_URL}/webhooks/${webhookId}/triggers`;
 				Logger.info('[ERS Webhook] Updating ERS webhook triggers', { triggerRequestUrl, webhookId });
 
 				await this.helpers.httpRequestWithAuthentication.call(this, credentialName, {
@@ -506,7 +507,7 @@ export class ErsAppTrigger implements INodeType {
 							? 'ersAppAccessTokenApi'
 							: 'ersAppOAuth2Api';
 
-					const deleteWebhookUrl = `http://dev.eresourcescheduler.cloud:8080/rest/webhooks/${webhookId}?force_delete_logs=true&force_delete_triggers=true`;
+					const deleteWebhookUrl = `${ERS_APP_REST_BASE_URL}/webhooks/${webhookId}?force_delete_logs=true&force_delete_triggers=true`;
 					Logger.info('[ERS Webhook] Deleting ERS webhook', { webhookId, deleteWebhookUrl });
 
 					try {

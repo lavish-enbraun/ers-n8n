@@ -1,4 +1,5 @@
 import type { INodeProperties } from 'n8n-workflow';
+import { ERS_APP_V1_BASE_URL } from '../../shared/api.constants';
 import { bookingCreateDescription } from './create';
 import { bookingUpdateDescription } from './update';
 import { bookingDeleteDescription } from './delete';
@@ -28,7 +29,7 @@ export const bookingDescription: INodeProperties[] = [
 				routing: {
 					request: {
 						method: 'POST',
-						url: `http://dev.eresourcescheduler.cloud:8080/rest/v1/bookings`,
+						url: `${ERS_APP_V1_BASE_URL}/bookings`,
 						headers: {
 							'Content-Type': 'application/json',
 							Accept: 'application/json',
@@ -46,7 +47,7 @@ export const bookingDescription: INodeProperties[] = [
 				routing: {
 					request: {
 						method: 'DELETE',
-						url: `={{ "http://dev.eresourcescheduler.cloud:8080/rest/v1/bookings/" + $parameter.booking_id }}`,
+						url: `={{ "${ERS_APP_V1_BASE_URL}/bookings/" + $parameter.booking_id }}`,
 						headers: {
 							Authorization: '={{ $parameter.authentication === "accessToken" && $credentials.accessToken ? "Bearer " + $credentials.accessToken : undefined }}',
 						},
@@ -61,7 +62,7 @@ export const bookingDescription: INodeProperties[] = [
 				routing: {
 					request: {
 						method: 'GET',
-						url: `http://dev.eresourcescheduler.cloud:8080/rest/v1/bookings`,
+						url: `${ERS_APP_V1_BASE_URL}/bookings`,
 						headers: {
 							Authorization: '={{ $parameter.authentication === "accessToken" && $credentials.accessToken ? "Bearer " + $credentials.accessToken : undefined }}',
 						},
@@ -86,7 +87,7 @@ export const bookingDescription: INodeProperties[] = [
 			routing: {
 				request: {
 					method: 'GET',
-					url: `={{ "http://dev.eresourcescheduler.cloud:8080/rest/v1/bookings/" + $parameter.booking_id }}`,
+					url: `={{ "${ERS_APP_V1_BASE_URL}/bookings/" + $parameter.booking_id }}`,
 					headers: {
 						Authorization: '={{ $parameter.authentication === "accessToken" && $credentials.accessToken ? "Bearer " + $credentials.accessToken : undefined }}',
 					},
@@ -102,7 +103,7 @@ export const bookingDescription: INodeProperties[] = [
 				routing: {
 					request: {
 						method: 'POST',
-						url: `http://dev.eresourcescheduler.cloud:8080/rest/v1/bookings/search`,
+						url: `${ERS_APP_V1_BASE_URL}/bookings/search`,
 						headers: {
 							'Content-Type': 'application/json',
 							Accept: 'application/json',
@@ -131,7 +132,7 @@ export const bookingDescription: INodeProperties[] = [
 				routing: {
 					request: {
 						method: 'PUT',
-						url: '={{ (() => { const base = "http://dev.eresourcescheduler.cloud:8080/rest/v1/bookings/" + $parameter.booking_id; const ub = $parameter.connectedBookingsFields?.update_connected_bookings; if (ub === 1 || ub === 2 || ub === 4) return base + "?update_connected_bookings=" + ub; return base; })() }}',
+						url: '={{ (() => { const base = "' + ERS_APP_V1_BASE_URL + '/bookings/" + $parameter.booking_id; const ub = $parameter.connectedBookingsFields?.update_connected_bookings; if (ub === 1 || ub === 2 || ub === 4) return base + "?update_connected_bookings=" + ub; return base; })() }}',
 						headers: {
 							'Content-Type': 'application/json',
 							Accept: 'application/json',

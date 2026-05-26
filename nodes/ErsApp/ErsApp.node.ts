@@ -5,6 +5,7 @@ import {
 	type ILoadOptionsFunctions,
 	type INodePropertyOptions,
 } from 'n8n-workflow';
+import { ERS_APP_V1_BASE_URL } from './shared/api.constants';
 import { resourceDescription } from './resources/resource';
 import { projectDescription } from './resources/project';
 import { bookingDescription } from './resources/booking';
@@ -318,7 +319,7 @@ async function ensureProfileFieldsCache(
 		if (!cache?.length) {
 			const response = await ctx.helpers.httpRequestWithAuthentication.call(ctx, credentialType, {
 				method: 'GET',
-				url: `http://dev.eresourcescheduler.cloud:8080/rest/v1${meta.endpoint}`,
+				url: `${ERS_APP_V1_BASE_URL}${meta.endpoint}`,
 				headers: { Accept: 'application/json' },
 			}) as { data?: ProfileField[] } | ProfileField[];
 
@@ -475,7 +476,7 @@ async function fetchResourceTypesList(
 			credentialType,
 			{
 				method: 'GET',
-				url: 'http://dev.eresourcescheduler.cloud:8080/rest/v1/resourcetypes',
+				url: `${ERS_APP_V1_BASE_URL}/resourcetypes`,
 				headers: { Accept: 'application/json' },
 			},
 		) as ResourceType[] | { data?: ResourceType[]; items?: ResourceType[] };
@@ -510,7 +511,7 @@ async function fetchResourceTypeFields(
 			credentialType,
 			{
 				method: 'GET',
-				url: `http://dev.eresourcescheduler.cloud:8080/rest/v1/resourcetypes/${resourceTypeIdStr}`,
+				url: `${ERS_APP_V1_BASE_URL}/resourcetypes/${resourceTypeIdStr}`,
 				headers: { Accept: 'application/json' },
 			},
 		) as ResourceType;
@@ -600,7 +601,7 @@ async function fetchProjectTypesList(ctx: ILoadOptionsFunctions): Promise<Projec
 			credentialType,
 			{
 				method: 'GET',
-				url: `http://dev.eresourcescheduler.cloud:8080/rest/v1/projecttypes`,
+				url: `${ERS_APP_V1_BASE_URL}/projecttypes`,
 				headers: { Accept: 'application/json' },
 			},
 		) as ProjectType[] | { data?: ProjectType[]; items?: ProjectType[] };
@@ -637,7 +638,7 @@ async function fetchProjectTypeFields(
 			credentialType,
 			{
 				method: 'GET',
-				url: `http://dev.eresourcescheduler.cloud:8080/rest/v1/projecttypes/${projectTypeIdStr}`,
+				url: `${ERS_APP_V1_BASE_URL}/projecttypes/${projectTypeIdStr}`,
 				headers: { Accept: 'application/json' },
 			},
 		) as ProjectType;
