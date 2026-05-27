@@ -50,23 +50,6 @@ function getValidEventsForEntity(entity: number, events: number[]): number[] {
 	return filtered;
 }
 
-/**
- * Replaces webhook URL host with host.docker.internal:5678 for Docker compatibility
- * @param webhookUrl - The original webhook URL
- * @returns The webhook URL with host.docker.internal:5678 as the host
- */
-function replaceWebhookUrlForDocker(webhookUrl: string): string {
-	// Extract protocol and path from the original URL
-	const urlMatch = webhookUrl.match(/^(https?:\/\/)([^/]+)(.*)$/);
-	if (!urlMatch) {
-		return webhookUrl;
-	}
-	
-	const [, protocol, , path] = urlMatch;
-	// Replace with host.docker.internal:5678
-	return `${protocol}host.docker.internal:5678${path}`;
-}
-
 export class ErsAppTrigger implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'ERS Trigger',
@@ -274,17 +257,13 @@ export class ErsAppTrigger implements INodeType {
 				return false;
 			},
 			async create(this: IHookFunctions): Promise<boolean> {
-				// Get webhook URL - this ensures the webhook is ready
-				const generatedUrl = this.getNodeWebhookUrl('default');
+				const webhookUrl = this.getNodeWebhookUrl('default');
 				
-				if (!generatedUrl) {
+				if (!webhookUrl) {
 					throw new NodeApiError(this.getNode(), {
 						message: 'ERS webhook setup failed: could not determine callback URL. Save the workflow and try activating it again.',
 					});
 				}
-				
-				// Replace webhook URL host with host.docker.internal:5678 for Docker compatibility
-				const webhookUrl = replaceWebhookUrlForDocker(generatedUrl);
 				
 				const webhookPayload = {
 					name: 'n8n',
