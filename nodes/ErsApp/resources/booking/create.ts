@@ -81,6 +81,7 @@ export const bookingCreateDescription: INodeProperties[] = [
 						type: 'options',
 						typeOptions: {
 							loadOptionsMethod: 'getBookingUDFFieldsMandatory',
+							loadOptionsDependsOn: ['authentication'],
 						},
 						default: '',
 						description:
@@ -217,7 +218,7 @@ export const bookingCreateDescription: INodeProperties[] = [
 						noDataExpression: true,
 						typeOptions: {
 							loadOptionsMethod: 'getBookingUDFFieldOptions',
-							loadOptionsDependsOn: ['fieldName'],
+							loadOptionsDependsOn: ['authentication', 'fieldName'],
 							searchable: true,
 						},
 						default: [],
@@ -276,7 +277,7 @@ export const bookingCreateDescription: INodeProperties[] = [
 						noDataExpression: true,
 						typeOptions: {
 							loadOptionsMethod: 'getBookingUDFFieldOptions',
-							loadOptionsDependsOn: ['fieldName'],
+							loadOptionsDependsOn: ['authentication', 'fieldName'],
 							searchable: true,
 						},
 						default: '',
@@ -361,6 +362,7 @@ export const bookingCreateDescription: INodeProperties[] = [
 						type: 'options',
 						typeOptions: {
 							loadOptionsMethod: 'getBookingUDFFieldsOther',
+							loadOptionsDependsOn: ['authentication'],
 						},
 						default: '',
 						description:
@@ -493,7 +495,7 @@ export const bookingCreateDescription: INodeProperties[] = [
 						noDataExpression: true,
 						typeOptions: {
 							loadOptionsMethod: 'getBookingUDFFieldOptions',
-							loadOptionsDependsOn: ['fieldName'],
+							loadOptionsDependsOn: ['authentication', 'fieldName'],
 							searchable: true,
 						},
 						default: [],
@@ -552,7 +554,7 @@ export const bookingCreateDescription: INodeProperties[] = [
 						noDataExpression: true,
 						typeOptions: {
 							loadOptionsMethod: 'getBookingUDFFieldOptions',
-							loadOptionsDependsOn: ['fieldName'],
+							loadOptionsDependsOn: ['authentication', 'fieldName'],
 							searchable: true,
 						},
 						default: '',

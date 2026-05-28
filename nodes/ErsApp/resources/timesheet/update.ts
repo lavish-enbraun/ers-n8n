@@ -91,6 +91,7 @@ export const timesheetUpdateDescription: INodeProperties[] = [
 						type: 'options',
 						typeOptions: {
 							loadOptionsMethod: 'getTimesheetUDFFieldsMandatory',
+							loadOptionsDependsOn: ['authentication'],
 						},
 						default: '',
 						description:
@@ -206,7 +207,7 @@ export const timesheetUpdateDescription: INodeProperties[] = [
 						noDataExpression: true,
 						typeOptions: {
 							loadOptionsMethod: 'getTimesheetUDFFieldOptions',
-							loadOptionsDependsOn: ['fieldName'],
+							loadOptionsDependsOn: ['authentication', 'fieldName'],
 							searchable: true,
 						},
 						default: [],
@@ -261,7 +262,7 @@ export const timesheetUpdateDescription: INodeProperties[] = [
 						noDataExpression: true,
 						typeOptions: {
 							loadOptionsMethod: 'getTimesheetUDFFieldOptions',
-							loadOptionsDependsOn: ['fieldName'],
+							loadOptionsDependsOn: ['authentication', 'fieldName'],
 							searchable: true,
 						},
 						default: '',
@@ -344,6 +345,7 @@ export const timesheetUpdateDescription: INodeProperties[] = [
 						type: 'options',
 						typeOptions: {
 							loadOptionsMethod: 'getTimesheetUDFFieldsOther',
+							loadOptionsDependsOn: ['authentication'],
 						},
 						default: '',
 						description:
@@ -459,7 +461,7 @@ export const timesheetUpdateDescription: INodeProperties[] = [
 						noDataExpression: true,
 						typeOptions: {
 							loadOptionsMethod: 'getTimesheetUDFFieldOptions',
-							loadOptionsDependsOn: ['fieldName'],
+							loadOptionsDependsOn: ['authentication', 'fieldName'],
 							searchable: true,
 						},
 						default: [],
@@ -514,7 +516,7 @@ export const timesheetUpdateDescription: INodeProperties[] = [
 						noDataExpression: true,
 						typeOptions: {
 							loadOptionsMethod: 'getTimesheetUDFFieldOptions',
-							loadOptionsDependsOn: ['fieldName'],
+							loadOptionsDependsOn: ['authentication', 'fieldName'],
 							searchable: true,
 						},
 						default: '',

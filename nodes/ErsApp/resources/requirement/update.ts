@@ -196,12 +196,15 @@ export const requirementUpdateDescription: INodeProperties[] = [
 				displayName: 'Field',
 				name: 'field',
 				values: requirementCreateFieldValues.map((p) => {
-					if (p.name !== 'fieldName' || p.type !== 'options') return p;
+					if (p.name !== 'fieldName' || p.type !== 'options' || !p.typeOptions) return p;
 					return {
 						...p,
 						typeOptions: {
 							...p.typeOptions,
 							loadOptionsMethod: 'getRequirementUDFFieldsAll',
+							loadOptionsDependsOn: Array.from(
+								new Set(['authentication', ...(p.typeOptions.loadOptionsDependsOn ?? [])]),
+							),
 						},
 					};
 				}),

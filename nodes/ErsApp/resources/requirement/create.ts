@@ -12,6 +12,7 @@ export const requirementCreateFieldValues: INodeProperties[] = [
 		type: 'options',
 		typeOptions: {
 			loadOptionsMethod: 'getRequirementUDFFieldsMandatory',
+		loadOptionsDependsOn: ['authentication'],
 		},
 		default: '',
 		description:
@@ -53,7 +54,7 @@ export const requirementCreateFieldValues: INodeProperties[] = [
 		noDataExpression: true,
 		typeOptions: {
 			loadOptionsMethod: 'getRequirementUDFFieldOptions',
-			loadOptionsDependsOn: ['fieldName'],
+			loadOptionsDependsOn: ['authentication', 'fieldName'],
 			searchable: true,
 		},
 		default: [],
@@ -145,7 +146,7 @@ export const requirementCreateFieldValues: INodeProperties[] = [
 		noDataExpression: true,
 		typeOptions: {
 			loadOptionsMethod: 'getRequirementUDFFieldOptions',
-			loadOptionsDependsOn: ['fieldName'],
+			loadOptionsDependsOn: ['authentication', 'fieldName'],
 			searchable: true,
 		},
 		default: '',

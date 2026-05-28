@@ -29,6 +29,7 @@ export const projectUpdateDescription: INodeProperties[] = [
 		},
 		typeOptions: {
 			loadOptionsMethod: 'getProjectTypes',
+			loadOptionsDependsOn: ['authentication'],
 		},
 		default: '',
 		description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
@@ -77,7 +78,7 @@ export const projectUpdateDescription: INodeProperties[] = [
 						type: 'options',
 						typeOptions: {
 							loadOptionsMethod: 'getProjectUDFFields',
-							loadOptionsDependsOn: ['project_type_id'],
+							loadOptionsDependsOn: ['authentication', 'project_type_id'],
 						},
 						default: '',
 						description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
@@ -141,7 +142,7 @@ export const projectUpdateDescription: INodeProperties[] = [
 						noDataExpression: true,
 						typeOptions: {
 							loadOptionsMethod: 'getProjectUDFFieldOptions',
-							loadOptionsDependsOn: ['fieldName'],
+							loadOptionsDependsOn: ['authentication', 'fieldName'],
 							searchable: true,
 						},
 						default: [],
@@ -240,7 +241,7 @@ export const projectUpdateDescription: INodeProperties[] = [
 						noDataExpression: true,
 						typeOptions: {
 							loadOptionsMethod: 'getProjectUDFFieldOptions',
-							loadOptionsDependsOn: ['fieldName'],
+							loadOptionsDependsOn: ['authentication', 'fieldName'],
 							searchable: true,
 						},
 						default: '',

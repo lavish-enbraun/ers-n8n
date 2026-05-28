@@ -130,6 +130,7 @@ export const bookingUpdateDescription: INodeProperties[] = [
 						type: 'options',
 						typeOptions: {
 							loadOptionsMethod: 'getBookingUDFFieldsAll',
+							loadOptionsDependsOn: ['authentication'],
 						},
 						default: '',
 						description:
@@ -262,7 +263,7 @@ export const bookingUpdateDescription: INodeProperties[] = [
 						noDataExpression: true,
 						typeOptions: {
 							loadOptionsMethod: 'getBookingUDFFieldOptions',
-							loadOptionsDependsOn: ['fieldName'],
+							loadOptionsDependsOn: ['authentication', 'fieldName'],
 							searchable: true,
 						},
 						default: [],
@@ -321,7 +322,7 @@ export const bookingUpdateDescription: INodeProperties[] = [
 						noDataExpression: true,
 						typeOptions: {
 							loadOptionsMethod: 'getBookingUDFFieldOptions',
-							loadOptionsDependsOn: ['fieldName'],
+							loadOptionsDependsOn: ['authentication', 'fieldName'],
 							searchable: true,
 						},
 						default: '',

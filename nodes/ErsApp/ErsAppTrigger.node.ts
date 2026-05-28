@@ -52,14 +52,14 @@ function getValidEventsForEntity(entity: number, events: number[]): number[] {
 
 export class ErsAppTrigger implements INodeType {
 	description: INodeTypeDescription = {
-		displayName: 'ERS Trigger',
+		displayName: 'eRS Trigger',
 		name: 'ersAppTrigger',
 		icon: { light: 'file:ersApp.svg', dark: 'file:ersApp.dark.svg' },
 		group: ['trigger'],
 		version: 1,
 		description: 'Triggers the workflow when ERS sends a webhook event',
 		defaults: {
-			name: 'ERS Trigger',
+			name: 'eRS Trigger',
 		},
 		usableAsTool: true,
 		inputs: [],

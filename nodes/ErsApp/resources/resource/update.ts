@@ -16,6 +16,7 @@ export const resourceUpdateDescription: INodeProperties[] = [
 		},
 		typeOptions: {
 			loadOptionsMethod: 'getResourceTypes',
+			loadOptionsDependsOn: ['authentication'],
 		},
 		default: '',
 		description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
@@ -75,7 +76,7 @@ export const resourceUpdateDescription: INodeProperties[] = [
 						type: 'options',
 						typeOptions: {
 							loadOptionsMethod: 'getResourceUDFFields',
-							loadOptionsDependsOn: ['resource_type_id'],
+							loadOptionsDependsOn: ['authentication', 'resource_type_id'],
 						},
 						default: '',
 						description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
@@ -134,7 +135,7 @@ export const resourceUpdateDescription: INodeProperties[] = [
 						noDataExpression: true,
 						typeOptions: {
 							loadOptionsMethod: 'getResourceUDFFieldOptions',
-							loadOptionsDependsOn: ['fieldName', 'resource_type_id'],
+							loadOptionsDependsOn: ['authentication', 'fieldName', 'resource_type_id'],
 							searchable: true,
 						},
 						default: [],
@@ -233,7 +234,7 @@ export const resourceUpdateDescription: INodeProperties[] = [
 						noDataExpression: true,
 						typeOptions: {
 							loadOptionsMethod: 'getResourceUDFFieldOptions',
-							loadOptionsDependsOn: ['fieldName', 'resource_type_id'],
+							loadOptionsDependsOn: ['authentication', 'fieldName', 'resource_type_id'],
 							searchable: true,
 						},
 						default: '',

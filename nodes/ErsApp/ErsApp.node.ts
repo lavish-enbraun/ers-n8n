@@ -5,6 +5,7 @@ import {
 	type ILoadOptionsFunctions,
 	type INodePropertyOptions,
 } from 'n8n-workflow';
+import { createHash } from 'node:crypto';
 import { ERS_APP_V1_BASE_URL } from './shared/api.constants';
 import { resourceDescription } from './resources/resource';
 import { projectDescription } from './resources/project';
@@ -215,9 +216,6 @@ interface ResourceUDFField {
 	placeholder_text?: string;
 }
 
-const resourceTypeCache: Record<string, ResourceUDFField[]> = {};
-let resourceTypesListCache: ResourceType[] | undefined;
-
 // Layer 2: Cache for project UDFs — global UDF list (fetched once) and per–project-type filtered list
 interface ProjectUDFOption {
 	id: number | string;
@@ -246,9 +244,6 @@ interface ProjectUDFField {
 	placeholder_text?: string;
 }
 
-const projectTypeCache: Record<string, ProjectUDFField[]> = {};
-let projectTypesListCache: ProjectType[] | undefined;
-
 const PROJECT_EXCLUDED_SYSTEM_FIELDS = ['id', 'project_type_id', 'title'];
 
 type ProfileEntityKey = 'booking' | 'timesheet' | 'requirement';
@@ -269,7 +264,119 @@ const PROFILE_ENTITY_META: Record<ProfileEntityKey,{ endpoint: string; excludedC
 	},
 };
 
-const profileFieldsCache: Partial<Record<ProfileEntityKey, ProfileField[]>> = {};
+type LoadOptionsCacheValue =
+	| ResourceType[]
+	| ResourceUDFField[]
+	| ProjectType[]
+	| ProjectUDFField[]
+	| ProfileField[];
+
+interface LoadOptionsCacheEntry {
+	value: LoadOptionsCacheValue;
+	expiresAt: number;
+	lastAccess: number;
+}
+
+const LOAD_OPTIONS_CACHE_TTL_MS = 5 * 60 * 1000;
+const LOAD_OPTIONS_CACHE_MAX_ENTRIES = 300;
+const loadOptionsCache = new Map<string, LoadOptionsCacheEntry>();
+const loadOptionsInFlight = new Map<string, Promise<LoadOptionsCacheValue>>();
+
+function stableSerializeForHash(value: unknown): string {
+	if (value === null || value === undefined) return String(value);
+	if (typeof value !== 'object') return JSON.stringify(value);
+	if (Array.isArray(value)) return `[${value.map((item) => stableSerializeForHash(item)).join(',')}]`;
+
+	const obj = value as Record<string, unknown>;
+	const keys = Object.keys(obj).sort();
+	return `{${keys.map((key) => `${JSON.stringify(key)}:${stableSerializeForHash(obj[key])}`).join(',')}}`;
+}
+
+function buildCredentialFingerprint(credentials: unknown): string {
+	const serialized = stableSerializeForHash(credentials);
+	return createHash('sha256').update(serialized).digest('hex').slice(0, 16);
+}
+
+async function getCredentialScopeCacheKey(ctx: ILoadOptionsFunctions): Promise<string> {
+	const authentication = (ctx.getNode().parameters as { authentication?: string }).authentication;
+	const credentialType = getAuthCredentialType(authentication);
+	try {
+		const credentials = await ctx.getCredentials(credentialType);
+		return `${credentialType}:${buildCredentialFingerprint(credentials)}`;
+	} catch {
+		return `${credentialType}:missing`;
+	}
+}
+
+function buildLoadOptionsCacheKey(scope: string, credentialScopeCacheKey: string): string {
+	return `${scope}|${credentialScopeCacheKey}`;
+}
+
+function getCachedLoadOptionsValue<T extends LoadOptionsCacheValue>(cacheKey: string): T | undefined {
+	const cached = loadOptionsCache.get(cacheKey);
+	if (!cached) return undefined;
+
+	if (cached.expiresAt <= Date.now()) {
+		loadOptionsCache.delete(cacheKey);
+		return undefined;
+	}
+
+	cached.lastAccess = Date.now();
+	return cached.value as T;
+}
+
+function setCachedLoadOptionsValue<T extends LoadOptionsCacheValue>(cacheKey: string, value: T): void {
+	if (value.length === 0) return;
+
+	const now = Date.now();
+	loadOptionsCache.set(cacheKey, {
+		value,
+		expiresAt: now + LOAD_OPTIONS_CACHE_TTL_MS,
+		lastAccess: now,
+	});
+
+	if (loadOptionsCache.size <= LOAD_OPTIONS_CACHE_MAX_ENTRIES) return;
+
+	let leastRecentlyUsedKey: string | undefined;
+	let oldestAccess = Number.POSITIVE_INFINITY;
+	for (const [key, entry] of loadOptionsCache.entries()) {
+		if (entry.lastAccess < oldestAccess) {
+			oldestAccess = entry.lastAccess;
+			leastRecentlyUsedKey = key;
+		}
+	}
+	if (leastRecentlyUsedKey) {
+		loadOptionsCache.delete(leastRecentlyUsedKey);
+	}
+}
+
+async function getCachedOrLoadOptionsValue<T extends LoadOptionsCacheValue>(
+	cacheKey: string,
+	refresh: boolean,
+	loadFn: () => Promise<T>,
+): Promise<T> {
+	if (refresh) {
+		loadOptionsCache.delete(cacheKey);
+		loadOptionsInFlight.delete(cacheKey);
+	}
+
+	const cached = getCachedLoadOptionsValue<T>(cacheKey);
+	if (cached) return cached;
+
+	const inFlight = loadOptionsInFlight.get(cacheKey) as Promise<T> | undefined;
+	if (inFlight) return inFlight;
+
+	const loaderPromise: Promise<T> = (async () => {
+		const loaded = await loadFn();
+		setCachedLoadOptionsValue(cacheKey, loaded);
+		return loaded;
+	})().finally(() => {
+		loadOptionsInFlight.delete(cacheKey);
+	});
+
+	loadOptionsInFlight.set(cacheKey, loaderPromise as Promise<LoadOptionsCacheValue>);
+	return loaderPromise;
+}
 
 function parseProfileFieldCode(fieldName: string): string | undefined {
 	let parsed: { code?: string };
@@ -310,13 +417,10 @@ async function ensureProfileFieldsCache(
 		const auth = (ctx.getNode().parameters as { authentication?: string }).authentication;
 		const credentialType = getAuthCredentialType(auth);
 		const meta = PROFILE_ENTITY_META[entity];
+		const credentialScopeCacheKey = await getCredentialScopeCacheKey(ctx);
+		const cacheKey = buildLoadOptionsCacheKey(`profileFields:${entity}`, credentialScopeCacheKey);
 
-		if (invalidateCache) {
-			delete profileFieldsCache[entity];
-		}
-
-		let cache = profileFieldsCache[entity];
-		if (!cache?.length) {
+		return await getCachedOrLoadOptionsValue(cacheKey, invalidateCache, async () => {
 			const response = await ctx.helpers.httpRequestWithAuthentication.call(ctx, credentialType, {
 				method: 'GET',
 				url: `${ERS_APP_V1_BASE_URL}${meta.endpoint}`,
@@ -324,11 +428,8 @@ async function ensureProfileFieldsCache(
 			}) as { data?: ProfileField[] } | ProfileField[];
 
 			const list = Array.isArray(response) ? response : (response.data ?? []);
-			cache = mapProfileFieldsFromApi(list);
-			profileFieldsCache[entity] = cache;
-		}
-
-		return cache;
+			return mapProfileFieldsFromApi(list);
+		});
 	} catch (error: unknown) {
 		if (isAccessTokenError(error)) return [];
 		ctx.logger.error(`Error fetching ${entity} fields:`, { error });
@@ -382,10 +483,7 @@ async function getProfileFieldValueOptionsByFieldName(
 	const fieldCode = parseProfileFieldCode(fieldName);
 	if (!fieldCode) return [];
 
-	let fields = profileFieldsCache[entity];
-	if (!fields?.length) {
-		fields = await ensureProfileFieldsCache(ctx, entity, false);
-	}
+	const fields = await ensureProfileFieldsCache(ctx, entity, false);
 
 	const search = (
 		ctx.getCurrentNodeParameter('fieldValue') ??
@@ -462,28 +560,23 @@ async function fetchResourceTypesList(
 	ctx: ILoadOptionsFunctions,
 	refresh = false,
 ): Promise<ResourceType[]> {
-	if (refresh) {
-		resourceTypesListCache = undefined;
-	}
-
-	if (resourceTypesListCache?.length) return resourceTypesListCache;
-
 	const parameters = ctx.getNode().parameters as { authentication?: string };
 	const credentialType = getAuthCredentialType(parameters.authentication);
 	try {
-		const response = await ctx.helpers.httpRequestWithAuthentication.call(
-			ctx,
-			credentialType,
-			{
-				method: 'GET',
-				url: `${ERS_APP_V1_BASE_URL}/resourcetypes`,
-				headers: { Accept: 'application/json' },
-			},
-		) as ResourceType[] | { data?: ResourceType[]; items?: ResourceType[] };
-
-		const list = parseResourceTypesListResponse(response);
-		resourceTypesListCache = list;
-		return list;
+		const credentialScopeCacheKey = await getCredentialScopeCacheKey(ctx);
+		const cacheKey = buildLoadOptionsCacheKey('resourceTypesList', credentialScopeCacheKey);
+		return await getCachedOrLoadOptionsValue(cacheKey, refresh, async () => {
+			const response = await ctx.helpers.httpRequestWithAuthentication.call(
+				ctx,
+				credentialType,
+				{
+					method: 'GET',
+					url: `${ERS_APP_V1_BASE_URL}/resourcetypes`,
+					headers: { Accept: 'application/json' },
+				},
+			) as ResourceType[] | { data?: ResourceType[]; items?: ResourceType[] };
+			return parseResourceTypesListResponse(response);
+		});
 	} catch (error: unknown) {
 		if (isAccessTokenError(error)) return [];
 		ctx.logger.error('Error fetching resource types:', { error });
@@ -496,28 +589,23 @@ async function fetchResourceTypeFields(
 	resourceTypeIdStr: string,
 	refresh = false,
 ): Promise<ResourceUDFField[]> {
-	if (refresh) {
-		delete resourceTypeCache[resourceTypeIdStr];
-	}
-
-	const cached = resourceTypeCache[resourceTypeIdStr];
-	if (cached?.length) return cached;
-
 	const parameters = ctx.getNode().parameters as { authentication?: string };
 	const credentialType = getAuthCredentialType(parameters.authentication);
 	try {
-		const resourceTypeResponse = await ctx.helpers.httpRequestWithAuthentication.call(
-			ctx,
-			credentialType,
-			{
-				method: 'GET',
-				url: `${ERS_APP_V1_BASE_URL}/resourcetypes/${resourceTypeIdStr}`,
-				headers: { Accept: 'application/json' },
-			},
-		) as ResourceType;
-		const fields = mapPublicApiFieldsToUDF(resourceTypeResponse.fields);
-		resourceTypeCache[resourceTypeIdStr] = fields;
-		return fields;
+		const credentialScopeCacheKey = await getCredentialScopeCacheKey(ctx);
+		const cacheKey = buildLoadOptionsCacheKey(`resourceTypeFields:${resourceTypeIdStr}`, credentialScopeCacheKey);
+		return await getCachedOrLoadOptionsValue(cacheKey, refresh, async () => {
+			const resourceTypeResponse = await ctx.helpers.httpRequestWithAuthentication.call(
+				ctx,
+				credentialType,
+				{
+					method: 'GET',
+					url: `${ERS_APP_V1_BASE_URL}/resourcetypes/${resourceTypeIdStr}`,
+					headers: { Accept: 'application/json' },
+				},
+			) as ResourceType;
+			return mapPublicApiFieldsToUDF(resourceTypeResponse.fields);
+		});
 	} catch (error: unknown) {
 		if (isAccessTokenError(error)) return [];
 		ctx.logger.error('Error fetching resource type fields:', { error });
@@ -590,25 +678,25 @@ function mapProjectTypesToOptions(list: ProjectType[]): INodePropertyOptions[] {
 		});
 }
 
-async function fetchProjectTypesList(ctx: ILoadOptionsFunctions): Promise<ProjectType[]> {
-	if (projectTypesListCache?.length) return projectTypesListCache;
-
+async function fetchProjectTypesList(ctx: ILoadOptionsFunctions, refresh = false): Promise<ProjectType[]> {
 	const parameters = ctx.getNode().parameters as { authentication?: string };
 	const credentialType = getAuthCredentialType(parameters.authentication);
 	try {
-		const response = await ctx.helpers.httpRequestWithAuthentication.call(
-			ctx,
-			credentialType,
-			{
-				method: 'GET',
-				url: `${ERS_APP_V1_BASE_URL}/projecttypes`,
-				headers: { Accept: 'application/json' },
-			},
-		) as ProjectType[] | { data?: ProjectType[]; items?: ProjectType[] };
+		const credentialScopeCacheKey = await getCredentialScopeCacheKey(ctx);
+		const cacheKey = buildLoadOptionsCacheKey('projectTypesList', credentialScopeCacheKey);
+		return await getCachedOrLoadOptionsValue(cacheKey, refresh, async () => {
+			const response = await ctx.helpers.httpRequestWithAuthentication.call(
+				ctx,
+				credentialType,
+				{
+					method: 'GET',
+					url: `${ERS_APP_V1_BASE_URL}/projecttypes`,
+					headers: { Accept: 'application/json' },
+				},
+			) as ProjectType[] | { data?: ProjectType[]; items?: ProjectType[] };
 
-		const list = parseProjectTypesListResponse(response);
-		projectTypesListCache = list;
-		return list;
+			return parseProjectTypesListResponse(response);
+		});
 	} catch (error: unknown) {
 		if (isAccessTokenError(error)) return [];
 		ctx.logger.error('Error fetching project types:', { error });
@@ -626,25 +714,25 @@ function filterEditableProjectFields(fields: ProjectUDFField[]): ProjectUDFField
 async function fetchProjectTypeFields(
 	ctx: ILoadOptionsFunctions,
 	projectTypeIdStr: string,
+	refresh = false,
 ): Promise<ProjectUDFField[]> {
-	const cached = projectTypeCache[projectTypeIdStr];
-	if (cached?.length) return cached;
-
 	const parameters = ctx.getNode().parameters as { authentication?: string };
 	const credentialType = getAuthCredentialType(parameters.authentication);
 	try {
-		const projectTypeResponse = await ctx.helpers.httpRequestWithAuthentication.call(
-			ctx,
-			credentialType,
-			{
-				method: 'GET',
-				url: `${ERS_APP_V1_BASE_URL}/projecttypes/${projectTypeIdStr}`,
-				headers: { Accept: 'application/json' },
-			},
-		) as ProjectType;
-		const fields = mapPublicApiProjectFieldsToUDF(projectTypeResponse.fields);
-		projectTypeCache[projectTypeIdStr] = fields;
-		return fields;
+		const credentialScopeCacheKey = await getCredentialScopeCacheKey(ctx);
+		const cacheKey = buildLoadOptionsCacheKey(`projectTypeFields:${projectTypeIdStr}`, credentialScopeCacheKey);
+		return await getCachedOrLoadOptionsValue(cacheKey, refresh, async () => {
+			const projectTypeResponse = await ctx.helpers.httpRequestWithAuthentication.call(
+				ctx,
+				credentialType,
+				{
+					method: 'GET',
+					url: `${ERS_APP_V1_BASE_URL}/projecttypes/${projectTypeIdStr}`,
+					headers: { Accept: 'application/json' },
+				},
+			) as ProjectType;
+			return mapPublicApiProjectFieldsToUDF(projectTypeResponse.fields);
+		});
 	} catch (error: unknown) {
 		if (isAccessTokenError(error)) return [];
 		ctx.logger.error('Error fetching project type fields:', { error });
@@ -718,7 +806,7 @@ function mapPublicApiProjectFieldsToUDF(fields: ProjectTypeField[] | undefined):
 
 export class ErsApp implements INodeType {
 	description: INodeTypeDescription = {
-		displayName: 'eResource Scheduler',
+		displayName: 'eRS Actions',
 		name: 'ersApp',
 		icon: { light: 'file:ersApp.svg', dark: 'file:ersApp.dark.svg' },
 		group: ['transform'],
@@ -726,7 +814,7 @@ export class ErsApp implements INodeType {
 		subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
 		description: 'Interact with the Ers App API',
 		defaults: {
-			name: 'Ers App',
+			name: 'eRS Actions',
 		},
 		usableAsTool: true,
 		inputs: [NodeConnectionTypes.Main],
