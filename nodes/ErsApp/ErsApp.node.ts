@@ -972,7 +972,7 @@ export class ErsApp implements INodeType {
 					const udfFields = await fetchResourceTypeFields(this, resourceTypeIdStr);
 					if (udfFields.length === 0) return [];
 
-					const excludedSystemFields = ['id', 'resource_type_id', 'first_name', 'start_date'];
+					const excludedSystemFields = ['id', 'resource_type_id', 'first_name', 'start_date', 'calendar'];
 					return udfFields
 						.filter((field) => {
 							if (field.is_system_defined && excludedSystemFields.includes(field.code)) return false;
