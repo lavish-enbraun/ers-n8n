@@ -15,8 +15,8 @@ export const requirementCreateFieldValues: INodeProperties[] = [
 		loadOptionsDependsOn: ['authentication'],
 		},
 		default: '',
-		description:
-			'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+		description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+		hint: 'Select the user-defined field from the list.',
 		required: true,
 	},
 	{
@@ -24,6 +24,8 @@ export const requirementCreateFieldValues: INodeProperties[] = [
 		name: 'fieldValueBoolean',
 		type: 'boolean',
 		default: false,
+		description: 'Whether the field value is true',
+		hint: 'Enter true or false for Checkbox and Boolean field types.',
 		displayOptions: {
 			show: {
 				fieldName: [
@@ -38,6 +40,7 @@ export const requirementCreateFieldValues: INodeProperties[] = [
 		name: 'fieldValueDate',
 		type: 'dateTime',
 		default: '',
+		description: 'Enter a date or date-time value in ISO 8601 format',
 		displayOptions: {
 			show: {
 				fieldName: [
@@ -68,14 +71,15 @@ export const requirementCreateFieldValues: INodeProperties[] = [
 				],
 			},
 		},
-		description:
-			'Select multiple options from the dropdown. Selected values will be sent as an array of IDs. Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
+		description: 'Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+		hint: 'Select one or more options from the list.',
 	},
 	{
 		displayName: 'Field Value (Number)',
 		name: 'fieldValueNumber',
 		type: 'number',
 		default: 0,
+		description: 'Enter a numeric value for this field',
 		typeOptions: {
 			maxValue: 99999999.99,
 			minValue: -999999999,
@@ -113,7 +117,7 @@ export const requirementCreateFieldValues: INodeProperties[] = [
 				fieldName: [{ _cnd: { regex: '.*"has_options":true.*' } }],
 			},
 		},
-		description: 'Fill this for project/task (or role without options) when the API does not return a dropdown list',
+		description: 'Enter the ID of the selected option when no options list is available',
 	},
 	{
 		displayName: 'Field Value (Unit)',
@@ -163,8 +167,8 @@ export const requirementCreateFieldValues: INodeProperties[] = [
 				],
 			},
 		},
-		description:
-			'Fill this for single-select dropdown fields (e.g. Performing Role when options are returned by the API). Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
+		description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+		hint: 'Enter true, false, or the ID of the selected option.',
 	},
 	{
 		displayName: 'Field Value (Text)',
@@ -183,13 +187,14 @@ export const requirementCreateFieldValues: INodeProperties[] = [
 				],
 			},
 		},
-		description: 'For Tags, enter comma-separated values (sent as an array of strings)',
+		description: 'Enter a text value for this field. For Tags, enter comma-separated values.',
 	},
 	{
 		displayName: 'Field Value (Rich Text)',
 		name: 'fieldValueRichText',
 		type: 'string',
 		default: '',
+		description: 'Enter a text value for this field',
 		typeOptions: {
 			editor: 'htmlEditor',
 		},
@@ -227,8 +232,7 @@ export const requirementCreateDescription: INodeProperties[] = [
 			show: showOnlyForRequirementCreate,
 		},
 		default: '',
-		description:
-			'ID of the project for which this requirement is created',
+		description: 'ID of the project for this requirement',
 	},
 	{
 		displayName: 'Start Time',
@@ -239,8 +243,7 @@ export const requirementCreateDescription: INodeProperties[] = [
 			show: showOnlyForRequirementCreate,
 		},
 		default: '',
-		description:
-			'Start date and time (snapped to 15-minute intervals with seconds 00 in the request, format yyyy-MM-ddThh:mm:00)',
+		description: 'Start date and time in yyyy-MM-ddThh:mm:00 format',
 	},
 	{
 		displayName: 'End Time',
@@ -251,8 +254,7 @@ export const requirementCreateDescription: INodeProperties[] = [
 			show: showOnlyForRequirementCreate,
 		},
 		default: '',
-		description:
-			'End date and time (must be at least 15 minutes after start; snapped like start_time)',
+		description: 'End time, at least 15 minutes after start',
 	},
 	{
 		displayName: 'Effort',
@@ -268,7 +270,7 @@ export const requirementCreateDescription: INodeProperties[] = [
 			numberStepSize: 0.01,
 		},
 		default: 0,
-		description: 'Effort for the requirement (0–99999999.99)',
+		description: 'Effort value for the requirement (0-99999999.99)',
 	},
 	{
 		displayName: 'Unit',
@@ -291,7 +293,7 @@ export const requirementCreateDescription: INodeProperties[] = [
 			},
 		],
 		default: 2,
-		description: 'Unit for effort: 2 = Hours, 4 = FTE',
+		description: 'Unit for effort: Hours or FTE',
 	},
 	{
 		displayName: 'Allow Multi Allocation',
@@ -301,8 +303,8 @@ export const requirementCreateDescription: INodeProperties[] = [
 		displayOptions: {
 			show: showOnlyForRequirementCreate,
 		},
-		description:
-			'Whether to allow allocating this requirement to multiple resources at the same time',
+		description: 'Whether to allow multiple resource allocations',
+		hint: 'Toggle to allow multiple resource allocations.',
 	},
 	{
 		displayName: 'Sync To Booking',
@@ -312,8 +314,8 @@ export const requirementCreateDescription: INodeProperties[] = [
 		displayOptions: {
 			show: showOnlyForRequirementCreate,
 		},
-		description:
-			'Whether common custom field values in linked bookings stay synced from this requirement, with those fields read-only on the booking form',
+		description: 'Whether to sync custom fields to linked bookings',
+		hint: 'Toggle to sync custom fields to linked bookings.',
 	},
 	{
 		displayName: 'Flexi Range Duration',
@@ -327,8 +329,7 @@ export const requirementCreateDescription: INodeProperties[] = [
 			minValue: 0,
 			numberPrecision: 0,
 		},
-		description:
-			'Optional. Defined duration range for flexibility in fulfilling the requirement compared to the original requirement date. When set, flexi_range_unit is sent (default 2 = Days).',
+		description: 'Optional duration range for fulfilling the requirement',
 	},
 	{
 		displayName: 'Flexi Range Unit',
@@ -342,8 +343,7 @@ export const requirementCreateDescription: INodeProperties[] = [
 			{ name: 'Hours', value: 1, description: 'Hours as the flexi range unit' },
 			{ name: 'Days', value: 2, description: 'Days as the flexi range unit' },
 		],
-		description:
-			'Optional unit for flexi range (1 = Hours, 2 = Days). Default is 2. Used when flexi_range_duration is set.',
+		description: 'Unit for flexi range: Hours or Days',
 	},
 	{
 		displayName: 'Mandatory Fields',
@@ -357,8 +357,7 @@ export const requirementCreateDescription: INodeProperties[] = [
 		typeOptions: {
 			multipleValues: true,
 		},
-		description:
-			'Required fields from GET /requirement/fields (project, start/end time, effort, and unit are set above and are not listed here). Add one row per field; fill only the matching value control.',
+		description: 'Required user-defined fields for the requirement type',
 		options: [
 			{
 				displayName: 'Field',
@@ -379,8 +378,7 @@ export const requirementCreateDescription: INodeProperties[] = [
 		typeOptions: {
 			multipleValues: true,
 		},
-		description:
-			'Optional fields from GET /requirement/fields (same value rules as mandatory fields; core fields above are excluded)',
+		description: 'Optional user-defined fields for the requirement type',
 		options: [
 			{
 				displayName: 'Field',

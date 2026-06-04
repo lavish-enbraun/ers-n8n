@@ -19,6 +19,7 @@ export const projectGetAllDescription: INodeProperties[] = [
 		},
 		default: 50,
 		description: 'Max number of results to return',
+		hint: 'Maximum number of results to return.',
 		routing: {
 			send: {
 				type: 'query',
@@ -37,7 +38,7 @@ export const projectGetAllDescription: INodeProperties[] = [
 			minValue: 0,
 		},
 		default: 0,
-		description: 'Offset keyword is used to skip n items. If offset value is given as 10, then first 10 records will be skipped from result set. Default value is 0.',
+		description: 'Number of records to skip from the start',
 		routing: {
 			send: {
 				type: 'query',

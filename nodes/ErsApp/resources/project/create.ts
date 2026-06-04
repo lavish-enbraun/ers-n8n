@@ -20,6 +20,7 @@ export const projectCreateDescription: INodeProperties[] = [
 		},
 		default: '',
 		description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+		hint: 'Select the project type from the list.',
 	},
 	{
 		displayName: 'Title',
@@ -53,8 +54,7 @@ export const projectCreateDescription: INodeProperties[] = [
 		typeOptions: {
 			multipleValues: true,
 		},
-		description:
-			'Mandatory user-defined fields from eResource Scheduler. Fields are fetched dynamically based on the selected Project Type. After selecting a field, fill ONLY the appropriate value field that matches the field type (Text for TEXT/EMAIL/ENAME, Number for NUMBER/INTEGER, Date for DATE, Boolean for BOOLEAN/CHECKBOX, Select for dropdowns with options including CALSS project calendar when Scheduling Plus is on, Multi-Select for multi-select dropdowns).',
+		description: 'Required user-defined fields for the project type',
 		options: [
 			{
 				displayName: 'Field',
@@ -70,6 +70,7 @@ export const projectCreateDescription: INodeProperties[] = [
 						},
 						default: '',
 						description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+						hint: 'Select the user-defined field from the list.',
 						required: true,
 					},
 					{
@@ -98,7 +99,8 @@ export const projectCreateDescription: INodeProperties[] = [
 								],
 							},
 						},
-						description: 'Whether to fill this for BOOLEAN, CHECKBOX field types',
+						description: 'Whether the field value is true',
+						hint: 'Enter true or false for Checkbox and Boolean field types.',
 					},
 					{
 						displayName: 'Field Value (Date)',
@@ -121,7 +123,7 @@ export const projectCreateDescription: INodeProperties[] = [
 								],
 							},
 						},
-						description: 'Fill this for DATE field types',
+						description: 'Enter a date or date-time value in ISO 8601 format',
 					},
 					{
 						displayName: 'Field Value (Multi-Select) Names or IDs',
@@ -160,7 +162,8 @@ export const projectCreateDescription: INodeProperties[] = [
 								],
 							},
 						},
-						description: 'Select multiple options from the dropdown. Selected values will be sent as an array of IDs. Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
+						description: 'Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+						hint: 'Select one or more options from the list.',
 					},
 					{
 						displayName: 'Field Value (Number)',
@@ -197,7 +200,7 @@ export const projectCreateDescription: INodeProperties[] = [
 								],
 							},
 						},
-						description: 'Fill this for NUMBER, INTEGER, FLOAT, INT field types. INT allows max 9 digits (999,999,999).',
+						description: 'Enter a numeric value for this field',
 					},
 					{
 						displayName: 'Field Value (Rich Text)',
@@ -218,8 +221,7 @@ export const projectCreateDescription: INodeProperties[] = [
 								],
 							},
 						},
-						description:
-							'Fill this for MLTEXT (Multi Line Rich Text) field types. Value is stored/sent as HTML (for example: <p>text</p>).',
+						description: 'Enter a text value for this field',
 					},
 					{
 						displayName: 'Field Value (Select) Name or ID',
@@ -297,8 +299,8 @@ export const projectCreateDescription: INodeProperties[] = [
 								],
 							},
 						},
-						description:
-							'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+						description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+						hint: 'Enter true, false, or the ID of the selected option.',
 					},
 					{
 						displayName: 'Field Value (Text)',
@@ -336,7 +338,8 @@ export const projectCreateDescription: INodeProperties[] = [
 								],
 							},
 						},
-						description: 'Fill this for TEXT, EMAIL, ENAME, URL, COLPICK field types. For COLPICK use hex format #XXXXXX;1 or #XXXXXX;0 (1=white, 0=black foreground).',
+						description:
+							'Enter a text value for this field. For COLPICK use hex format #XXXXXX;1 or #XXXXXX;0 (1=white, 0=black foreground).',
 					},
 				],
 			},
@@ -363,8 +366,7 @@ export const projectCreateDescription: INodeProperties[] = [
 		typeOptions: {
 			multipleValues: true,
 		},
-		description:
-			'Other user-defined fields from eResource Scheduler. Fields are fetched dynamically based on the selected Project Type. After selecting a field, fill ONLY the appropriate value field that matches the field type (Text for TEXT/EMAIL/ENAME, Number for NUMBER/INTEGER, Date for DATE, Boolean for BOOLEAN/CHECKBOX, Select for dropdowns with options including CALSS project calendar when Scheduling Plus is on, Multi-Select for multi-select dropdowns).',
+		description: 'Optional user-defined fields for the project type',
 		options: [
 			{
 				displayName: 'Field',
@@ -380,6 +382,7 @@ export const projectCreateDescription: INodeProperties[] = [
 						},
 						default: '',
 						description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+						hint: 'Select the user-defined field from the list.',
 						required: true,
 					},
 					{
@@ -408,7 +411,8 @@ export const projectCreateDescription: INodeProperties[] = [
 								],
 							},
 						},
-						description: 'Whether to fill this for BOOLEAN, CHECKBOX field types',
+						description: 'Whether the field value is true',
+						hint: 'Enter true or false for Checkbox and Boolean field types.',
 					},
 					{
 						displayName: 'Field Value (Date)',
@@ -431,7 +435,7 @@ export const projectCreateDescription: INodeProperties[] = [
 								],
 							},
 						},
-						description: 'Fill this for DATE field types',
+						description: 'Enter a date or date-time value in ISO 8601 format',
 					},
 					{
 						displayName: 'Field Value (Multi-Select) Names or IDs',
@@ -470,7 +474,8 @@ export const projectCreateDescription: INodeProperties[] = [
 								],
 							},
 						},
-						description: 'Select multiple options from the dropdown. Selected values will be sent as an array of IDs. Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
+						description: 'Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+						hint: 'Select one or more options from the list.',
 					},
 					{
 						displayName: 'Field Value (Number)',
@@ -507,7 +512,7 @@ export const projectCreateDescription: INodeProperties[] = [
 								],
 							},
 						},
-						description: 'Fill this for NUMBER, INTEGER, FLOAT, INT field types. INT allows max 9 digits (999,999,999).',
+						description: 'Enter a numeric value for this field',
 					},
 					{
 						displayName: 'Field Value (Rich Text)',
@@ -528,8 +533,7 @@ export const projectCreateDescription: INodeProperties[] = [
 								],
 							},
 						},
-						description:
-							'Fill this for MLTEXT (Multi Line Rich Text) field types. Value is stored/sent as HTML (for example: <p>text</p>).',
+						description: 'Enter a text value for this field',
 					},
 					{
 						displayName: 'Field Value (Select) Name or ID',
@@ -607,8 +611,8 @@ export const projectCreateDescription: INodeProperties[] = [
 								],
 							},
 						},
-						description:
-							'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+						description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+						hint: 'Enter true, false, or the ID of the selected option.',
 					},
 					{
 						displayName: 'Field Value (Text)',
@@ -646,7 +650,8 @@ export const projectCreateDescription: INodeProperties[] = [
 								],
 							},
 						},
-						description: 'Fill this for TEXT, EMAIL, ENAME, URL, COLPICK field types. For COLPICK use hex format #XXXXXX;1 or #XXXXXX;0 (1=white, 0=black foreground).',
+						description:
+							'Enter a text value for this field. For COLPICK use hex format #XXXXXX;1 or #XXXXXX;0 (1=white, 0=black foreground).',
 					},
 				],
 			},

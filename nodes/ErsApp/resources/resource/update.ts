@@ -20,6 +20,7 @@ export const resourceUpdateDescription: INodeProperties[] = [
 		},
 		default: '',
 		description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+		hint: 'Select or specify the resource type.',
 	},
 	{
 		displayName: 'Resource ID',
@@ -41,7 +42,7 @@ export const resourceUpdateDescription: INodeProperties[] = [
 			show: showOnlyForResourceUpdate,
 		},
 		default: '',
-		description: 'Name of the resource (sent as "first_name" for human resources or "name" for non-human resources). Optional - only included in request if provided.',
+		description: 'Name of the resource to update',
 	},
 	{
 		displayName: 'User Defined Fields',
@@ -64,7 +65,7 @@ export const resourceUpdateDescription: INodeProperties[] = [
 		typeOptions: {
 			multipleValues: true,
 		},
-		description: 'Custom user-defined fields from eResource Scheduler. Fields are loaded dynamically by Resource Type; dropdown options are loaded on demand. After selecting a field, fill ONLY the value that matches the field type (Text, Number, Date, Boolean, Select, or Multi-Select).',
+		description: 'User-defined fields for the resource',
 		options: [
 			{
 				displayName: 'Field',
@@ -80,7 +81,7 @@ export const resourceUpdateDescription: INodeProperties[] = [
 						},
 						default: '',
 						description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
-						required: true,
+						hint: 'Select the user-defined field from the list.',
 					},
 					{
 						displayName: 'Field Value (Boolean)',
@@ -103,7 +104,8 @@ export const resourceUpdateDescription: INodeProperties[] = [
 								],
 							},
 						},
-						description: 'Whether to fill this for BOOLEAN, CHECKBOX field types',
+						description: 'Whether the field value is true',
+						hint: 'Enter true or false for Checkbox and Boolean field types.',
 					},
 					{
 						displayName: 'Field Value (Date)',
@@ -126,7 +128,7 @@ export const resourceUpdateDescription: INodeProperties[] = [
 								],
 							},
 						},
-						description: 'Fill this for DATE field types',
+						description: 'Enter a date or date-time value in ISO 8601 format',
 					},
 					{
 						displayName: 'Field Value (Multi-Select) Names or IDs',
@@ -165,8 +167,8 @@ export const resourceUpdateDescription: INodeProperties[] = [
 								],
 							},
 						},
-						description:
-							'Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+						description: 'Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+						hint: 'Select one or more options from the list.',
 					},
 					{
 						displayName: 'Field Value (Number)',
@@ -203,7 +205,7 @@ export const resourceUpdateDescription: INodeProperties[] = [
 								],
 							},
 						},
-						description: 'Fill this for NUMBER, INTEGER, FLOAT, INT field types. INT allows max 9 digits (999,999,999).',
+						description: 'Enter a numeric value for this field',
 					},
 					{
 						displayName: 'Field Value (Rich Text)',
@@ -224,8 +226,7 @@ export const resourceUpdateDescription: INodeProperties[] = [
 								],
 							},
 						},
-						description:
-							'Fill this for MLTEXT (Multi Line Rich Text) field types. Value is stored/sent as HTML (for example: <p>text</p>).',
+						description: 'Enter a text value for this field',
 					},
 					{
 						displayName: 'Field Value (Select) Name or ID',
@@ -298,8 +299,8 @@ export const resourceUpdateDescription: INodeProperties[] = [
 								],
 							},
 						},
-						description:
-							'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+						description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+						hint: 'Enter true, false, or the ID of the selected option.',
 					},
 					{
 						displayName: 'Field Value (Text)',
@@ -337,7 +338,8 @@ export const resourceUpdateDescription: INodeProperties[] = [
 								],
 							},
 						},
-						description: 'Fill this for TEXT, EMAIL, ENAME, URL, COLPICK field types. For COLPICK use hex format #XXXXXX;1 or #XXXXXX;0 (1=white, 0=black foreground).',
+						description:
+							'Enter a text value for this field. For Color Picker, enter a hex color code in #XXXXXX;1/0 format.',
 					},
 				],
 			},

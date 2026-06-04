@@ -33,7 +33,7 @@ export const bookingDeleteDescription: INodeProperties[] = [
 				name: 'delete_connected_bookings',
 				type: 'options',
 				default: 4,
-				description: 'How to handle recurring bookings when deleting',
+				description: 'Select how to handle recurring bookings',
 				options: [
 					{
 						name: 'All Related Bookings',

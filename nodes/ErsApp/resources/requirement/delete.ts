@@ -35,7 +35,8 @@ export const requirementDeleteDescription: INodeProperties[] = [
 				name: 'delete_bookings',
 				type: 'boolean',
 				default: false,
-				description: 'Whether to delete linked bookings when deleting the requirement',
+				description: 'Whether to delete all associated bookings',
+				hint: 'Toggle to delete all associated bookings.',
 				routing: {
 					send: {
 						type: 'query',
@@ -48,7 +49,8 @@ export const requirementDeleteDescription: INodeProperties[] = [
 				name: 'unlink_bookings',
 				type: 'boolean',
 				default: false,
-				description: 'Whether to unlink linked bookings when deleting the requirement',
+				description: 'Whether to unlink all associated bookings',
+				hint: 'Toggle to unlink all associated bookings.',
 				routing: {
 					send: {
 						type: 'query',

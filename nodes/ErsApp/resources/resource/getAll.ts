@@ -15,6 +15,7 @@ export const resourceGetResourcesDescription: INodeProperties[] = [
 		},
 		default: false,
 		description: 'Whether to return all results or only up to a given limit',
+		hint: 'Toggle on to return all results.',
 		routing: {
 			send: {
 				paginate: '={{ $value }}',
@@ -57,6 +58,7 @@ export const resourceGetResourcesDescription: INodeProperties[] = [
 			},
 		},
 		description: 'Max number of results to return',
+		hint: 'Maximum number of results to return.',
 	},
 ];
 

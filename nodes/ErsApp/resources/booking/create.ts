@@ -43,7 +43,7 @@ export const bookingCreateDescription: INodeProperties[] = [
 			show: showOnlyForBookingCreate,
 		},
 		default: '',
-		description: 'Start time of the booking (format: yyyy-MM-ddThh:mm:00, minutes will be rounded to 0, 15, 30, or 45)',
+		description: 'Start time in yyyy-MM-ddThh:mm:00 format',
 	},
 	{
 		displayName: 'End Time',
@@ -54,7 +54,7 @@ export const bookingCreateDescription: INodeProperties[] = [
 			show: showOnlyForBookingCreate,
 		},
 		default: '',
-		description: 'End time of the booking (format: yyyy-MM-ddThh:mm:00, minutes will be rounded to 0, 15, 30, or 45)',
+		description: 'End time in yyyy-MM-ddThh:mm:00 format',
 	},
 	{
 		displayName: 'Mandatory Fields',
@@ -68,8 +68,7 @@ export const bookingCreateDescription: INodeProperties[] = [
 		typeOptions: {
 			multipleValues: true,
 		},
-		description:
-			'Mandatory fields from eResource Scheduler Booking. Fields are fetched dynamically from /booking/fields. After selecting a field, fill ONLY the appropriate value field that matches the field type (Text for TEXT/EMAIL/ENAME, Number for NUMBER/INTEGER/FLOAT/INT, Date/Time for DATIM/DATE, Boolean for BOOLEAN/CHK, Select for dropdowns with options, Multi-Select for multi-select dropdowns).',
+		description: 'Required user-defined fields for the booking type',
 		options: [
 			{
 				displayName: 'Field',
@@ -84,8 +83,8 @@ export const bookingCreateDescription: INodeProperties[] = [
 							loadOptionsDependsOn: ['authentication'],
 						},
 						default: '',
-						description:
-							'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+						description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+						hint: 'Select the user-defined field from the list.',
 						required: true,
 					},
 					{
@@ -126,6 +125,8 @@ export const bookingCreateDescription: INodeProperties[] = [
 						name: 'fieldValueBoolean',
 						type: 'boolean',
 						default: false,
+						description: 'Whether the field value is true',
+						hint: 'Enter true or false for Checkbox and Boolean field types.',
 						displayOptions: {
 							show: {
 								fieldName: [
@@ -162,6 +163,7 @@ export const bookingCreateDescription: INodeProperties[] = [
 						name: 'fieldValueDate',
 						type: 'dateTime',
 						default: '',
+						description: 'Enter a date or date-time value in ISO 8601 format',
 						displayOptions: {
 							show: {
 								fieldName: [
@@ -209,7 +211,7 @@ export const bookingCreateDescription: INodeProperties[] = [
 								fieldName: [{ _cnd: { regex: '.*"has_options":true.*' } }],
 							},
 						},
-						description: 'Fill this when the field expects an ID and no options list is available',
+						description: 'Enter the ID of the selected option when no options list is available',
 					},
 					{
 						displayName: 'Field Value (Multi-Select) Names or IDs',
@@ -232,14 +234,15 @@ export const bookingCreateDescription: INodeProperties[] = [
 								],
 							},
 						},
-						description:
-							'Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+						description: 'Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+						hint: 'Select one or more options from the list.',
 					},
 					{
 						displayName: 'Field Value (Number)',
 						name: 'fieldValueNumber',
 						type: 'number',
 						default: 0,
+						description: 'Enter a numeric value for this field',
 						typeOptions: {
 							maxValue: 999999999,
 							minValue: -999999999,
@@ -261,6 +264,7 @@ export const bookingCreateDescription: INodeProperties[] = [
 						name: 'fieldValueRichText',
 						type: 'string',
 						default: '',
+						description: 'Enter a text value for this field',
 						typeOptions: {
 							editor: 'htmlEditor',
 						},
@@ -294,8 +298,8 @@ export const bookingCreateDescription: INodeProperties[] = [
 								],
 							},
 						},
-						description:
-							'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+						description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+						hint: 'Enter true, false, or the ID of the selected option.',
 					},
 					{
 						displayName: 'Field Value (Text)',
@@ -315,7 +319,7 @@ export const bookingCreateDescription: INodeProperties[] = [
 							},
 						},
 						description:
-							'Fill this for text-like field types. For Tags, enter comma-separated values.',
+							'Enter a text value for this field. For Tags, enter comma-separated values.',
 					},
 					{
 						displayName: 'Field Value (Unit)',
@@ -349,8 +353,7 @@ export const bookingCreateDescription: INodeProperties[] = [
 		typeOptions: {
 			multipleValues: true,
 		},
-		description:
-			'Other fields from eResource Scheduler Booking. Fields are fetched dynamically from /booking/fields. After selecting a field, fill ONLY the appropriate value field that matches the field type.',
+		description: 'Optional user-defined fields for the booking type',
 		options: [
 			{
 				displayName: 'Field',
@@ -365,8 +368,8 @@ export const bookingCreateDescription: INodeProperties[] = [
 							loadOptionsDependsOn: ['authentication'],
 						},
 						default: '',
-						description:
-							'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+						description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+						hint: 'Select the user-defined field from the list.',
 						required: true,
 					},
 					{
@@ -407,6 +410,8 @@ export const bookingCreateDescription: INodeProperties[] = [
 						name: 'fieldValueBoolean',
 						type: 'boolean',
 						default: false,
+						description: 'Whether the field value is true',
+						hint: 'Enter true or false for Checkbox and Boolean field types.',
 						displayOptions: {
 							show: {
 								fieldName: [
@@ -439,6 +444,7 @@ export const bookingCreateDescription: INodeProperties[] = [
 						name: 'fieldValueDate',
 						type: 'dateTime',
 						default: '',
+						description: 'Enter a date or date-time value in ISO 8601 format',
 						displayOptions: {
 							show: {
 								fieldName: [
@@ -486,7 +492,7 @@ export const bookingCreateDescription: INodeProperties[] = [
 								fieldName: [{ _cnd: { regex: '.*"has_options":true.*' } }],
 							},
 						},
-						description: 'Fill this when the field expects an ID and no options list is available',
+						description: 'Enter the ID of the selected option when no options list is available',
 					},
 					{
 						displayName: 'Field Value (Multi-Select) Names or IDs',
@@ -509,14 +515,15 @@ export const bookingCreateDescription: INodeProperties[] = [
 								],
 							},
 						},
-						description:
-							'Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+						description: 'Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+						hint: 'Select one or more options from the list.',
 					},
 					{
 						displayName: 'Field Value (Number)',
 						name: 'fieldValueNumber',
 						type: 'number',
 						default: 0,
+						description: 'Enter a numeric value for this field',
 						typeOptions: {
 							maxValue: 999999999,
 							minValue: -999999999,
@@ -538,6 +545,7 @@ export const bookingCreateDescription: INodeProperties[] = [
 						name: 'fieldValueRichText',
 						type: 'string',
 						default: '',
+						description: 'Enter a text value for this field',
 						typeOptions: {
 							editor: 'htmlEditor',
 						},
@@ -571,8 +579,8 @@ export const bookingCreateDescription: INodeProperties[] = [
 								],
 							},
 						},
-						description:
-							'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+						description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+						hint: 'Enter true, false, or the ID of the selected option.',
 					},
 					{
 						displayName: 'Field Value (Text)',
@@ -592,7 +600,7 @@ export const bookingCreateDescription: INodeProperties[] = [
 							},
 						},
 						description:
-							'Fill this for text-like field types. For Tags, enter comma-separated values.',
+							'Enter a text value for this field. For Tags, enter comma-separated values.',
 					},
 					{
 						displayName: 'Field Value (Unit)',

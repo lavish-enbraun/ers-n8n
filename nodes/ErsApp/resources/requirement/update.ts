@@ -16,7 +16,7 @@ export const requirementUpdateDescription: INodeProperties[] = [
 			show: showOnlyForRequirementUpdate,
 		},
 		default: '',
-		description: 'Unique ID of the requirement to update',
+		description: 'Unique ID of requirement to update',
 	},
 	{
 		displayName: 'Project ID',
@@ -26,8 +26,7 @@ export const requirementUpdateDescription: INodeProperties[] = [
 			show: showOnlyForRequirementUpdate,
 		},
 		default: '',
-		description:
-			'If set, sent as a numeric project ID',
+		description: 'Sent as a numeric project ID',
 	},
 	{
 		displayName: 'Start Time',
@@ -37,8 +36,7 @@ export const requirementUpdateDescription: INodeProperties[] = [
 			show: showOnlyForRequirementUpdate,
 		},
 		default: '',
-		description:
-			'If set, start date and time (snapped to 15-minute intervals with seconds 00 in the request)',
+		description: 'Start date and time in yyyy-MM-ddThh:mm:00 format',
 	},
 	{
 		displayName: 'End Time',
@@ -48,7 +46,7 @@ export const requirementUpdateDescription: INodeProperties[] = [
 			show: showOnlyForRequirementUpdate,
 		},
 		default: '',
-		description: 'If set, end date and time (snapped like start time; must be at least 15 minutes after start)',
+		description: 'End time, at least 15 minutes after start',
 	},
 	{
 		displayName: 'Effort',
@@ -63,7 +61,7 @@ export const requirementUpdateDescription: INodeProperties[] = [
 			numberStepSize: 0.01,
 		},
 		default: undefined,
-		description: 'If set, effort for the requirement (0–99999999.99)',
+		description: 'Effort value for the requirement (0-99999999.99)',
 	},
 	{
 		displayName: 'Unit',
@@ -85,7 +83,7 @@ export const requirementUpdateDescription: INodeProperties[] = [
 			},
 		],
 		default: 2,
-		description: 'If set with effort, unit for effort: 2 = Hours, 4 = FTE',
+		description: 'Unit for effort: Hours or FTE',
 	},
 	{
 		displayName: 'Allow Multi Allocation',
@@ -95,8 +93,8 @@ export const requirementUpdateDescription: INodeProperties[] = [
 		displayOptions: {
 			show: showOnlyForRequirementUpdate,
 		},
-		description:
-			'Whether to allow allocating this requirement to multiple resources at the same time',
+		description: 'Whether to allow multiple resource allocations',
+		hint: 'Toggle to allow multiple resource allocations.',
 	},
 	{
 		displayName: 'Sync To Booking',
@@ -106,8 +104,8 @@ export const requirementUpdateDescription: INodeProperties[] = [
 		displayOptions: {
 			show: showOnlyForRequirementUpdate,
 		},
-		description:
-			'Whether common custom field values in linked bookings stay synced from this requirement, with those fields read-only on the booking form',
+		description: 'Whether to sync custom fields to linked bookings',
+		hint: 'Toggle to sync custom fields to linked bookings.',
 	},
 	{
 		displayName: 'Flexi Range Duration',
@@ -121,8 +119,7 @@ export const requirementUpdateDescription: INodeProperties[] = [
 			minValue: 0,
 			numberPrecision: 0,
 		},
-		description:
-			'Optional. Defined duration range for flexibility in fulfilling the requirement compared to the original requirement date. When set, flexi_range_unit is sent (default 2 = Days).',
+		description: 'Optional duration range for fulfilling requirements',
 	},
 	{
 		displayName: 'Flexi Range Unit',
@@ -136,8 +133,7 @@ export const requirementUpdateDescription: INodeProperties[] = [
 			{ name: 'Hours', value: 1, description: 'Hours as the flexi range unit' },
 			{ name: 'Days', value: 2, description: 'Days as the flexi range unit' },
 		],
-		description:
-			'Optional unit for flexi range (1 = Hours, 2 = Days). Default is 2. Used when flexi_range_duration is set.',
+		description: 'Unit for flexi range: Hours or Days',
 	},
 	{
 		displayName: 'Update Fields',
@@ -154,7 +150,8 @@ export const requirementUpdateDescription: INodeProperties[] = [
 				name: 'delete_bookings',
 				type: 'boolean',
 				default: false,
-				description: 'Whether to delete linked bookings when updating the requirement',
+				description: 'Whether to delete all associated bookings',
+				hint: 'Toggle to delete all associated bookings.',
 				routing: {
 					send: {
 						type: 'query',
@@ -167,7 +164,8 @@ export const requirementUpdateDescription: INodeProperties[] = [
 				name: 'unlink_bookings',
 				type: 'boolean',
 				default: false,
-				description: 'Whether to unlink linked bookings when updating the requirement',
+				description: 'Whether to unlink all associated bookings',
+				hint: 'Toggle to unlink all associated bookings.',
 				routing: {
 					send: {
 						type: 'query',
@@ -189,8 +187,7 @@ export const requirementUpdateDescription: INodeProperties[] = [
 		typeOptions: {
 			multipleValues: true,
 		},
-		description:
-			'Fields from GET /requirement/fields (required and optional; core fields above are excluded). After selecting a field, fill only the matching value control.',
+		description: 'User-defined fields for the requirement (required and optional)',
 		options: [
 			{
 				displayName: 'Field',

@@ -19,6 +19,7 @@ export const requirementGetAllDescription: INodeProperties[] = [
 		},
 		default: 50,
 		description: 'Max number of results to return',
+		hint: 'Maximum number of results to return.',
 		routing: {
 			send: {
 				type: 'query',
@@ -37,7 +38,7 @@ export const requirementGetAllDescription: INodeProperties[] = [
 			minValue: 0,
 		},
 		default: 0,
-		description: 'Offset keyword is used to skip n items. If offset value is given as 10, then first 10 records will be skipped from result set. Default value is 0.',
+		description: 'Number of records to skip from start',
 		routing: {
 			send: {
 				type: 'query',
@@ -53,7 +54,7 @@ export const requirementGetAllDescription: INodeProperties[] = [
 			show: showOnlyForRequirementGetAll,
 		},
 		default: '',
-		description: 'Start date in ISO 8601 format (yyyy-MM-dd). Used to filter requirements starting on or after this date. Must be provided together with End Date.',
+		description: 'Filter requirements on or after this date',
 		routing: {
 			send: {
 				type: 'query',
@@ -70,7 +71,7 @@ export const requirementGetAllDescription: INodeProperties[] = [
 			show: showOnlyForRequirementGetAll,
 		},
 		default: '',
-		description: 'End date in ISO 8601 format (yyyy-MM-dd). Used to filter requirements starting before this date. Must be provided together with Start Date.',
+		description: 'Filter requirements ending on or before this date',
 		routing: {
 			send: {
 				type: 'query',

@@ -33,6 +33,7 @@ export const projectUpdateDescription: INodeProperties[] = [
 		},
 		default: '',
 		description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+		hint: 'Select the project type from the list.',
 	},
 	{
 		displayName: 'Title',
@@ -42,7 +43,7 @@ export const projectUpdateDescription: INodeProperties[] = [
 			show: showOnlyForProjectUpdate,
 		},
 		default: '',
-		description: 'Title of the project. Optional - only included in request if provided.',
+		description: 'Title of the project to update',
 	},
 	{
 		displayName: 'User Defined Fields',
@@ -82,6 +83,7 @@ export const projectUpdateDescription: INodeProperties[] = [
 						},
 						default: '',
 						description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+						hint: 'Select the user-defined field from the list.',
 						required: true,
 					},
 					{
@@ -110,7 +112,8 @@ export const projectUpdateDescription: INodeProperties[] = [
 								],
 							},
 						},
-						description: 'Whether to fill this for BOOLEAN, CHECKBOX field types',
+						description: 'Whether the field value is true',
+						hint: 'Enter true or false for Checkbox and Boolean field types.',
 					},
 					{
 						displayName: 'Field Value (Date)',
@@ -133,7 +136,7 @@ export const projectUpdateDescription: INodeProperties[] = [
 								],
 							},
 						},
-						description: 'Fill this for DATE field types',
+						description: 'Enter a date or date-time value in ISO 8601 format',
 					},
 					{
 						displayName: 'Field Value (Multi-Select) Names or IDs',
@@ -172,8 +175,8 @@ export const projectUpdateDescription: INodeProperties[] = [
 								],
 							},
 						},
-						description:
-							'Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+						description: 'Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+						hint: 'Select one or more options from the list.',
 					},
 					{
 						displayName: 'Field Value (Number)',
@@ -210,7 +213,7 @@ export const projectUpdateDescription: INodeProperties[] = [
 								],
 							},
 						},
-						description: 'Fill this for NUMBER, INTEGER, FLOAT, INT field types. INT allows max 9 digits (999,999,999).',
+						description: 'Enter a numeric value for this field',
 					},
 					{
 						displayName: 'Field Value (Rich Text)',
@@ -231,8 +234,7 @@ export const projectUpdateDescription: INodeProperties[] = [
 								],
 							},
 						},
-						description:
-							'Fill this for MLTEXT (Multi Line Rich Text) field types. Value is stored/sent as HTML (for example: <p>text</p>).',
+						description: 'Enter a text value for this field',
 					},
 					{
 						displayName: 'Field Value (Select) Name or ID',
@@ -349,7 +351,8 @@ export const projectUpdateDescription: INodeProperties[] = [
 								],
 							},
 						},
-						description: 'Fill this for TEXT, EMAIL, ENAME, URL, COLPICK field types. For COLPICK use hex format #XXXXXX;1 or #XXXXXX;0 (1=white, 0=black foreground).',
+						description:
+							'Enter a text value for this field. For COLPICK use hex format #XXXXXX;1 or #XXXXXX;0 (1=white, 0=black foreground).',
 					},
 				],
 			},

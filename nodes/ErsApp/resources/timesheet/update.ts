@@ -78,8 +78,7 @@ export const timesheetUpdateDescription: INodeProperties[] = [
 		typeOptions: {
 			multipleValues: true,
 		},
-		description:
-			'Mandatory fields from eResource Scheduler Timesheet. Fields are fetched dynamically from /timesheet/fields. Core fields (`resource_id`, `project_id`, `date`, `hours`) and `start_time`/`end_time` are excluded here.',
+		description: 'Required user-defined fields for the timesheet',
 		options: [
 			{
 				displayName: 'Field',
@@ -94,8 +93,8 @@ export const timesheetUpdateDescription: INodeProperties[] = [
 							loadOptionsDependsOn: ['authentication'],
 						},
 						default: '',
-						description:
-							'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+						description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+						hint: 'Select the user-defined field from the list.',
 						required: true,
 					},
 					{
@@ -136,6 +135,8 @@ export const timesheetUpdateDescription: INodeProperties[] = [
 						name: 'fieldValueBoolean',
 						type: 'boolean',
 						default: false,
+						description: 'Whether the field value is true',
+						hint: 'Enter true or false for Checkbox and Boolean field types.',
 						displayOptions: {
 							show: {
 								fieldName: [
@@ -168,6 +169,7 @@ export const timesheetUpdateDescription: INodeProperties[] = [
 						name: 'fieldValueDate',
 						type: 'dateTime',
 						default: '',
+						description: 'Enter a date or date-time value in ISO 8601 format',
 						displayOptions: {
 							show: {
 								fieldName: [
@@ -198,7 +200,7 @@ export const timesheetUpdateDescription: INodeProperties[] = [
 								fieldName: [{ _cnd: { regex: '.*"has_options":true.*' } }],
 							},
 						},
-						description: 'Fill this for project/task (or role) when the API does not return a dropdown list',
+						description: 'Enter the ID of the selected option when no options list is available',
 					},
 					{
 						displayName: 'Field Value (Multi-Select) Names or IDs',
@@ -221,8 +223,8 @@ export const timesheetUpdateDescription: INodeProperties[] = [
 								],
 							},
 						},
-						description:
-							'Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+						description: 'Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+						hint: 'Select one or more options from the list.',
 					},
 					{
 						displayName: 'Field Value (Number)',
@@ -246,6 +248,7 @@ export const timesheetUpdateDescription: INodeProperties[] = [
 						name: 'fieldValueRichText',
 						type: 'string',
 						default: '',
+						description: 'Enter a text value for this field',
 						typeOptions: {
 							editor: 'htmlEditor',
 						},
@@ -279,8 +282,8 @@ export const timesheetUpdateDescription: INodeProperties[] = [
 								],
 							},
 						},
-						description:
-							'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+						description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+						hint: 'Enter true, false, or the ID of the selected option.',
 					},
 					{
 						displayName: 'Field Value (Text)',
@@ -299,7 +302,7 @@ export const timesheetUpdateDescription: INodeProperties[] = [
 								],
 							},
 						},
-						description: 'For Tags, enter comma-separated values',
+						description: 'Enter a text value for this field. For Tags, enter comma-separated values.',
 					},
 					{
 						displayName: 'Field Value (Unit)',
@@ -333,7 +336,7 @@ export const timesheetUpdateDescription: INodeProperties[] = [
 		typeOptions: {
 			multipleValues: true,
 		},
-		description: 'Other fields from eResource Scheduler Timesheet. Fetched dynamically from /timesheet/fields.',
+		description: 'Optional user-defined fields for the timesheet',
 		options: [
 			{
 				displayName: 'Field',
@@ -348,8 +351,8 @@ export const timesheetUpdateDescription: INodeProperties[] = [
 							loadOptionsDependsOn: ['authentication'],
 						},
 						default: '',
-						description:
-							'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+						description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+						hint: 'Select the user-defined field from the list.',
 						required: true,
 					},
 					{
@@ -390,6 +393,8 @@ export const timesheetUpdateDescription: INodeProperties[] = [
 						name: 'fieldValueBoolean',
 						type: 'boolean',
 						default: false,
+						description: 'Whether the field value is true',
+						hint: 'Enter true or false for Checkbox and Boolean field types.',
 						displayOptions: {
 							show: {
 								fieldName: [
@@ -422,6 +427,7 @@ export const timesheetUpdateDescription: INodeProperties[] = [
 						name: 'fieldValueDate',
 						type: 'dateTime',
 						default: '',
+						description: 'Enter a date or date-time value in ISO 8601 format',
 						displayOptions: {
 							show: {
 								fieldName: [
@@ -452,7 +458,7 @@ export const timesheetUpdateDescription: INodeProperties[] = [
 								fieldName: [{ _cnd: { regex: '.*"has_options":true.*' } }],
 							},
 						},
-						description: 'Fill this for project/task (or role) when the API does not return a dropdown list',
+						description: 'Enter the ID of the selected option when no options list is available',
 					},
 					{
 						displayName: 'Field Value (Multi-Select) Names or IDs',
@@ -475,8 +481,8 @@ export const timesheetUpdateDescription: INodeProperties[] = [
 								],
 							},
 						},
-						description:
-							'Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+						description: 'Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+						hint: 'Select one or more options from the list.',
 					},
 					{
 						displayName: 'Field Value (Number)',
@@ -500,6 +506,7 @@ export const timesheetUpdateDescription: INodeProperties[] = [
 						name: 'fieldValueRichText',
 						type: 'string',
 						default: '',
+						description: 'Enter a text value for this field',
 						typeOptions: {
 							editor: 'htmlEditor',
 						},
@@ -533,8 +540,8 @@ export const timesheetUpdateDescription: INodeProperties[] = [
 								],
 							},
 						},
-						description:
-							'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+						description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+						hint: 'Enter true, false, or the ID of the selected option.',
 					},
 					{
 						displayName: 'Field Value (Text)',
@@ -553,7 +560,7 @@ export const timesheetUpdateDescription: INodeProperties[] = [
 								],
 							},
 						},
-						description: 'For Tags, enter comma-separated values',
+						description: 'Enter a text value for this field. For Tags, enter comma-separated values.',
 					},
 					{
 						displayName: 'Field Value (Unit)',
@@ -586,7 +593,7 @@ export const timesheetUpdateDescription: INodeProperties[] = [
 			rows: 4,
 		},
 		default: '',
-		description: 'Comment for the timesheet entry',
+		description: 'Optional comment for this timesheet entry',
 	},
 ];
 
